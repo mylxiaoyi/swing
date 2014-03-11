@@ -1,0 +1,2194 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>List Model Controls &mdash; The Definitive Guide to Java Swing Third Edtion 0.01 documentation</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.01',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="The Definitive Guide to Java Swing Third Edtion 0.01 documentation" href="index.html" />
+    <link rel="next" title="Spinner Model Controls" href="ch14.html" />
+    <link rel="prev" title="Bounded Range Components" href="ch12.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="ch14.html" title="Spinner Model Controls"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="ch12.html" title="Bounded Range Components"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">The Definitive Guide to Java Swing Third Edtion 0.01 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="list-model-controls">
+<h1>List Model Controls<a class="headerlink" href="#list-model-controls" title="Permalink to this headline">¶</a></h1>
+<p>12章探讨了支持滚动与输入或是显示某些边界范围值的边界范围组件。在本章中，我们将会探讨表示选项列表的两个选择控件：JList与JComboBox。这两个组件之间的主要区别在于JList组件支持多项选择，而JComboBox不支持。同时，JComboBox允许用户提供不在可用选项中的选项。</p>
+<div class="section" id="listmodel">
+<h2>ListModel接口<a class="headerlink" href="#listmodel" title="Permalink to this headline">¶</a></h2>
+<p>图13-1显示了在本章中我们将要探讨的两个控件。</p>
+<div class="figure">
+<img alt="Swing_13_1.png" src="_images/Swing_13_1.png" />
+<p class="caption">Swing_13_1.png</p>
+</div>
+<p>这两个组件之间所共享的数据模型是ListModel，从而形成了ListMode接口。AbstractListModel类通过支持ListDataListener对象的管理与通知提供了实现基础。</p>
+<p>对于JList组件，数据模型的实现是DefaultListModel类。这个类添加了一个实际的数据仓库，其遵循Vector
+API，可以用于在JList组件内显示的不同的元素。</p>
+<p>对于JComboBox组件，一个名为ComboBoxModel的ListModel接口扩展提供了在模型内选择项目的概念。DefaultComboBoxModel类通过另一个接口，MutableComboBoxModel实现了ComboBoxModel接口，MutableComboBoxModel为模型中元素的添加与移除提供了支持方法。</p>
+<p>注意，BasicDirectoryModel类是另一个ListModel实现。这个实现为第9章所描述的文件选择器组件JFileChooser所用。</p>
+<p>实际上ListModel接口非常简单。他提供了ListDataListener管理，并且访问模型特定元素的尺寸。</p>
+<div class="code java highlight-python"><pre>public interface ListModel {
+  // Properties
+  public int getSize();
+  // Listeners
+  public void addListDataListener(ListDataListener l);
+  public void removeListDataListener(ListDataListener l);
+  // Other methods
+  public Object getElementAt(int index);
+}</pre>
+</div>
+<div class="section" id="abstractlistmodel">
+<h3>AbstractListModel类<a class="headerlink" href="#abstractlistmodel" title="Permalink to this headline">¶</a></h3>
+<p>AbstractListModel类提供了ListModel接口的部分实现。我们只需要提供数据结构与数据。这个类为ListDataListener的列表管理提供对象并且当数据变化时为这些监听器的通知提供框架。我们可以使用public
+ListDataListener[]
+getListDataListener()方法获取监听器列表。当我们修改数据模型时，我们必须调用AbstractListModel的相应方法来通知监听在ListDataListener对象：</p>
+<ul class="simple">
+<li>protected void fireIntervalAdded(Object source, int index0, int
+index1)：在向列表添加一个连续的范围值之后调用。</li>
+<li>protected void fireIntervalRemoved(Object source, int index0, int
+index1)：在由列表移除一个连续的范围值之后调用。</li>
+<li>protected void fireContentsChanged(Object source, int index0, int
+index1)：如果修改的范围对于插入，移除或是两者，不是连续的时调用。</li>
+</ul>
+<p>如果我们的数据在一个已存在数据结构中，我们需要将其转换为Swing组件可以理解的格式或是我们自己实现ListModel接口。正如我们将要看到，数据或是Vector是直接为JList与JComboBox所支持的。我们可以将我们的数据结构包装进AbstractListModel。例如，如果我们的初始数据结构是集合框架中的ArrayList，我们可以使用下面的代码转换为一个ListModel：</p>
+<div class="code java highlight-python"><pre>final List arrayList = ...;
+ListModel model = new AbstractListModel() {
+  public int getSize() {
+    return arrayList.size();
+  }
+  public Object getElementAt(int index) {
+    return arrayList.get(index);
+  }
+}</pre>
+</div>
+<p>另一个选择就是将List传递给Vector构造函数，然后将Vector传递给JList构造函数。事实上，我们已经完成了相同的事件。</p>
+</div>
+<div class="section" id="defaultlistmodel">
+<h3>DefaultListModel类<a class="headerlink" href="#defaultlistmodel" title="Permalink to this headline">¶</a></h3>
+<p>DefaultListModel类为我们提供了一个数据结构用来以Vector的形式存储内部数据。我们只需要添加数据，因为这个类为我们管理ListDataListener。</p>
+<p>首先，我们使用无参数的构造函数创建数据结构：DefaultListModel model = new
+DefaultListModel()。然后我们进行冰封装填。如表13-1所示，DefaultListModel类只有两个属性。</p>
+<div class="figure">
+<img alt="Swing_table_13_1.png" src="_images/Swing_table_13_1.png" />
+<p class="caption">Swing_table_13_1.png</p>
+</div>
+<p>DefaultListModel类通过一系列的公开方法提供了所有的操作方法。要添加元素，可以使用下面的方法：</p>
+<div class="code java highlight-python"><pre>public void add(int index, Object element)
+public void addElement(Object element)
+public void insertElementAt(Object element, int index)</pre>
+</div>
+<p>DefaultListModel的addElement()方法将元素添加到数据模型的尾部。要修改元素，使用下面的方法：</p>
+<div class="code java highlight-python"><pre>public Object set(int index, Object element)
+public void setElementAt(Object element, int index)</pre>
+</div>
+<p>要移除元素，可以使用下面的方法：</p>
+<div class="code java highlight-python"><pre>public void clear()
+public Object remove(int index)
+public void removeAllElements()
+public boolean removeElement(Object element)
+public void removeElementAt(int index)
+public void removeRange(int fromIndex, int toIndex)</pre>
+</div>
+<p>removeElement()方法返回一个状态：如果他找到对象并且移除则返回true，否则返回false。</p>
+<p>当我们并没有将数据存储在已存在数据结构中时，DefalutListModel类十分有用。例如，数据库查询的结果会作为JDBC
+ResultSet返回。如果我们希望使用这些结果作为显示在JList中的内容的基础，我们必须将其存储在某些地方。这就可以存储在DefaultListModel中，如下面的代码所示：</p>
+<div class="code java highlight-python"><pre>ResultSet results = aJDBCStatement.executeQuery(
+   "SELECT columnName FROM tableName");
+DefaultListModel model = new DefaultListModel();
+while (results.next()) {
+  model.addElement(result.getString(1));
+}</pre>
+</div>
+</div>
+<div class="section" id="listdatalistenerlistmodel">
+<h3>使用ListDataListener监听ListModel事件<a class="headerlink" href="#listdatalistenerlistmodel" title="Permalink to this headline">¶</a></h3>
+<p>如果我们对确定列表模型的内容何时发生变化感兴趣，我们可以向模型注册一个ListDataListsener。接口的三个单独方法可以告诉我们内容何时被添加，被移除或是被修改。修改数据模型意味着由数据模型的一个或多个区域添加或移除内容或者是没有添加或是移除元素修改已存在的内容。接口定义如下：</p>
+<div class="code java highlight-python"><pre>public interface ListDataListener extends EventListener {
+  public void contentsChanged(ListDataEvent e);
+  public void intervalAdded(ListDataEvent e);
+  public void intervalRemoved(ListDataEvent e);
+}</pre>
+</div>
+<p>基于列表修改事件的通知，我们可以传递一个ListDataEvent实现，其包含三修改必，如表13-2所示。</p>
+<div class="figure">
+<img alt="Swing_table_13_2.png" src="_images/Swing_table_13_2.png" />
+<p class="caption">Swing_table_13_2.png</p>
+</div>
+<p>索引并不是顺序所必须的，也不是修改区域的边界。在列表模型内容修改的例子中，并不是区域中的所有内容都会被修改。内容实际变化的区域是通过索引指定的边界区域。type属性的设置是表13-3中的三个常量之一，这直接映射到所调用的接口方法。</p>
+<div class="figure">
+<img alt="Swing_table_13_3.png" src="_images/Swing_table_13_3.png" />
+<p class="caption">Swing_table_13_3.png</p>
+</div>
+<p>如果当DefaultListModel类的操作方法被调用时，ListDataListener对象被关联到数据模型，每一个监听器都会得到数据模型变化的通知。为了演示ListDataListesner的使用以及数据模型的动态更新，列表13-1中的ModifyModelSample程序使用的DefaultListModel类修改方法，以事件的形式发送输出并列出JTextArea的内容。</p>
+<div class="code java highlight-python"><pre>package swingstudy.ch13;
+
+import java.awt.BorderLayout;
+import java.awt.EventQueue;
+import java.awt.FlowLayout;
+import java.awt.GridLayout;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+
+import javax.swing.DefaultListModel;
+import javax.swing.JButton;
+import javax.swing.JFrame;
+import javax.swing.JList;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JTextArea;
+import javax.swing.event.ListDataEvent;
+import javax.swing.event.ListDataListener;
+
+public class ModifyModelSample {
+
+    static String labels[] = {"Chardonnay", "Sauvignon", "Riesling", "Cabernet",
+        "Zinfandel", "Merlot", "Pinot Noir", "Sauvignon Blanc", "Syrah", "Gewurztraminer"
+    };
+
+    /**
+     * @param args
+     */
+    public static void main(String[] args) {
+        // TODO Auto-generated method stub
+
+        Runnable runner = new Runnable() {
+            public void run() {
+                JFrame frame = new JFrame("Modifying Model");
+                frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+
+                // Fill model
+                final DefaultListModel model = new DefaultListModel();
+                for(int i=0; i&lt;labels.length; i++) {
+                    model.addElement(labels[i]);
+                }
+
+                JList jList = new JList(model);
+                JScrollPane scrollPane1 = new JScrollPane(jList);
+                frame.add(scrollPane1, BorderLayout.WEST);
+
+                final JTextArea textArea = new JTextArea();
+                textArea.setEditable(false);
+                JScrollPane scrollPane2 = new JScrollPane(textArea);
+                frame.add(scrollPane2, BorderLayout.CENTER);
+
+                ListDataListener listDataListener = new ListDataListener() {
+                    public void contentsChanged(ListDataEvent event) {
+                        appendEvent(event);
+                    }
+                    public void intervalAdded(ListDataEvent event) {
+                        appendEvent(event);
+                    }
+                    public void intervalRemoved(ListDataEvent event) {
+                        appendEvent(event);
+                    }
+                    private void appendEvent(ListDataEvent event) {
+                        StringWriter sw = new StringWriter();
+                        PrintWriter pw = new PrintWriter(sw);
+                        switch(event.getType()) {
+                        case ListDataEvent.CONTENTS_CHANGED:
+                            pw.print("Type: contents Changed");
+                            break;
+                        case ListDataEvent.INTERVAL_ADDED:
+                            pw.print("Type: Interval Added");
+                            break;
+                        case ListDataEvent.INTERVAL_REMOVED:
+                            pw.print("Type: Interval Removed");
+                            break;
+                        }
+                        pw.print(", Index0: "+event.getIndex0());
+                        pw.print(", Index1 "+event.getIndex1());
+                        DefaultListModel theModel = (DefaultListModel)event.getSource();
+                        pw.println(theModel);
+                        textArea.append(sw.toString());
+                    }
+                };
+
+                model.addListDataListener(listDataListener);
+
+                // Set up buttons
+                JPanel jp = new JPanel(new GridLayout(2,1));
+                JPanel jp1 = new JPanel(new FlowLayout(FlowLayout.CENTER, 1,1));
+                JPanel jp2 = new JPanel(new FlowLayout(FlowLayout.CENTER, 1,1));
+                jp.add(jp1);
+                jp.add(jp2);
+                JButton jb = new JButton("add F");
+                jp1.add(jb);
+                jb.addActionListener(new ActionListener() {
+                    public void actionPerformed(ActionEvent event) {
+                        model.add(0, "First");
+                    }
+                });
+                jb = new JButton("addElement L");
+                jp1.add(jb);
+                jb.addActionListener(new ActionListener(){
+                    public void actionPerformed(ActionEvent event) {
+                        model.addElement("Last");
+                    }
+                });
+                jb = new JButton("insertElementAt M");
+                jp1.add(jb);
+                jb.addActionListener(new ActionListener() {
+                    public void actionPerformed(ActionEvent event) {
+                        int size = model.getSize();
+                        model.insertElementAt("Middle", size/2);
+                    }
+                });
+                jb = new JButton("set F");
+                jp1.add(jb);
+                jb.addActionListener(new ActionListener() {
+                    public void actionPerformed(ActionEvent event) {
+                        int size = model.getSize();
+                        if (size != 0) {
+                            model.set(0, "New First");
+                        }
+                    }
+                });
+                jb = new JButton("setElementAt L");
+                jp1.add(jb);
+                jb.addActionListener(new ActionListener() {
+                    public void actionPerformed(ActionEvent event) {
+                        int size = model.getSize();
+                        if(size!=0)
+                            model.setElementAt("New Last", size-1);
+                    }
+                });
+                jb = new JButton("load 10");
+                jp1.add(jb);
+                jb.addActionListener(new ActionListener() {
+                    public void actionPerformed(ActionEvent event) {
+                        for(int i=0, n=labels.length; i&lt;n; i++) {
+                            model.addElement(labels[i]);
+                        }
+                    }
+                });
+                jb =  new JButton("clear");
+                jp2.add(jb);
+                jb.addActionListener(new ActionListener() {
+                    public void actionPerformed(ActionEvent event) {
+                        model.clear();
+                    }
+                });
+                jb = new JButton("remove F");
+                jp2.add(jb);
+                jb.addActionListener(new ActionListener() {
+                    public void actionPerformed(ActionEvent event) {
+                        int size = model.getSize();
+                        if(size !=0)
+                            model.remove(0);
+                    }
+                });
+                jb = new JButton("removeAllElements");
+                jp2.add(jb);
+                jb.addActionListener(new ActionListener() {
+                    public void actionPerformed(ActionEvent event) {
+                        model.removeAllElements();
+                    }
+                });
+                jb = new JButton("removeElement 'Last'");
+                jp2.add(jb);
+                jb.addActionListener(new ActionListener() {
+                    public void actionPerformed(ActionEvent event) {
+                        model.removeElement("Last");
+                    }
+                });
+                jb = new JButton("removeElementAt M");
+                jp2.add(jb);
+                jb.addActionListener(new ActionListener() {
+                    public void actionPerformed(ActionEvent event) {
+                        int size = model.getSize();
+                        if(size != 0)
+                            model.removeElementAt(size/2);
+                    }
+                });
+                jb = new JButton("removeRange FM");
+                jp2.add(jb);
+                jb.addActionListener(new ActionListener() {
+                    public void actionPerformed(ActionEvent event) {
+                        int size = model.getSize();
+                        if(size !=0)
+                            model.removeRange(0, size/2);
+                    }
+                });
+                frame.add(jp, BorderLayout.SOUTH);
+                frame.setSize(640, 300);
+                frame.setVisible(true);
+            }
+        };
+        EventQueue.invokeLater(runner);
+    }
+
+}</pre>
+</div>
+<p>图13-2显示了程序的运行结果。</p>
+<div class="figure">
+<img alt="Swing_13_2.png" src="_images/Swing_13_2.png" />
+<p class="caption">Swing_13_2.png</p>
+</div>
+<p>DefaultListModel类的获取方法会随着他们的功能而变化。这个类具有基本的访问方法public
+Object get(int index), public Object getElementAt(int index)以及public
+Object elementAt(int
+index)，这三个方法都可以完成相同的事情。DefaultListModel类同时也具有更为特殊的方法。例如，为了使用所有的元素，我们可以使用public
+Enumeration elements()方法获取Enumeration的实例。</p>
+<p>或者是如果我们希望以数组的方式操作所有的元素，可以使用public Object[]
+toArray()或是public void copyInto(Object
+anArray[])。我们也可以使用方法来检测模型中是否存在某一个元素，public
+boolean contains(Object element), public int indexOf(Object element),
+public int indexOf(Object element, int index), public int
+lastIndexOf(Object element)以及public int lastIndexOf(Object element,
+int index)。</p>
+<p>提示，一旦我们完成了向数据模型添加元素，使用public void
+trimToSize()方法修整其长度是个好主意。这会移除数据结构内部所分配的额外空间。另外，如果我们知道数据尺寸，我们可以调用public
+void ensureCapacity(int
+minCapacity)来预分配空间。这两种方法都可以用于DefaultListModel。</p>
+</div>
+<div class="section" id="comboboxmodel">
+<h3>ComboBoxModel接口<a class="headerlink" href="#comboboxmodel" title="Permalink to this headline">¶</a></h3>
+<p>ComboBoxModel接口扩展了ListModel接口。扩展的主要原因是因为实现ComboBoxModel接口的类需要通过selectedItem属性来管理被选中的项目，如下面的接口定义所示：</p>
+<div class="code java highlight-python"><pre>public interface ComboBoxModel extends ListModel {
+  // Properties
+  public Object getSelectedItem();
+  public void setSelectedItem(Object anItem);
+}</pre>
+</div>
+</div>
+<div class="section" id="mutablecomboboxmodel">
+<h3>MutableComboBoxModel接口<a class="headerlink" href="#mutablecomboboxmodel" title="Permalink to this headline">¶</a></h3>
+<p>除了ComboBoxModel接口以外，另一个数据模型接口MutableComboBoxModel扩展了ComboBoxModel从而构成了可以修改数据模型的方法。</p>
+<div class="code java highlight-python"><pre>public interface MutableComboBoxModel extends ComboBoxModel {
+  // Other methods
+  public void addElement(Object obj);
+  public void insertElementAt(Object obj, int index);
+  public void removeElement(Object obj);
+  public void removeElementAt(int index);
+}</pre>
+</div>
+<p>JComboBox组件默认使用这个接口的实现。</p>
+</div>
+<div class="section" id="defaultcomboboxmodel">
+<h3>DefaultComboBoxModel类<a class="headerlink" href="#defaultcomboboxmodel" title="Permalink to this headline">¶</a></h3>
+<p>DefaultComboBoxModel类扩展了AbstractListModel类来为JComboBox提供相应的方法。由于这种扩展，他继承了ListDataListener列表的管理。</p>
+<p>类似于DefaultListModel，DefaultComboBoxModel为我们添加了收集显示在组件中的元素所必需的数据结构。同时，由于模型是可修改的，实现MutableComboBoxModel会使得当模型中的数据元素发生变化时，数据模型调用AbstractListModel的各种fileXXX()方法。</p>
+<p>注意，如果我们由一个数组创建了DefaultComboBoxModel，数组的元素会被拷贝到一个内部数据结构中。如果我们使用Vector，他们不会被拷贝；相反，在内部会使用实际的Vector。</p>
+<p>要使用数据模型，我们必须首先使用下面的构造函数来创建模型：</p>
+<div class="code java highlight-python"><pre>public DefaultComboBoxModel()
+DefaultComboBoxModel model = new DefaultComboBoxModel();
+public DefaultComboBoxModel(Object listData[])
+String labels[] = { "Chardonnay", "Sauvignon", "Riesling", "Cabernet", "Zinfandel",
+  "Merlot", "Pinot Noir", "Sauvignon Blanc", "Syrah", "Gewürztraminer"};
+DefaultComboBoxModel model = new DefaultComboBoxModel(labels);
+public DefaultComboBoxModel(Vector listData)
+Vector vector = aBufferedImage.getSources();
+DefaultComboBoxModel model = new DefaultComboBoxModel(vector);</pre>
+</div>
+<p>然后，我们操作模型。DefaultComboBoxModel类引入了两个新属性，如表13-4所示。</p>
+<div class="figure">
+<img alt="Swing_table_13_4.png" src="_images/Swing_table_13_4.png" />
+<p class="caption">Swing_table_13_4.png</p>
+</div>
+<p>DefaultComboBoxModel的数据模型修改方法不同于DefaultListModel的模型修改方法。他们来自于MutableComboBoxModel接口：</p>
+<div class="code java highlight-python"><pre>public void addElement(Object element)
+public void insertElementAt(Object element, int index)
+public boolean removeElement(Object element)
+public void removeElementAt(int index)</pre>
+</div>
+<p>由于DefaultComboBoxModel的灵活性（以及功能性），通常并不需要创建我们自己的ComboBoxModel实现。只需要创建一个DefaultComboBoxModel实例，然后简单的使用相应的数据源对其进行装配。</p>
+<p>注意，我们也许希望提供我们自己模型的一个例子就是当我们需要支持模型多个项目中相同项目的表示。对于DefaultComboBoxModel，如果我们在其equals()方法返回true的列表中有两个项目，模型不会正确的工作。</p>
+<p>如果我们确实希望定义我们自己的模型实现，也许是因为在我们已经有数据存储在我们的数据结构中，最好的方法就是继承AbstractListModel并且实现ComboBoxModel或是MutableComboBoxModel接口方法。当继承AbstractListModel时，我们只需要提供数据结构以及对其的访问接口。因为数据模型的“选中项目”部分是在基本的数据结构之外进行管理的，我们也需要提供的一个位置进行存储。列表13-2中的程序源码演示了使用ArrayList作为数据结构的实现。程序包含main()方法来演示JComboBox中模型的使用。</p>
+<div class="code java highlight-python"><pre>package swingstudy.ch13;
+
+import java.awt.BorderLayout;
+import java.awt.EventQueue;
+import java.util.ArrayList;
+import java.util.Collection;
+
+import javax.swing.AbstractListModel;
+import javax.swing.ComboBoxModel;
+import javax.swing.JComboBox;
+import javax.swing.JFrame;
+
+public class ArrayListComboBoxModel extends AbstractListModel implements ComboBoxModel{
+
+    private Object selectedItem;
+    private ArrayList anArrayList;
+
+    public ArrayListComboBoxModel(ArrayList arrayList) {
+        anArrayList = arrayList;
+    }
+
+    public Object getSelectedItem() {
+        return selectedItem;
+    }
+
+    public void setSelectedItem(Object newValue) {
+        selectedItem = newValue;
+    }
+
+    public int getSize() {
+        return anArrayList.size();
+    }
+
+    public Object getElementAt(int i) {
+        return anArrayList.get(i);
+    }
+    /**
+     * @param args
+     */
+    public static void main(String[] args) {
+        // TODO Auto-generated method stub
+
+        Runnable runner = new Runnable() {
+            public void run() {
+                JFrame frame = new JFrame("ArrayListComboBoxModel");
+                frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+
+                Collection&lt;Object&gt; col = System.getProperties().values();
+                ArrayList&lt;Object&gt; arrayList = new ArrayList&lt;Object&gt;(col);
+                ArrayListComboBoxModel model = new ArrayListComboBoxModel(arrayList);
+
+                JComboBox comboBox = new JComboBox(model);
+
+                frame.add(comboBox, BorderLayout.NORTH);
+                frame.setSize(300, 225);
+                frame.setVisible(true);
+            }
+        };
+        EventQueue.invokeLater(runner);
+    }
+
+}</pre>
+</div>
+<p>图13-3实际显示了使用当前的系统属性作为数据模型元素的数据源中模型。</p>
+<div class="figure">
+<img alt="Swing_13_3.png" src="_images/Swing_13_3.png" />
+<p class="caption">Swing_13_3.png</p>
+</div>
+</div>
+</div>
+<div class="section" id="jlist">
+<h2>JList类<a class="headerlink" href="#jlist" title="Permalink to this headline">¶</a></h2>
+<p>JList组件是用于由一个选项集合中选择一个或多个项目的基本Swing组件。我们向用户展示选项列表，依据于组件的选择模式，用户可以选择一个或多个。</p>
+<p>三个关键元素及其实现定义了JList结构：</p>
+<ul class="simple">
+<li>用于存储JList数据的数据模型，由ListModel接口定义。</li>
+<li>用于绘制JList的单元渲染器，由ListCellRenderer接口描述。</li>
+<li>用于选择JList元素的选择模式，由ListSelectionModel接口描述。</li>
+</ul>
+<div class="section" id="id1">
+<h3>创建JList组件<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h3>
+<p>JList组件有四个构造函数，可以允许我们基于我们的初始数据结构创建JList实例：</p>
+<div class="code java highlight-python"><pre>public JList()
+JList jlist = new JList();
+public JList(Object listData[])
+String labels[] = { "Chardonnay", "Sauvignon", "Riesling", "Cabernet", "Zinfandel",
+  "Merlot", "Pinot Noir", "Sauvignon Blanc", "Syrah", "Gewürztraminer"};
+JList jlist = new JList(labels);
+public JList(Vector listData)
+Vector vector = aBufferedImage.getSources();
+JList jlist = new JList(vector);
+public JList(ListModel model)
+ResultSet results = aJDBCStatement.executeQuery("SELECT colName FROM tableName");
+DefaultListModel model = new DefaultListModel();
+while (result.next())
+  model.addElement(result.getString(1));
+JList jlist = new JList(model);</pre>
+</div>
+<p>如果我们使用无参数的构造函数，我们可以稍后填充数据。然而，如果我们使用数组或是Vector构造函数，如果不修改整个模式，那么我们就不能修改内容。</p>
+<p>注意，如果我们希望显示一些内容而不是每一个数组元素的toString()结果，可以查看本章稍后的“渲染JList元素”来了解如何实现。</p>
+</div>
+<div class="section" id="id2">
+<h3>JList属性<a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h3>
+<p>在创建了JList组件之后，我们可以修改其每一个属性。表13-5显示了JList的32个属性。</p>
+<div class="figure">
+<img alt="Swing_table_13_5_1.png" src="_images/Swing_table_13_5_1.png" />
+<p class="caption">Swing_table_13_5_1.png</p>
+</div>
+<div class="figure">
+<img alt="Swing_table_13_5_2.png" src="_images/Swing_table_13_5_2.png" />
+<p class="caption">Swing_table_13_5_2.png</p>
+</div>
+<div class="figure">
+<img alt="Swing_table_13_5_3.png" src="_images/Swing_table_13_5_3.png" />
+<p class="caption">Swing_table_13_5_3.png</p>
+</div>
+<p>JList属性中的多个都与选择过程有关。例如，anchorSelectionIndex,
+leadSelectionIndex, maxSelectionIndex, minSelectionIndex,
+selectedIndex与selectedIndices处理被选中行的索引，而selectedValue与selectedValues与被选中元素的内容有关。anchorSelectionIndex是ListDataEvent最近的index0，而leadSelectionIndex则是最近的index1。</p>
+<p>要控制所显示的可视行的数目，设置JList的visibleRowCount属性。这个属性的默认设置为8。</p>
+</div>
+<div class="section" id="id3">
+<h3>滚动JList组件<a class="headerlink" href="#id3" title="Permalink to this headline">¶</a></h3>
+<p>当我们使用JList组件时，如果我们希望允许用户在所有的选项中进行选择，我们必须将组件放置在一个JScrollPane中。如果我们没有将其放置在一个JScrollPane中，而默认显示的行数小于数据模型的尺寸，或者是没有足够的空间来显示行，则其他的选项不会显示。当放置在JScrollPane中时，JList提供了一个垂直滚动条来在所有的选项中移动。</p>
+<p>如果我们没有将JList放置在JScrollPane中，并且选项的数目超出了可用空间时，只有上部的选项组可见，如图13-4所示。</p>
+<div class="figure">
+<img alt="Swing_13_4.png" src="_images/Swing_13_4.png" />
+<p class="caption">Swing_13_4.png</p>
+</div>
+<p>提示，当我们看到了一个类实现了Scrollable接口，我们就应该想起在将其添加到程序之前需要将其放在JScrollPane中。</p>
+<p>JScrollPane依赖于preferredScrollableViewportSize属性设置所提供的维度来确定面板内容的最优尺寸。当JList的数据模型为空时，则会使用每个可见行16像素高256像素宽的默认尺寸。否则宽度通过遍历所有的行来查找最宽的行来确定，而高度是通过第一行的高度来确定。</p>
+<p>为了快速确定JScrollPane视图区域的尺寸，我们可以通过设置prototypeCellValue属性来定义一个原型行。我们必须保证原型toString()的值足够宽与足够高从而适应JList中的所用内容。然后JScrollPane基于原型视图区域的尺寸，从而JList就没有必要来询问每一行的尺寸；相反，只需要询问原型的尺寸即可。</p>
+<p>我们也可以通过为fixedCellHeight与fixedCellWidth属性指定尺寸来改善性能。设置这些属性是避免JList询问每一行渲染尺寸的另一种方法。设置两个属性是使得JList确定在视图区域中尺寸的最快的方法。当然，这也是最不灵活的方法，因为他保证当内容发生变化时JList的选项不会变宽（或变短）。然而，如果我们在数据模型中有大量的条目，这些灵活性的缺失对于改善性能是值得的。图13-5帮助我们理解JList的一些尺寸功能。</p>
+<div class="figure">
+<img alt="Swing_13_5.png" src="_images/Swing_13_5.png" />
+<p class="caption">Swing_13_5.png</p>
+</div>
+<p>用来生成图13-5的源码显示在列表13-3中。图中间的列表包含超出1000个固定尺寸的行。顶部的列表显示了我们可以通过setVisibleRowCount()方法设置可视行的数目。然而，因为列表并没有位于JScrollPane中，行数目限制的请求会被忽略。</p>
+<div class="code java highlight-python"><pre>package swingstudy.ch13;
+
+import java.awt.BorderLayout;
+import java.awt.EventQueue;
+
+import javax.swing.DefaultListModel;
+import javax.swing.JFrame;
+import javax.swing.JList;
+import javax.swing.JScrollPane;
+
+public class SizingSamples {
+
+    /**
+     * @param args
+     */
+    public static void main(String[] args) {
+        // TODO Auto-generated method stub
+
+        Runnable runner = new Runnable() {
+            public void run() {
+                String labels[] = { "Chardonnay", "Sauvignon", "Riesling", "Cabernet",
+                "Zinfandel", "Merlot", "Pinot Noir", "Sauvignon Blanc", "Syrah", "Gewurztraminer"};
+
+                JFrame frame = new JFrame("Sizing Samples");
+                frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+
+                JList jlist1 = new JList(labels);
+                jlist1.setVisibleRowCount(4);
+                DefaultListModel model = new DefaultListModel();
+                for(int i=0; i&lt;100; i++) {
+                    for(int j=0; j&lt;10; j++) {
+                        model.addElement(labels[j]);
+                    }
+                }
+                JScrollPane scrollPane1 = new JScrollPane(jlist1);
+                frame.add(scrollPane1, BorderLayout.NORTH);
+
+                JList jlist2 = new JList(model);
+                jlist2.setVisibleRowCount(4);
+                jlist2.setFixedCellHeight(12);
+                jlist2.setFixedCellWidth(200);
+                JScrollPane scrollPane2 = new JScrollPane(jlist2);
+                frame.add(scrollPane2, BorderLayout.CENTER);
+
+                JList jlist3 = new JList(labels);
+                jlist3.setVisibleRowCount(4);
+                frame.add(jlist3, BorderLayout.SOUTH);
+
+                frame.setSize(300, 350);
+                frame.setVisible(true);
+            }
+        };
+        EventQueue.invokeLater(runner);
+    }
+
+}</pre>
+</div>
+<p>除了将JList放在JScrollPane中以外，我们可以确定哪些选项是可见或是请求特定的元素可见。firstVisibleIndex与lastVisibleIndex属性使得我们可以确定在JScrollPane中哪些选项是当前可见的。如果没有选项可见，两个方法都会返回-1；这通常在数据模型为空的情况下发生。要请求一个特定的元素可见，使用public
+void ensureIndexIsVisible(int
+index)方法。例如，要编程将列表移动到顶部可以使用下面的代码：</p>
+<p>jlist.ensureIndexIsVisible(0);</p>
+</div>
+<div class="section" id="id4">
+<h3>渲染JList元素<a class="headerlink" href="#id4" title="Permalink to this headline">¶</a></h3>
+<p>JList中的每一个元素被称之为单元。每一个JList都有一个已安装的单元渲染器，当列表需要绘制时渲染器绘制每一个单元。默认的渲染器，DefaultListCellRenderer是JLable的一个子类，这就意味着我们可以使用文本或是图标作为单元的图形显示。这可以满足大多数用户的需要，但是有时单元的外观需要进行某些定制。耏
+一，每一个JList至多只有一个安装的渲染器，自定义需要我们替换已安装的渲染器。</p>
+<p><strong>ListCellRender接口与DefaultListCellRenderer类</strong></p>
+<p>JList有一个已安装的渲染器。实现了ListCellRender接口的类提供了这个渲染器。</p>
+<div class="code java highlight-python"><pre>public interface ListCellRenderer {
+  public Component getListCellRendererComponent(JList list, Object value,
+    int index, boolean isSelected, boolean cellHasFocus);
+}</pre>
+</div>
+<p>当需要绘制单元时，接口的核心方法被调用。返回的渲染器为列表中的单元提供特定的渲染。Jlist使用渲染来绘制元素，然后获取下一个渲染器。</p>
+<p>一个到JList的引用会被提供给getListCellRendererComponent()方法，从而渲染器可以共享显示特性。选中的value包含列表数据模型在位置index上的对象。索引由数据模型的开始处由0开始。最后两个参数允许我们基于单元的状态自定义单元的外观，也就是他是否被选中或是具有输入焦点。</p>
+<p>列表13-4显示了一个演示这种技术的渲染器。这个渲染器的核心不同之处在于具有输入焦点的单元有一个带有标题的边框。在渲染器被创建之后，我们通过设置JList的cellRenderer属性来安装。</p>
+<p>提示，由于性能的原因，最好不要在getListCellRendererComponent()方法创建实际的渲染器。可以派生Component并返回this或是创建一个类变量来存储Component的实例，然后进行自定义并返回。</p>
+<div class="code java highlight-python"><pre>package swingstudy.ch13;
+
+import java.awt.Component;
+
+import javax.swing.DefaultListCellRenderer;
+import javax.swing.JLabel;
+import javax.swing.JList;
+import javax.swing.ListCellRenderer;
+import javax.swing.border.Border;
+import javax.swing.border.EmptyBorder;
+import javax.swing.border.LineBorder;
+import javax.swing.border.TitledBorder;
+
+public class FocusedTitleListCellRenderer implements ListCellRenderer {
+
+    protected static Border noFocusBorder = new EmptyBorder(15, 1, 1, 1);
+    protected static TitledBorder focusBorder = new TitledBorder(LineBorder.createGrayLineBorder(), "Focused");
+    protected DefaultListCellRenderer defaultRenderer = new DefaultListCellRenderer();
+
+    public String getTitle() {
+        return focusBorder.getTitle();
+    }
+
+    public void setTitle(String newValue) {
+        focusBorder.setTitle(newValue);
+    }
+    @Override
+    public Component getListCellRendererComponent(JList list, Object value,
+            int index, boolean isSelected, boolean cellHasFocus) {
+        // TODO Auto-generated method stub
+        JLabel renderer = (JLabel)defaultRenderer.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+        renderer.setBorder(cellHasFocus ? focusBorder : noFocusBorder);
+        return renderer;
+    }
+
+}</pre>
+</div>
+<p>注意，当创建我们自己的渲染器时一个觉错误就是忘记使得渲染器组件非透明。这会使得渲染器的背景颜色被忽略，并且列表容器的背景外漏。使用DefaultListCellRenderer类，渲染器组件已经是不透明的了。</p>
+<p>列表13-5显示了一个使用这个新渲染器的示例程序。他并没有做任何特殊的事情，而只是安装了刚才创建的自定义单元渲染器。</p>
+<div class="code java highlight-python"><pre>package swingstudy.ch13;
+
+import java.awt.BorderLayout;
+import java.awt.EventQueue;
+
+import javax.swing.JFrame;
+import javax.swing.JList;
+import javax.swing.JScrollPane;
+import javax.swing.ListCellRenderer;
+
+public class CustomBorderSample {
+
+    /**
+     * @param args
+     */
+    public static void main(String[] args) {
+        // TODO Auto-generated method stub
+
+        Runnable runner = new Runnable() {
+            public void run() {
+                String labels[] = {"Chardonnay", "Sauvignon", "Riesling", "Cabernet",
+                        "Zinfandel", "Merlot", "Pinot Noir", "Sauvignon Blanc", "Syrah",
+                        "Gewurztraminer"
+                };
+                JFrame frame = new JFrame("Custom Border");
+                frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+                JList jlist =  new JList(labels);
+                ListCellRenderer renderer = new FocusedTitleListCellRenderer();
+                jlist.setCellRenderer(renderer);
+                JScrollPane sp = new JScrollPane(jlist);
+                frame.add(sp, BorderLayout.CENTER);
+                frame.setSize(300, 200);
+                frame.setVisible(true);
+            }
+        };
+        EventQueue.invokeLater(runner);
+    }
+
+}</pre>
+</div>
+<p>图13-6显示了示例程序的输出。</p>
+<div class="figure">
+<img alt="Swing_13_6.png" src="_images/Swing_13_6.png" />
+<p class="caption">Swing_13_6.png</p>
+</div>
+<p><strong>创建复杂的ListCellRenderer</strong></p>
+<p>有时，当数据模型由每个元素中的多个复杂数据组成，不能由文本字符串表示的内容，自定义的单元渲染器（类似于图13-6所示）是必需的。例如，列表13-6显示了一个示例的源码，其中每一个数据模型的元素由字体，前景色，图标与文本字符串组成。保证渲染器中这些元素的正确使用简单的涉及到在配置渲染器组件方面的更多工作。在这个特定的例子中，数据存储在数据模型中数组的每个元素之中。我们可以简单的定义一个新类或是使用散列表。</p>
+<div class="code java highlight-python"><pre>package swingstudy.ch13;
+
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.Font;
+
+import javax.swing.DefaultListCellRenderer;
+import javax.swing.Icon;
+import javax.swing.JLabel;
+import javax.swing.JList;
+import javax.swing.ListCellRenderer;
+
+public class ComplexCellRenderer implements ListCellRenderer {
+
+    protected DefaultListCellRenderer defaultRenderer = new DefaultListCellRenderer();
+
+    @Override
+    public Component getListCellRendererComponent(JList list, Object value,
+            int index, boolean isSelected, boolean cellHasFocus) {
+        // TODO Auto-generated method stub
+        Font theFont = null;
+        Color theForeground = null;
+        Icon theIcon = null;
+        String theText = null;
+
+        JLabel renderer = (JLabel)defaultRenderer.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+
+        if(value instanceof Object[]) {
+            Object values[] = (Object[])value;
+            theFont = (Font)values[0];
+            theForeground = (Color)values[1];
+            theIcon = (Icon)values[2];
+            theText = (String)values[3];
+        }
+        else {
+            theFont = list.getFont();
+            theForeground = list.getForeground();
+            theText = "";
+        }
+        if(!isSelected) {
+            renderer.setForeground(theForeground);
+        }
+        if(theIcon != null) {
+            renderer.setIcon(theIcon);
+        }
+        renderer.setText(theText);
+        renderer.setFont(theFont);
+        return renderer;
+    }
+
+}</pre>
+</div>
+<p>渲染器很少自定义DefaultListCellRenderer返回的渲染器组件。自定义基于作为数组传递给getListCellRendererComponent()方法的value参数的数据模型值。列表13-7显示了测试类。这个演示程序重用了第4章所创建的DiamondIcon。大部分代码用于数据模型的初始化。</p>
+<div class="code java highlight-python"><pre>package swingstudy.ch13;
+
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.EventQueue;
+import java.awt.Font;
+
+import javax.swing.JFrame;
+import javax.swing.JList;
+import javax.swing.JScrollPane;
+import javax.swing.ListCellRenderer;
+
+import swingstudy.ch04.DiamondIcon;
+
+public class ComplexRenderingSample {
+
+    /**
+     * @param args
+     */
+    public static void main(String[] args) {
+        // TODO Auto-generated method stub
+
+        Runnable runner = new Runnable() {
+            public void run() {
+                Object elements[][] = {
+                        {new Font("Helvetica", Font.PLAIN, 20), Color.RED, new DiamondIcon(Color.BLUE), "Help"},
+                        {new Font("TimesRoman", Font.BOLD, 14), Color.BLUE, new DiamondIcon(Color.GREEN), "Me"},
+                        {new Font("Courier", Font.ITALIC, 18), Color.GREEN, new DiamondIcon(Color.BLACK), "I'm"},
+                        {new Font("Helvetica", Font.BOLD|Font.ITALIC, 12), Color.GRAY, new DiamondIcon(Color.MAGENTA), "Trapped"},
+                        {new Font("TimesRoman", Font.PLAIN, 32), Color.PINK, new DiamondIcon(Color.YELLOW), "Inside"},
+                        {new Font("Courier", Font.BOLD, 16), Color.YELLOW, new DiamondIcon(Color.RED), "This"},
+                        {new Font("Helvetica", Font.ITALIC, 8), Color.DARK_GRAY, new DiamondIcon(Color.PINK), "Computer"}
+                };
+                JFrame frame = new JFrame("Complex Renderer");
+                frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+
+                JList jlist = new JList(elements);
+                ListCellRenderer renderer = new ComplexCellRenderer();
+                jlist.setCellRenderer(renderer);
+                JScrollPane scrollPane = new JScrollPane(jlist);
+                frame.add(scrollPane, BorderLayout.CENTER);
+                frame.setSize(300, 200);
+                frame.setVisible(true);
+            }
+        };
+        EventQueue.invokeLater(runner);
+    }
+
+}</pre>
+</div>
+<p>程序的输出结果如图13-7所示。</p>
+<div class="figure">
+<img alt="Swing_13_7.png" src="_images/Swing_13_7.png" />
+<p class="caption">Swing_13_7.png</p>
+</div>
+<p>提示，当我们创建自己的渲染组件时，我们将会发现最好由默认的列表单元渲染器开始。这可以使得我们专注于我们感兴趣的特定细节。否则，我们就需要考虑所有事情，例如默认选择的前景与背景颜色，以及我们是否记得使得组件非透明。当然，如果我们希望亲自配置所有事情，自由去做就是了。</p>
+</div>
+<div class="section" id="id5">
+<h3>选择JList元素<a class="headerlink" href="#id5" title="Permalink to this headline">¶</a></h3>
+<p>默认情况下，所有的JList组件处于多项选择模式。这意味着我们可以选择组件中的多个元素。我们如何选择多个元素依赖于我们正在使用的用户界面。例如，对于Ocean观感界面，Ctrl-select可以作为选择切换，而Shift-select可以作为一种范围选择的方法。</p>
+<p><strong>ListSelectionModel接口与DefaultListSelectionModel类</strong></p>
+<p>ListSelectionModel接口的实现控制JList组件的选择机制。在这里显示的接口定义定义了用于不同选择模式的常量并且描述了如何管理ListSelectionListener对象的列表。他同时提供了一种方法来描述多个内部选择。</p>
+<div class="code java highlight-python"><pre>public interface ListSelectionModel {
+  // Constants
+  public final static int MULTIPLE_INTERVAL_SELECTION;
+  public final static int SINGLE_INTERVAL_SELECTION;
+  public final static int SINGLE_SELECTION;
+  // Properties
+  public int getAnchorSelectionIndex();
+  public void setAnchorSelectionIndex(int index);
+  public int getLeadSelectionIndex();
+  public void setLeadSelectionIndex(int index);
+  public int getMaxSelectionIndex();
+  public int getMinSelectionIndex();
+  public boolean isSelectionEmpty();
+  public int getSelectionMode();
+  public void setSelectionMode(int selectionMode);
+  public boolean getValueIsAdjusting();
+  public void setValueIsAdjusting(boolean valueIsAdjusting);
+  // Listeners
+  public void addListSelectionListener(ListSelectionListener x);
+  public void removeListSelectionListener(ListSelectionListener x);
+  // Other methods
+  public void addSelectionInterval(int index0, int index1);
+  public void clearSelection();
+  public void insertIndexInterval(int index, int length, boolean before);
+  public boolean isSelectedIndex(int index);
+  public void removeIndexInterval(int index0, int index1);
+  public void removeSelectionInterval(int index0, int index1);
+  public void setSelectionInterval(int index0, int index1);
+}</pre>
+</div>
+<p>其中有三个不同的选择模式。表13-6中包含了每个模式的名字及其描述。</p>
+<div class="figure">
+<img alt="Swing_table_13_6.png" src="_images/Swing_table_13_6.png" />
+<p class="caption">Swing_table_13_6.png</p>
+</div>
+<p>图13-8显示了每个选择模式的结果。</p>
+<div class="figure">
+<img alt="Swing_13_8.png" src="_images/Swing_13_8.png" />
+<p class="caption">Swing_13_8.png</p>
+</div>
+<p>要修改JList的选择模式，将selectionModel属性设置为表13-6中的一个ListSelectionModel常量。例如，下面的代码可以将一个列表的修改为单选模式：</p>
+<div class="code java highlight-python"><pre>JList list = new JList(...);
+list.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);</pre>
+</div>
+<p>DefaultListSelectionModel类是ListSelectionModel接口的默认实现。我们可以尝试表13-7中所示的九个属性来了解当前的选中范围。</p>
+<div class="figure">
+<img alt="Swing_table_13_7.png" src="_images/Swing_table_13_7.png" />
+<p class="caption">Swing_table_13_7.png</p>
+</div>
+<p>当selectionEmpty属性为false时选择模式可以显示我们当前在多项选择模式中使用的是哪一种。如果是使用public
+boolean isSelectedIndex(int
+index)方法选中的，则只需要简单的查询最小与最大选中索引中的每一个索引。因为多项选择模式支持不连续的区域，这是确定哪一个被选中的唯一方法。然而，JList的selectedIndeices属性提供了这种信息，而不需要我们手动检测。</p>
+<p><strong>使用ListSelectionListener监听JList事件</strong></p>
+<p>如果我们希望了解何时JList的元素被选中，我们需要向JList或是ListSelectionModel关联一个ListSelectionListener。Jlist的addListListSelectionListener()与removeListSelectionListener()方法只会委托给底层的ListSelectionModel。当被选中的元素集合发生变化时，所关联的监听器对象会得到通知。接口定义如下：</p>
+<div class="code java highlight-python"><pre>public interface ListSelectionListener extends EventListener {
+  public void valueChanged(ListSelectionEvent e);
+}</pre>
+</div>
+<p>监听器所接收的ListSelectionEvent实例描述了这个选中事件的所影响的元素的范围以及选中是否仍在变化，如表13-8所示。当用户仍在修改被选中的元素，通过valueIsAdjusting设置为true，我们也许会希望延迟执行耗费资源的操作，例如绘制一个高分辨率的图形显示。</p>
+<div class="figure">
+<img alt="Swing_table_13_8.png" src="_images/Swing_table_13_8.png" />
+<p class="caption">Swing_table_13_8.png</p>
+</div>
+<p>为了演示JList的选中，列表13-8中所示的程序向窗口添加了一个JTextArea来显示选中监听器的输出。监听器输出当前被选中的项的位置与值。</p>
+<div class="code java highlight-python"><pre>package swingstudy.ch13;
+
+import java.awt.BorderLayout;
+import java.awt.EventQueue;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+
+import javax.swing.JFrame;
+import javax.swing.JList;
+import javax.swing.JScrollPane;
+import javax.swing.JTextArea;
+import javax.swing.event.ListSelectionEvent;
+import javax.swing.event.ListSelectionListener;
+
+public class SelectingJListSample {
+
+    /**
+     * @param args
+     */
+    public static void main(String[] args) {
+        // TODO Auto-generated method stub
+
+        Runnable runner = new Runnable() {
+            public void run() {
+                String labels[] = {"Chardonnay", "Sauvignon", "Riesling", "Cabernet",
+                        "Zinfandel", "Merlot", "Pinot Noir", "Sauvignon Blanc", "Syrah", "Gewurztraminer"
+                };
+
+                JFrame frame = new JFrame("Selecting Jlist");
+                frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+
+                JList jlist = new JList(labels);
+                JScrollPane scrollPane1 = new JScrollPane(jlist);
+                frame.add(scrollPane1, BorderLayout.WEST);
+
+                final JTextArea textArea =  new JTextArea();
+                textArea.setEditable(false);
+                JScrollPane scrollPane2 = new JScrollPane(textArea);
+                frame.add(scrollPane2, BorderLayout.CENTER);
+
+                ListSelectionListener listSelectionListener= new ListSelectionListener() {
+                    public void valueChanged(ListSelectionEvent event) {
+                        StringWriter sw = new StringWriter();
+                        PrintWriter pw = new PrintWriter(sw);
+                        pw.println("First index: "+event.getFirstIndex());
+                        pw.println(", Last idnex: "+event.getLastIndex());
+                        boolean adjust = event.getValueIsAdjusting();
+                        pw.println(", Adjusting? "+adjust);
+                        if(!adjust) {
+                            JList list = (JList)event.getSource();
+                            int selections[] = list.getSelectedIndices();
+                            Object selectionValues[] = list.getSelectedValues();
+                            for(int i=0, n=selections.length; i&lt;n; i++) {
+                                if(i==0) {
+                                    pw.println(" Selections: ");
+                                }
+                                pw.print(selections[i]+"/"+selectionValues[i]+" ");
+                            }
+                            pw.println();
+                        }
+                        textArea.append(sw.toString());
+                    }
+                };
+                jlist.addListSelectionListener(listSelectionListener);
+
+                frame.setSize(350, 200);
+                frame.setVisible(true);
+            }
+        };
+        EventQueue.invokeLater(runner);
+    }
+
+}</pre>
+</div>
+<p>注意，如果我们知道JList处理单项选择模式中，我们可以使用selectedIndex或是selectedValue属性来获取当前被选中的项目。</p>
+<p>图13-9显示了程序运行的结果。</p>
+<div class="figure">
+<img alt="Swing_13_9.png" src="_images/Swing_13_9.png" />
+<p class="caption">Swing_13_9.png</p>
+</div>
+<p>列表13-8中的示例在没有快速更新时只输出当前选中的项（当isAdjusting报告false）时。否则，程序仅报告选中范围变化的起始与结束，以及调整状态。程序会检测JList的selectedIndices与selectedValues属性来获得选中项的有序列表。slectedIndices与slectedValues数组以相同的方式排序，所以数据模式中的特定元素显示在两个列表中的相同位置。</p>
+<p>并没有特殊的选中事件用于处理列表中元素的双击。如果我们对双击感兴趣，那我们就要求助于AWT的MouseEvent/MouseListener对了。将下面的代码添加到列表13-8的程序中会向TextArea添加相应的文本用于响应双击事件。这里的关键方法是JList的public
+int locationToIndex(Point location)，他会将屏幕坐标映射到列表元素。</p>
+<div class="code java highlight-python"><pre>import java.awt.event.*;
+...
+    MouseListener mouseListener = new MouseAdapter() {
+      public void mouseClicked(MouseEvent mouseEvent) {
+        JList theList = (JList)mouseEvent.getSource();
+        if (mouseEvent.getClickCount() == 2) {
+          int index = theList.locationToIndex(mouseEvent.getPoint());
+          if (index &gt;= 0) {
+            Object o = theList.getModel().getElementAt(index);
+            textArea.append("Double-clicked on: " + o.toString());
+            textArea.append(System.getProperty("line.separator"));
+          }
+        }
+      }
+    };
+    jlist.addMouseListener(mouseListener);</pre>
+</div>
+<p>注意，JList类同时提供了一个public Point indexToLocation(int
+index)方法，这个方法会生成相反的行为。</p>
+<p><strong>手动选择JList事件</strong></p>
+<p>除了检测用户何时选择了列表中的项以外，我们也可以编程实现了列表项的选中与非选中。如果ListSelectionListener对象被叛逆到JList，当选中的项目集合被编程修改时他们也会得到相应的通知。可以使用下面的方法：</p>
+<ul class="simple">
+<li>对于单个项目，public void setSelectedValue(Object element, boolean
+shouldScroll)选中与element匹配的第一项。如果element并不是前一次被选中的，已被选中的所有条目会首先取消选中。</li>
+<li>对于一系列的项目，public void setSelectedInterval(int index0, int
+index1)选择一个包含的范围。</li>
+<li>要向已选中的集合添加一系列的选中项目，使用public void
+addSelectedInterval(int index0, int index1)。</li>
+<li>我们可以使用public void clearSelection()方法清除所有被选中的条目。</li>
+<li>我们可以使用public void removeSelectedInterval(int index0, int
+index1)方法清除一个选中条目的范围。</li>
+</ul>
+</div>
+<div class="section" id="id6">
+<h3>显示多列<a class="headerlink" href="#id6" title="Permalink to this headline">¶</a></h3>
+<p>通常，当我们使用JList时，我们在单列中的显示其选项。尽管这是通常的使用方法，Swing
+JList控件为在多列中显示其选项提供了支持。借且于setLayoutOrientation()方法，我们可以设置JList方法来在水平列或是垂直列中的布局其单元。JList.VERTICAL是默认设置，其中所有的选项在一列中的显示。</p>
+<p>要水平布局单元，在进入到下一行之前，使用值JList.HORIZONTAL_WRAP。例如，一个具有九个元素的列表可以以下面的方式显示：</p>
+<div class="figure">
+<img alt="Swing_13_list_1.png" src="_images/Swing_13_list_1.png" />
+<p class="caption">Swing_13_list_1.png</p>
+</div>
+<p>要垂直布局单元，在进入下一列之前，使用值JList.VERTICAL_WRAP。例如，一个具有九个元素的列表可以以下面的方式显示：</p>
+<div class="figure">
+<img alt="Swing_13_list_2.png" src="_images/Swing_13_list_2.png" />
+<p class="caption">Swing_13_list_2.png</p>
+</div>
+<p>设置JList的visibleRowCount属性来控制行数。否则，列表的宽度决定HORIZONTAL_WRAP的行数，而列表的高度决定VERTICAL_WRAP的列数。</p>
+<p>图13-10显示了一个具有水平换行的JList，其中显示了一个3x3的网格。注意，他仍然支持多项选中模式。</p>
+<div class="figure">
+<img alt="Swing_13_10.png" src="_images/Swing_13_10.png" />
+<p class="caption">Swing_13_10.png</p>
+</div>
+</div>
+<div class="section" id="id7">
+<h3>自定义JList观感<a class="headerlink" href="#id7" title="Permalink to this headline">¶</a></h3>
+<p>每一个可安装的Swing观感都提供了不同的JList外观以及用于组件的默认的UIResource值设置集合。图13-11显示了JList在预安装的观感类型集合Motif，Windows以及Ocean下的外观。</p>
+<div class="figure">
+<img alt="Swing_13_11.png" src="_images/Swing_13_11.png" />
+<p class="caption">Swing_13_11.png</p>
+</div>
+<p>JList的UIResource相关的属性集合显示在表13-9中。对于JList组件，有17个不同的属性。</p>
+<div class="figure">
+<img alt="Swing_table_13_9_1.png" src="_images/Swing_table_13_9_1.png" />
+<p class="caption">Swing_table_13_9_1.png</p>
+</div>
+<div class="figure">
+<img alt="Swing_table_13_9_2.png" src="_images/Swing_table_13_9_2.png" />
+<p class="caption">Swing_table_13_9_2.png</p>
+</div>
+<p>类似于大多数的UIResource属性，大多数属性的名字都是自解释的。而List.timeFactor在这里需要解释一下。默认情况下，JList具有键盘选中的行为。当我们输入时，JList会查找到目前为止与我们的输入匹配的项。这是借助于public
+int getNextMatch(String prefix, int startIndex, Position.Bias
+bias)方法来实现的。“到目前为止”的量是由List.timeFactory设置来控制的。只要两次击键之间有延迟没有超出List.timeFactory指定的毫秒数（默认为1000），所输入的新键就会添加到前一个键序列中。一旦工厂超时，搜索字符串就会被重置。</p>
+</div>
+<div class="section" id="id8">
+<h3>创建双列表框<a class="headerlink" href="#id8" title="Permalink to this headline">¶</a></h3>
+<p>这一节所展示的示例创建了一个新的名为DualListBox的Swing组件。双列表框的基本目的就是创建两个选项列表：一个用于选取，而另一个构成结果集。当初始选项列表是可调整的时双列表框十分有用。尝试由一个跨越多个屏幕包含多个选项的JList中进行多项选择是一个麻烦的事情，特别是由于我们没有按下Shift或是Ctrl组合键时而恰好取消了我们已经选中的选项时。使用双列表模式，用户在每一个列表中选择选项并将其移动到第二个列表中。用户可以很容易的在两个列表之间进行滚动而不无需担心偶然取消了某了个选项。图13-12显示使用中的DualListBox的样子。</p>
+<div class="figure">
+<img alt="Swing_13_12.png" src="_images/Swing_13_12.png" />
+<p class="caption">Swing_13_12.png</p>
+</div>
+<p>要使用这个自定义组件，通过调用构造函数DualListBox sdual = new
+DualListBox()来进行创建，然而使用setSourceElements()或addSourceLements()方法使用数据对其进行填充；每个方法都需要一个ListModel或是一个数组参数。add版本会补充已存在的选项，而set版本会首先清除已存在选项。当需要向组件查询用户选中了哪些选项时，我们可以使用destinationIterator()方法向已选中元素的Iterator进行查询。我们也许希望修改的属性如下所示：</p>
+<ul class="simple">
+<li>源选项的标题（示例中的可用选项）</li>
+<li>目标选项的标题（示例中我们的选项）</li>
+<li>源或目标列单元渲染器</li>
+<li>源或目标可见行数</li>
+<li>源或是目标前景色或后景色</li>
+</ul>
+<p>下面显示了这个新的DualListBox组件的完整源码。列表13-9包含了每一个类SortedListModel，他提供了一个已排序的ListModel。在其内部，他利用了TreeSet。</p>
+<div class="code java highlight-python"><pre>package swingstudy.ch13;
+
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.SortedSet;
+import java.util.TreeSet;
+
+import javax.swing.AbstractListModel;
+
+public class SortedListModel extends AbstractListModel {
+
+    SortedSet&lt;Object&gt; model;
+
+    public SortedListModel() {
+        model = new TreeSet&lt;Object&gt;();
+    }
+    @Override
+    public Object getElementAt(int index) {
+        // TODO Auto-generated method stub
+        return model.toArray()[index];
+    }
+
+    @Override
+    public int getSize() {
+        // TODO Auto-generated method stub
+        return model.size();
+    }
+
+    public void add(Object element) {
+        if(model.add(element)) {
+            fireContentsChanged(this, 0, getSize());
+        }
+    }
+
+    public void addAll(Object elements[]) {
+        Collection&lt;Object&gt; c = Arrays.asList(elements);
+        model.addAll(c);
+        fireContentsChanged(this, 0, getSize());
+    }
+
+    public void clear() {
+        model.clear();
+        fireContentsChanged(this, 0, getSize());
+    }
+
+    public boolean contains(Object element) {
+        return model.contains(element);
+    }
+
+    public Object firstElement() {
+        return model.first();
+    }
+
+    public Iterator iterator() {
+        return model.iterator();
+    }
+
+    public Object lastElement() {
+        return model.last();
+    }
+
+    public boolean removeElement(Object element) {
+        boolean removed = model.remove(element);
+        if(removed) {
+            fireContentsChanged(this, 0, getSize());
+        }
+        return removed;
+    }
+
+}</pre>
+</div>
+<p>列表13-10显示了DualListBox的源码。其中包含的main()方法演示了该组件。</p>
+<div class="code java highlight-python"><pre>package swingstudy.ch13;
+
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.EventQueue;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.Insets;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.util.Iterator;
+
+import javax.swing.BorderFactory;
+import javax.swing.JButton;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JList;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.ListCellRenderer;
+import javax.swing.ListModel;
+
+public class DualListBox extends JPanel {
+
+    private static final Insets EMPTY_INSETS = new Insets(0, 0, 0, 0);
+    private static final String ADD_BUTTON_LABEL = "Add &gt;&gt;";
+    private static final String REMOVE_BUTTON_LABEL = "&lt;&lt; Remove";
+    private static final String DEFAULT_SOURCE_CHOICE_LABEL = "Advailable Choices";
+    private static final String DEFAULT_DEST_CHOICE_LABEL = "Your Choices";
+    private JLabel sourceLabel;
+    private JList sourceList;
+    private SortedListModel sourceListModel;
+    private JList destList;
+    private SortedListModel destListModel;
+    private JLabel destLabel;
+    private JButton addButton;
+    private JButton removeButton;
+
+    public DualListBox() {
+        initScreen();
+    }
+
+    public String getSourceChoicesTitle() {
+        return sourceLabel.getText();
+    }
+
+    public void setSourceChoicesTitle(String newValue) {
+        sourceLabel.setText(newValue);
+    }
+
+    public String getDestinationChoicesTitle() {
+        return destLabel.getText();
+    }
+
+    public void setDestinationChoicesTitle(String newValue) {
+        destLabel.setText(newValue);
+    }
+
+    public void clearSourceListModel() {
+        sourceListModel.clear();
+    }
+
+    public void clearDestinationListModel() {
+        destListModel.clear();
+    }
+
+    public void addSourceElements(ListModel newValue) {
+        fillListModel(sourceListModel, newValue);
+    }
+
+    public void setSourceElements(ListModel newValue) {
+        clearSourceListModel();
+        addSourceElements(newValue);
+    }
+
+    public void addDestinationElements(ListModel newValue) {
+        fillListModel(destListModel, newValue);
+    }
+
+    private void fillListModel(SortedListModel model, ListModel newValues) {
+        int size = newValues.getSize();
+        for(int i=0; i&lt;size; i++) {
+            model.add(newValues.getElementAt(i));
+        }
+    }
+
+    public void addSourceElements(Object newValue[]) {
+        fillListModel(sourceListModel, newValue);
+    }
+
+    public void setSourceElements(Object newValue[]) {
+        clearSourceListModel();
+        addSourceElements(newValue);
+    }
+
+    public void addDestinationElements(Object newValue[]) {
+        fillListModel(destListModel, newValue);
+    }
+
+    private void fillListModel(SortedListModel model, Object newValues[]) {
+        model.addAll(newValues);
+    }
+
+    public Iterator sourceIterator() {
+        return sourceListModel.iterator();
+    }
+
+    public Iterator destinationIterator() {
+        return destListModel.iterator();
+    }
+
+    public void setSourceCellRender(ListCellRenderer newValue) {
+        sourceList.setCellRenderer(newValue);
+    }
+
+    public ListCellRenderer getSourceCellRenderer() {
+        return sourceList.getCellRenderer();
+    }
+
+    public void setDestinationCellRenderer(ListCellRenderer newValue) {
+        destList.setCellRenderer(newValue);
+    }
+
+    public ListCellRenderer getDestinationCellRenderer() {
+        return destList.getCellRenderer();
+    }
+
+    public void stVisibleRowCount(int newValue) {
+        sourceList.setVisibleRowCount(newValue);
+        destList.setVisibleRowCount(newValue);
+    }
+
+    public int getVisibleRowCount() {
+        return sourceList.getVisibleRowCount();
+    }
+
+    public void setSelectionBackground(Color newValue) {
+        sourceList.setSelectionBackground(newValue);
+        destList.setSelectionBackground(newValue);
+    }
+
+    public Color getSelectionBackground() {
+        return sourceList.getSelectionBackground();
+    }
+
+    public void setSelectionForeground(Color newValue) {
+        sourceList.setSelectionForeground(newValue);
+        destList.setSelectionForeground(newValue);
+    }
+
+    public Color getSelectionForeground() {
+        return sourceList.getSelectionForeground();
+    }
+
+    private void clearSourceSelected() {
+        Object selected[] = sourceList.getSelectedValues();
+        for(int i= selected.length-1; i&gt;=0; i--) {
+            sourceListModel.removeElement(selected[i]);
+        }
+        sourceList.getSelectionModel().clearSelection();
+    }
+
+    private void clearDestinationSelected() {
+        Object selected[] = destList.getSelectedValues();
+        for(int i=selected.length-1; i&gt;=0; --i) {
+            destListModel.removeElement(selected[i]);
+        }
+        destList.getSelectionModel().clearSelection();
+    }
+
+    private void initScreen() {
+        setBorder(BorderFactory.createEtchedBorder());
+        setLayout(new GridBagLayout());
+        sourceLabel =  new JLabel(DEFAULT_SOURCE_CHOICE_LABEL);
+        sourceListModel = new SortedListModel();
+        sourceList = new JList(sourceListModel);
+        add(sourceLabel, new GridBagConstraints(0,0,1,1,0,0,GridBagConstraints.CENTER,GridBagConstraints.NONE, EMPTY_INSETS, 0, 0));
+        add(new JScrollPane(sourceList), new GridBagConstraints(0,1,1,5,.5,1,GridBagConstraints.CENTER,GridBagConstraints.BOTH,EMPTY_INSETS,0,0));
+
+        addButton = new JButton(ADD_BUTTON_LABEL);
+        add(addButton, new GridBagConstraints(1,2,1,2,0,.25,GridBagConstraints.CENTER,GridBagConstraints.NONE,EMPTY_INSETS,0,0));
+        addButton.addActionListener(new AddListener());
+        removeButton = new JButton(REMOVE_BUTTON_LABEL);
+        add(removeButton, new GridBagConstraints(1,4,1,2,0,.25,GridBagConstraints.CENTER,GridBagConstraints.NONE, new Insets(0,5,0,5),0,0));
+        removeButton.addActionListener(new RemoveListener());
+
+        destLabel = new JLabel(DEFAULT_DEST_CHOICE_LABEL);
+        destListModel = new SortedListModel();
+        destList = new JList(destListModel);
+        add(destLabel, new GridBagConstraints(2,0,2,1,0,0,GridBagConstraints.CENTER,GridBagConstraints.NONE,EMPTY_INSETS,0,0));
+        add(new JScrollPane(destList), new GridBagConstraints(2,1,1,5,.5,1.0, GridBagConstraints.CENTER,GridBagConstraints.BOTH, EMPTY_INSETS,0,0));
+    }
+
+    private class AddListener implements ActionListener {
+        public void actionPerformed(ActionEvent event) {
+            Object selected[] = sourceList.getSelectedValues();
+            addDestinationElements(selected);
+            clearSourceSelected();
+        }
+    }
+
+    private class RemoveListener implements ActionListener {
+        public void actionPerformed(ActionEvent event) {
+            Object selected[] = destList.getSelectedValues();
+            addSourceElements(selected);
+            clearDestinationSelected();
+        }
+    }
+    /**
+     * @param args
+     */
+    public static void main(String[] args) {
+        // TODO Auto-generated method stub
+
+        Runnable runner = new Runnable() {
+            public void run() {
+                JFrame frame = new JFrame("Dual List Box Tester");
+                frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+                DualListBox dual = new DualListBox();
+                dual.addSourceElements(new String[] {"One", "Two", "Three"});
+                dual.addSourceElements(new String[] {"Four", "Five", "Six"});
+                dual.addSourceElements(new String[] {"Seven", "Eight", "Nigh"});
+                dual.addSourceElements(new String[] {"Ten", "Eleven", "Twele"});
+                dual.addSourceElements(new String[] {"Thirteen", "Fourteen", "Fifteen"});
+                dual.addSourceElements(new String[] {"Sixteen", "Seventeen", "Eighteen"});
+                dual.addSourceElements(new String[] {"Nineteen", "Twenty", "Thirty"});
+
+                frame.add(dual, BorderLayout.CENTER);
+                frame.setSize(400, 300);
+                frame.setVisible(true);
+            }
+        };
+        EventQueue.invokeLater(runner);
+    }
+
+}</pre>
+</div>
+</div>
+<div class="section" id="id9">
+<h3>向列表项添加元素及工具提示<a class="headerlink" href="#id9" title="Permalink to this headline">¶</a></h3>
+<p>正如第4章所描述的，所有的Swing组件支持显示工具提示文本。通过调用组件的setToolTipText()方法
+，我们可以在组件上显示任意的文本字符串。在JList组件的情况下，单个的工具提示文本字符串也许并足够。我们也许希望在一个组件中的每一项上显示一个不同的提示。</p>
+<p>显示元素级的提示需要一些工作。要在每一项上显示不同的工具提示文本，我们必须创建一个JList的子类。在这个子类中，我们必须手动向组件注册ToolTipManager。这通常是当我们调用setToolTipText()时为我们完成的。但是因为我们不会调用这个方法，我们必须手动通知管理器，如下所示：</p>
+<div class="code java highlight-python"><div class="highlight"><pre><span class="n">ToolTipManager</span><span class="o">.</span><span class="n">sharedInstance</span><span class="p">()</span><span class="o">.</span><span class="n">registerComponent</span><span class="p">(</span><span class="n">this</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>在我们通知ToolTipManager之后，管理器会在鼠标滑过组件时通知组件。这允许我们覆盖public
+String getToolTipText(MouseEvent
+mouseEvent)方法来为鼠标点下的项提供相应的提示。使用某些Hashtable，HashMap或是Properties列表可以使得我们将鼠标滑过的项映射到相应的工具提示文本。</p>
+<div class="code java highlight-python"><pre>public String getToolTipText(MouseEvent event) {
+  Point p = event.getPoint();
+  int location = locationToIndex(p);
+  String key = (String)model.getElementAt(location);
+  String tip = tipProps.getProperty(key);
+  return tip;
+}</pre>
+</div>
+<p>图13-13显示了PropertiesList示例如何基于鼠标停留的元素演示各种工具提示。示例的完整源码显示在列表13-11中。</p>
+<div class="figure">
+<img alt="Swing_13_13.png" src="_images/Swing_13_13.png" />
+<p class="caption">Swing_13_13.png</p>
+</div>
+<div class="code java highlight-python"><pre>package swingstudy.ch13;
+
+import java.awt.EventQueue;
+import java.awt.Point;
+import java.awt.event.MouseEvent;
+import java.util.Enumeration;
+import java.util.Properties;
+
+import javax.swing.JFrame;
+import javax.swing.JList;
+import javax.swing.JScrollPane;
+import javax.swing.ToolTipManager;
+
+public class PropertiesList extends JList {
+
+    SortedListModel model;
+    Properties tipProps;
+
+    public PropertiesList(Properties props) {
+        model = new SortedListModel();
+        setModel(model);
+        ToolTipManager.sharedInstance().registerComponent(this);
+
+        tipProps = props;
+        addProperties(props);
+    }
+
+    private void addProperties(Properties props) {
+        // Load
+        Enumeration names = props.propertyNames();
+        while(names.hasMoreElements()) {
+            model.add(names.nextElement());
+        }
+    }
+
+    public String getToolTipText(MouseEvent event) {
+        Point p = event.getPoint();
+        int location = locationToIndex(p);
+        String key = (String)model.getElementAt(location);
+        String tip = tipProps.getProperty(key);
+        return tip;
+    }
+    /**
+     * @param args
+     */
+    public static void main(String[] args) {
+        // TODO Auto-generated method stub
+
+        Runnable runner = new Runnable() {
+            public void run() {
+                JFrame frame = new JFrame("Custom Tip Demo");
+                frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+
+                Properties props = System.getProperties();
+                PropertiesList list = new PropertiesList(props);
+                JScrollPane scrollPane = new JScrollPane(list);
+                frame.add(scrollPane);
+                frame.setSize(300, 300);
+                frame.setVisible(true);
+            }
+        };
+        EventQueue.invokeLater(runner);
+    }
+
+}</pre>
+</div>
+</div>
+</div>
+<div class="section" id="jcombobox">
+<h2>JComboBox类<a class="headerlink" href="#jcombobox" title="Permalink to this headline">¶</a></h2>
+<p>Swing组件集合的JComboBox组件是一个多部分组件，允许用户借助于下拉列表由一个预定义的选项集合中进行选择。在其基本配置中，JComboBox类似于JLabel来显示当前的用户选择。嵌入在JLabel中的一个包含在JList控件中选择的弹出菜单。当所需要选项不可用时，JComboBox可以使用JTextField来输入新的选项。当需要时，JList部分会自被嵌入在JScrollPane中；我们并不需要手动创建JList或是将其放在JScrollPane中。另外，用于编辑的文本框默认是禁止的，只允许用户由预定义的选项集合中进行选择。图13-14演示了两个JComboBox组件：一个是不可以编辑，显示其选项列表，而另一个可以编辑而不显示其选项。</p>
+<p>四个核心元素定义了JComboBox组件及其实现：</p>
+<ul class="simple">
+<li>用于存储JComboBox数据的数据模型，通过ListModel接口定义</li>
+<li>用于绘制JComboBox元素的渲染器，通过ListCellRenderer接口描述</li>
+<li>用于输入选项的编辑器，通过ComboBoxEditor接口定义</li>
+<li>用于处理选择JComboBox元素的键盘输入的击键管理器，通过KeySelectionManager接口描述</li>
+</ul>
+<p>JComboBox的许多功能与JList组件所共用。这并不是巧合；这两个组件非常相似。下面我们详细了解JComboBox。</p>
+<div class="section" id="id10">
+<h3>创建JComboBox组件<a class="headerlink" href="#id10" title="Permalink to this headline">¶</a></h3>
+<p>类似于JList组件，JComboBox组件有四个构造函数，允许我们基于初始的数据结构进行创建。与JList组件不同，数组与Vector构造函数所用的默认模型允许添加或是移除数据元素。</p>
+<div class="code java highlight-python"><pre>public JComboBox()
+JComboBox comboBox = new JComboBox();
+public JComboBox(Object listData[])
+String labels[] = { "Chardonnay", "Sauvignon", "Riesling", "Cabernet", "Zinfandel",
+  "Merlot", "Pinot Noir", "Sauvignon Blanc", "Syrah", "Gewürztraminer"};
+JComboBox comboBox = new JComboBox(labels);
+public JComboBox(Vector listData)
+Vector vector = aBufferedImage.getSources();
+JComboBox comboBox = new JComboBox(vector);
+public JComboBox(ComboBoxModel model)
+ResultSet results = aJDBCStatement.executeQuery("SELECT columnName FROM tableName");
+DefaultComboBoxModel model = new DefaultComboBoxModel();
+while (result.next())
+  model.addElement(results.getString(1));
+JComboBox comboBox = new JComboBox(model);</pre>
+</div>
+</div>
+<div class="section" id="id11">
+<h3>JComboBox属性<a class="headerlink" href="#id11" title="Permalink to this headline">¶</a></h3>
+<p>在我们创建了JComboBox组件之后，我们可以修改其属性。表13-10显示了JComboBox的22个属性。</p>
+<div class="figure">
+<img alt="Swing_table_13_10_1.png" src="_images/Swing_table_13_10_1.png" />
+<p class="caption">Swing_table_13_10_1.png</p>
+</div>
+<div class="figure">
+<img alt="Swing_table_13_10_2.png" src="_images/Swing_table_13_10_2.png" />
+<p class="caption">Swing_table_13_10_2.png</p>
+</div>
+<p>JComboBox的重要属性关注弹出列表的显示。我们可以通过设置maximumRowCount属性来控制弹出列表可见项的最大数目。lightWeightPopupEnabled属性设置有助于确定当显示弹出选项菜单时所用的窗口类型。如果组件完全适应程序的顶级窗口，组件将是轻量级的。如果不适应，则其将是重量级的。如果我们在程序中混合使用AWT与Swing组件，我们可以通过将lightWeightPopupEnabled属性设置为true强制弹出选项菜单为重量级的。这将强制弹出菜单显示在其他组件之上。其他与弹出列表相关的属性是popupVisible属性，这将允许我们编程显示弹出列表。</p>
+<p>注意，除了设置popupVisible属性以外，我们可以使用public void
+hidePopup()与public void showPopup()方法来切换弹出列表的可视状态。</p>
+</div>
+<div class="section" id="id12">
+<h3>渲染JComboBox元素<a class="headerlink" href="#id12" title="Permalink to this headline">¶</a></h3>
+<p>JComboBox内的元素的渲染是使用ListCellRenderer来完成的。这是与JList组件所用的相同的渲染器。一旦我们为这两个组件中的一个创建一个渲染器，我们就可以为另一个组件使用相同的渲染器。为了重用本章前面的ComplexCellRenderer，我们可以将下面的代码添加到ComplexRenderingSample示例中使得两个组件共享相同的渲染器。</p>
+<div class="code java highlight-python"><pre>JComboBox comboBox = new JComboBox(elements);
+comboBox.setRenderer(renderer);
+frame.add(comboBox, BorderLayout.NORTH);</pre>
+</div>
+<p>最终的结果如图13-15所示。</p>
+<div class="figure">
+<img alt="Swing_13_15.png" src="_images/Swing_13_15.png" />
+<p class="caption">Swing_13_15.png</p>
+</div>
+<p>并不是所有的渲染器都会在JComboBox与JList组件之间得到所期望的结果。例如，在前面的图13-6中所演示的FocusedTitleListCellRenderer不会在JComboBox中显示的具有输入焦点的标题边框，因为选项绝不会具有输入焦点。另外，不同的组件也许具有不同的颜色（在这种情况下是不同的未选中背景颜色）。也许询问通常情况下组件以哪种颜色进行渲染是必要的，并且进行相应的响应。</p>
+</div>
+<div class="section" id="id13">
+<h3>选择JComboBox元素<a class="headerlink" href="#id13" title="Permalink to this headline">¶</a></h3>
+<p>JComboBox组件支持至少三个与选择相关的不同事件。我们可以监听键盘输入来支持借助于JComboBox.KeySelectionManager类的键盘选择。我们也可以使用ActionListener或ItemListener进行监听来确定何时JComboBox的选中项发生变化。</p>
+<p>如果我们希望编程选中一个元素，则可以使用public void
+setSelectedItem(Object element)或是public void setSelectedIndex(int
+index)。</p>
+<p>提示，要编程实现取消JComboBox的当前选项，使用参数-1来调用setSelectedIndex()方法。</p>
+<p><strong>使用KeySelectionManager监听键盘事件</strong></p>
+<p>JComboBox包含一个非常重要的公开内联接口。KeySelectionManager及其默认实现管理由键盘实现的对JComboBox中的项的选中。默认管理器定位与按下的键相对应的下一个元素。他具有记忆功能，所以如果我们具有相似前缀的多个条目，用户可以连续输入直接足够匹配唯一的元素。如果我们不喜欢这种行为，我们可以将其关掉或是创建一个新的键盘选择管理器。</p>
+<p>注意，KeySelectionManager只可以用在不可编辑的组合框中。</p>
+<p>如果我们希望关掉键盘选择功能，我们不能简单的将KeySelectionManager属性设置为null。相反，我们必须以相应的方法创建接口的实现。接口的唯一方法为public
+int selectionForKey(char aKey, ComboBoxModel
+aModel)。如果按下的键与任何元素都不匹配，这个方法需要返回-1。否则，他应该返回匹配元素的位置。所以，要忽略键盘输入，这个方法应总是返回-1，如下所示：</p>
+<div class="code java highlight-python"><pre>JComboBox.KeySelectionManager manager =
+  new JComboBox.KeySelectionManager() {
+    public int selectionForKey(char aKey, ComboBoxModel aModel) {
+      return -1;
+    }
+  };
+aJcombo.setKeySelectionManager(manager);</pre>
+</div>
+<p><strong>使用ActionListener监听JComboBox事件</strong></p>
+<p>监听选中事件的最基本的方法是使用ActionListsener，通常是使用setAction(Action)来设置的。他会通知我们JComboBox中的元素何时被选中。不幸的，这个监听器并不会知道哪一个元素被选中。</p>
+<p>注意，通过setAction(Action)设置ActionListsener同时配置工具提示文本以及基于Action的JComboBoxenabled状态。</p>
+<p>因为ActionListener不能标识被选中的元素，他必须询问作为事件源的JComboBox。要确定JComboBx中的选中元素，使用getSelectedItem()或是getSelectedIndex()方法。如果返回的索引为-1，那么当前选中的元素并不是模型的一部分。当JComboBox是可编辑的而用户输入了一个并不是原始模型一部分的值时也许就会发生不可能的情况。</p>
+<p>注意，文本字符串comboBoxChanged是当JComboBox中的一个元素发生变化时发送给ActionListener的ActionEvent的动作命令。</p>
+<p><strong>使用ItemListsener监听JComboBox事件</strong></p>
+<p>如果我们使用ItemListener来确定JComboBox中的选中元素何时发生变化，我们也可以了解哪一个元素被取消选中。</p>
+<p>为了演示ActionListener与ItemListener，列表13-12中所示的示例程序将两个监听器关联到同一个JComboBox上。ActionListsener输入其动作命令以及当前选中的元素。ItemListener输出受影响的元素及其状态变化，以及当前被选中的元素。</p>
+<div class="code java highlight-python"><pre>package swingstudy.ch13;
+
+import java.awt.BorderLayout;
+import java.awt.EventQueue;
+import java.awt.ItemSelectable;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.ItemEvent;
+import java.awt.event.ItemListener;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+
+import javax.swing.JComboBox;
+import javax.swing.JFrame;
+import javax.swing.JScrollPane;
+import javax.swing.JTextArea;
+
+public class SelectingComboSample {
+
+    static private String selectedString(ItemSelectable is) {
+        Object selected[] = is.getSelectedObjects();
+        return ((selected.length==0)?"null":(String)selected[0]);
+    }
+    /**
+     * @param args
+     */
+    public static void main(String[] args) {
+        // TODO Auto-generated method stub
+
+        Runnable runner = new Runnable() {
+            public void run() {
+                String labels[] = {"Chardonnay", "Sauvignon", "Riesling", "Cabernet",
+                        "Zinfandel", "Merlot", "Pinot Noir", "Sauvignon Blanc", "Syrah", "Gewurztraminer"
+                };
+                JFrame frame = new JFrame("Selecting JComboBox");
+                frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+
+                JComboBox comboBox = new JComboBox(labels);
+                frame.add(comboBox, BorderLayout.SOUTH);
+
+                final JTextArea textArea = new JTextArea();
+                textArea.setEditable(false);
+                JScrollPane sp = new JScrollPane(textArea);
+                frame.add(sp, BorderLayout.CENTER);
+
+                ItemListener itemListener =  new ItemListener() {
+                    public void itemStateChanged(ItemEvent event) {
+                        StringWriter sw = new StringWriter();
+                        PrintWriter pw =  new PrintWriter(sw);
+                        int state = event.getStateChange();
+                        String stateString = ((state==ItemEvent.SELECTED)?"Selected":"Deselected");
+                        pw.print("Item: "+event.getItem());
+                        pw.print(", state: "+stateString);
+                        ItemSelectable is = event.getItemSelectable();
+                        pw.print(", Selected: "+selectedString(is));
+                        pw.println();
+                        textArea.append(sw.toString());
+                    }
+                };
+                comboBox.addItemListener(itemListener);
+
+                ActionListener actionListener = new ActionListener() {
+                    public void actionPerformed(ActionEvent event) {
+                        StringWriter sw = new StringWriter();
+                        PrintWriter pw = new PrintWriter(sw);
+                        pw.print("Command: "+event.getActionCommand());
+                        ItemSelectable is = (ItemSelectable)event.getSource();
+                        pw.print(", Selected: "+selectedString(is));
+                        pw.println();
+                        textArea.append(sw.toString());
+                    }
+                };
+                comboBox.addActionListener(actionListener);
+
+                frame.setSize(400, 200);
+                frame.setVisible(true);
+            }
+        };
+        EventQueue.invokeLater(runner);
+    }
+
+}</pre>
+</div>
+<p>图13-16显示了程序运行一段时间后的结果。</p>
+<div class="figure">
+<img alt="Swing_13_16.png" src="_images/Swing_13_16.png" />
+<p class="caption">Swing_13_16.png</p>
+</div>
+<p><strong>使用ListDataListener监听JComboBox事件</strong></p>
+<p>我们可以ListDataListener关联到JComboBox的数据模型。当模型选中的元素发生变化时这个监听器会得到通知。不幸的是，监听器也会得到其他数据模型变化的通知。换句话说，使用ListDataListener来确定JComboBox的元素何时被选中并不是推荐的方法。</p>
+<p>注意，JComboBox中鼠标移动与当标移动事件不会改变被选中的元素；鼠标释放会修改被选中的元素。当选中的鼠标按钮在JComboBox弹出列表的元素上释放时，所注册的监听器会得到通知。</p>
+</div>
+<div class="section" id="id14">
+<h3>编辑JComboBox元素<a class="headerlink" href="#id14" title="Permalink to this headline">¶</a></h3>
+<p>我们也许会希望像文本输入框一样使用组合框，其中列出最户最可能的文本输入，但是同时允许输入一些其他的内容。通过允许JComboBox的editable属性，我们就可以获得这一功能。为了演示，图13-17显示了一个可编辑的JComboBox。这个窗口同时包含一个文本框来报告当前选中的元素及其索引。尽管我们手动在JComboBox输入一个选项，getSelectedIndex()将会报告正确的位置。记住，如果我们输入并没有出现的值，getSelectedIndex()会返回-1。</p>
+<div class="figure">
+<img alt="Swing_13_17.png" src="_images/Swing_13_17.png" />
+<p class="caption">Swing_13_17.png</p>
+</div>
+<p>图13-17中的程序源码显示在列表13-13中。</p>
+<div class="code java highlight-python"><pre>package swingstudy.ch13;
+
+import java.awt.BorderLayout;
+import java.awt.EventQueue;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+
+import javax.swing.JComboBox;
+import javax.swing.JFrame;
+import javax.swing.JScrollPane;
+import javax.swing.JTextArea;
+
+public class EditComboBox {
+
+    /**
+     * @param args
+     */
+    public static void main(String[] args) {
+        // TODO Auto-generated method stub
+
+        Runnable runner = new Runnable() {
+            public void run() {
+                String labels[] = {"Chardonnay", "Sauvignon", "Riesling", "Cabernet",
+                        "Zinfandel", "Merlot", "Pinot Noir", "Sauvignon Blanc", "Syrah", "Gewurztraminer"
+                };
+                JFrame frame = new JFrame("Editable JComboBox");
+                frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+
+                final JComboBox comboBox = new JComboBox(labels);
+                comboBox.setMaximumRowCount(5);
+                comboBox.setEditable(true);
+                frame.add(comboBox, BorderLayout.NORTH);
+
+                final JTextArea textArea = new JTextArea();
+                JScrollPane scrollPane = new JScrollPane(textArea);
+                frame.add(scrollPane, BorderLayout.CENTER);
+
+                ActionListener actionListener = new ActionListener() {
+                    public void actionPerformed(ActionEvent event) {
+                        textArea.append("Selected: "+comboBox.getSelectedItem());
+                        textArea.append(", Position: "+comboBox.getSelectedIndex());
+                        textArea.append(System.getProperty("line.seperator"));
+                    }
+                };
+                comboBox.addActionListener(actionListener);
+
+                frame.setSize(300, 200);
+                frame.setVisible(true);
+            }
+        };
+        EventQueue.invokeLater(runner);
+    }
+
+}</pre>
+</div>
+<p>默认情况下，用于编辑的输入框是JTextField。如果我们的数据模式由文本字符串组成，则默认的JTextField将是一个好的编辑器。然而，一旦我们的模型包含不同的对象类型（例如，颜色），我们需要提供一个不同的编辑器。默认情况下，一旦我们在文本框中输入（为我们的元素编辑toString的结果），对象会被看作一个String。由技术上来说，不同的编辑器并不总是必需的。如果我们能将作为字符串的文本框内容解析为正确的数据类型，那我们就可以这样做。但是，如查我们希望以某种方式限制输入（例如，只允许输入数字）或是提供一个更好的输入机制，我们必须提供我们自己的编辑器。定义为了必需行为的接口名为ComboBoxEditor，而其定义如下所示：</p>
+<div class="code java highlight-python"><pre>public interface ComboBoxEditor {
+  // Properties
+  public Component getEditorComponent();
+  public Object getItem();
+  public void setItem(Object anObject);
+  // Listeners
+  public void addActionListener(ActionListener l);
+  public void removeActionListener(ActionListener l);
+  // Other methods
+  public void selectAll();
+}</pre>
+</div>
+<p>注意，默认的编辑器是javax.swing.plaf.basic包中的BasicComboBoxEditor实现。</p>
+<p>add/remove监听器方法对于当ComboBoxEditor值发生变化时通知监听器是必需的。我们并没有必要添加一个监听器，而通常我们也并不希望这样做。无论如何，这些方法是接口的一部分，所以如果我们希望提供自己的编辑器我们需要实现这些方法。</p>
+<p>getEditorComponent()方法返回编辑器所用的Component对象。我们可以为编辑器使用AWT或是Swing组件（例如，用于颜色选择的JColorChooser）。当编辑器首次显示时selectAll()方法会被调用。他通知编辑器选中其内的所有内容。选中所有内容允许用户仅在默认JTextField情况的当前输入上输入。某些编辑器并不需要使用这种方法。</p>
+<p>当我们提供自定义的编辑器时，item属性需要最多的工作。为了显示要编辑的数据，我们需要提供一个方法来将Object子类的特定片段映射到组件。然后我们需要由编辑器获取数据，从而数据可以存储到原始对象的实例中。</p>
+<p>为了演示，列表13-14中的源码是用于Color类的ComboBoxEditor。自定义的编辑器是必需的，因为没有自动的方法来解析用于显示Color的默认字符串的编辑结果。这个编辑器使用JColorChooser从而允许用户选择一个新的颜色值。getItem()方法需要只返回当前值，Color。setItem()方法需要转换传递给Color对象的对象；setItem()方法的参数是一个Object。可以使得setItem()方法只接受Color参数。然而，对于这个例子，使用Color.decode()方法解码的字符串也可以被支持。</p>
+<div class="code java highlight-python"><pre>package swingstudy.ch13;
+
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+
+import javax.swing.ComboBoxEditor;
+import javax.swing.JButton;
+import javax.swing.JColorChooser;
+import javax.swing.event.EventListenerList;
+
+public class ColorComboBoxEditor implements ComboBoxEditor {
+
+    final protected JButton editor;
+    protected EventListenerList listenerList = new EventListenerList();
+
+    public ColorComboBoxEditor(Color initialColor) {
+        editor = new JButton("");
+        editor.setBackground(initialColor);
+        ActionListener actionListener = new ActionListener() {
+            public void actionPerformed(ActionEvent event) {
+                Color currentBackground = editor.getBackground();
+                Color color = JColorChooser.showDialog(editor, "Color Chooser", currentBackground);
+                if((color != null) &amp;&amp; (currentBackground != color)) {
+                    editor.setBackground(color);
+                    fireActionEvent(color);
+                }
+            }
+        };
+        editor.addActionListener(actionListener);
+    }
+
+    @Override
+    public void addActionListener(ActionListener l) {
+        // TODO Auto-generated method stub
+        listenerList.add(ActionListener.class, l);
+    }
+
+    @Override
+    public Component getEditorComponent() {
+        // TODO Auto-generated method stub
+        return editor;
+    }
+
+    @Override
+    public Object getItem() {
+        // TODO Auto-generated method stub
+        return editor.getBackground();
+    }
+
+    @Override
+    public void removeActionListener(ActionListener l) {
+        // TODO Auto-generated method stub
+        listenerList.remove(ActionListener.class, l);
+    }
+
+    @Override
+    public void selectAll() {
+        // TODO Auto-generated method stub
+
+    }
+
+    @Override
+    public void setItem(Object newValue) {
+        // TODO Auto-generated method stub
+        if(newValue instanceof Color) {
+            Color color = (Color)newValue;
+            editor.setBackground(color);
+        }
+        else {
+            try {
+                Color color = Color.decode(newValue.toString());
+                editor.setBackground(color);
+            }
+            catch(NumberFormatException e) {
+
+            }
+        }
+    }
+
+    protected void fireActionEvent(Color color) {
+        Object listeners[] = listenerList.getListenerList();
+        for(int i=listeners.length-2; i&gt;=0; i-=2) {
+            if(listeners[i] == ActionListener.class) {
+                ActionEvent actionEvent = new ActionEvent(editor, ActionEvent.ACTION_PERFORMED, color.toString());
+                ((ActionListener)listeners[i+1]).actionPerformed(actionEvent);
+            }
+        }
+    }
+
+}</pre>
+</div>
+<p>要使用新编辑器，我们需要将其关联到JComboBox。在我们修改前面所示的EditorComboBox示例使其数据模型由Color对象的数组组成之后，我们可以通过添加下面的代码来安装编辑器：</p>
+<div class="code java highlight-python"><pre>Color color = (Color)comboBox.getSelectedItem();
+ComboBoxEditor editor = new ColorComboBoxEditor(color);
+comboBox.setEditor(editor);</pre>
+</div>
+<p>列表13-15显示了完整的测试程序。他不同于EditComboBox，因为在JComboBox下面是一个与JComboBox当前选中的颜色同步的JLabel。同时有一个自定义的单元渲染器将背景色设置为单元的值。</p>
+<div class="code java highlight-python"><pre>package swingstudy.ch13;
+
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.Dimension;
+import java.awt.EventQueue;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+
+import javax.swing.ComboBoxEditor;
+import javax.swing.DefaultListCellRenderer;
+import javax.swing.JComboBox;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JList;
+import javax.swing.ListCellRenderer;
+
+public class ColorComboBox {
+
+    static class ColorCellRenderer implements ListCellRenderer {
+        protected DefaultListCellRenderer defaultRenderer = new DefaultListCellRenderer();
+        // width doesn't matter as the combo box will size
+        private final static Dimension preferredSize = new Dimension(0, 20);
+        public Component getListCellRendererComponent(JList list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
+            JLabel renderer = (JLabel)defaultRenderer.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+            if(value instanceof Color) {
+                renderer.setBackground((Color)value);
+            }
+            renderer.setPreferredSize(preferredSize);
+            return renderer;
+        }
+    }
+    /**
+     * @param args
+     */
+    public static void main(String[] args) {
+        // TODO Auto-generated method stub
+
+        Runnable runner = new Runnable() {
+            public void run() {
+                Color colors[] = {Color.BLACK, Color.BLUE, Color.CYAN, Color.DARK_GRAY, Color.GRAY, Color.green,
+                        Color.LIGHT_GRAY, Color.MAGENTA, Color.ORANGE, Color.PINK, Color.RED, Color.WHITE, Color.YELLOW
+                };
+                JFrame frame = new JFrame("Color JComboBox");
+                frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+
+                final JComboBox comboBox = new JComboBox(colors);
+                comboBox.setMaximumRowCount(5);
+                comboBox.setEditable(true);
+                comboBox.setRenderer(new ColorCellRenderer());
+                Color color = (Color)comboBox.getSelectedItem();
+                ComboBoxEditor editor = new ColorComboBoxEditor(color);
+                comboBox.setEditor(editor);
+                frame.add(comboBox, BorderLayout.NORTH);
+
+                final JLabel label = new JLabel();
+                label.setOpaque(true);
+                label.setBackground((Color)comboBox.getSelectedItem());
+                frame.add(label, BorderLayout.CENTER);
+
+                ActionListener actionListener = new ActionListener() {
+                    public void actionPerformed(ActionEvent event) {
+                        Color selectedColor = (Color)comboBox.getSelectedItem();
+                        label.setBackground(selectedColor);
+                    }
+                };
+                comboBox.addActionListener(actionListener);
+
+                frame.setSize(300, 200);
+                frame.setVisible(true);
+            }
+        };
+        EventQueue.invokeLater(runner);
+    }
+
+}</pre>
+</div>
+<p>图13-18显示了程序运行的结果。</p>
+<div class="figure">
+<img alt="Swing_13_18.png" src="_images/Swing_13_18.png" />
+<p class="caption">Swing_13_18.png</p>
+</div>
+</div>
+<div class="section" id="id15">
+<h3>自定义JComboBox观感<a class="headerlink" href="#id15" title="Permalink to this headline">¶</a></h3>
+<p>每一个可安装的Swing观感都提供了不同的JComboBox外观以及组件的默认UIResource值设置集合。图13-19显示在了预安装的观感类型集合Motif，Windows以及Ocean下JComboBox组件的外观。</p>
+<div class="figure">
+<img alt="Swing_13_19.png" src="_images/Swing_13_19.png" />
+<p class="caption">Swing_13_19.png</p>
+</div>
+<p>表13-11显示了JComboBox可用的UIResource相关属性的集合。JComboBox组件有21个不同的属性。</p>
+<div class="figure">
+<img alt="Swing_table_13_11_1.png" src="_images/Swing_table_13_11_1.png" />
+<p class="caption">Swing_table_13_11_1.png</p>
+</div>
+<div class="figure">
+<img alt="Swing_table_13_11_2.png" src="_images/Swing_table_13_11_2.png" />
+<p class="caption">Swing_table_13_11_2.png</p>
+</div>
+<p>修改弹出图标是自定义观感的一个示例。要实现这一目的，我们需要安装一个新的用户界面。基本上，我们由BasicComboBoxUI或是MetalComboBoxUI用户界面委托继承默认功能，并且只覆盖protected
+JButton createArrowButton()方法。</p>
+<p>图13-20显示了修改JComboBox用户界面的结果。</p>
+<p>列表13-16列出了完整的源码。</p>
+<div class="code java highlight-python"><pre>package swingstudy.ch13;
+
+import java.awt.BorderLayout;
+import java.awt.EventQueue;
+
+import javax.swing.JButton;
+import javax.swing.JComboBox;
+import javax.swing.JComponent;
+import javax.swing.JFrame;
+import javax.swing.plaf.ComboBoxUI;
+import javax.swing.plaf.ComponentUI;
+import javax.swing.plaf.basic.BasicArrowButton;
+import javax.swing.plaf.basic.BasicComboBoxUI;
+
+public class PopupComboSample {
+
+    /**
+     * @param args
+     */
+    public static void main(String[] args) {
+        // TODO Auto-generated method stub
+
+        Runnable runner = new Runnable() {
+            public void run() {
+                String labels[] = {"Chardonnay", "Sauvignon", "Riesling", "Cabernet",
+                        "Zinfandel", "Merlot", "Pinot Noir", "Sauvignon Blanc", "Syrah", "Gewurztraminer"
+                };
+                JFrame frame = new JFrame("Popup JComboBox");
+                frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+
+                JComboBox comboBox = new JComboBox(labels);
+                comboBox.setMaximumRowCount(5);
+                comboBox.setUI((ComboBoxUI)MyComboBoxUI.createUI(comboBox));
+                frame.add(comboBox, BorderLayout.NORTH);
+
+                frame.setSize(300, 200);
+                frame.setVisible(true);
+            }
+        };
+        EventQueue.invokeLater(runner);
+    }
+
+    static class MyComboBoxUI extends BasicComboBoxUI {
+        public static ComponentUI createUI(JComponent c) {
+            return new MyComboBoxUI();
+        }
+
+        protected JButton createArrowButton() {
+            JButton button = new BasicArrowButton(BasicArrowButton.EAST);
+            return button;
+        }
+    }
+}</pre>
+</div>
+</div>
+</div>
+<div class="section" id="jcomboboxjlist">
+<h2>为JComboBox与JList共享数据模型<a class="headerlink" href="#jcomboboxjlist" title="Permalink to this headline">¶</a></h2>
+<p>我们也许已经注意到了构成JComboBox与JList的部分之间的一些相似之处。我们可以为两个组件使用相同的数据模型与相同的渲染器。在本章前面的部分中，我们已经了解了如果在两个组件之间共享渲染器。本节中所展示的示例演示了我们如何在多个组件之间共享相同的数据模型。</p>
+<p>这个例子有两个可编辑的组合框与一个JList，所有的组件共享相同的数据模型。这个示例同时提供了一个按钮，我们可以点击来向数据模型动态添加内容。因为数据模型将会与多个组件相关联，我们将会注意到每一个都具有额外的选项在选中按钮之后进行选择。图13-21显示了程序在添加了一些元素之后的样子。</p>
+<div class="figure">
+<img alt="Swing_13_21.png" src="_images/Swing_13_21.png" />
+<p class="caption">Swing_13_21.png</p>
+</div>
+<p>列表13-17显示了共享数据模型的例子。</p>
+<div class="code java highlight-python"><pre>package swingstudy.ch13;
+
+import java.awt.BorderLayout;
+import java.awt.EventQueue;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+
+import javax.swing.DefaultComboBoxModel;
+import javax.swing.JButton;
+import javax.swing.JComboBox;
+import javax.swing.JFrame;
+import javax.swing.JList;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+
+public class SharedDataSample {
+
+    /**
+     * @param args
+     */
+    public static void main(String[] args) {
+        // TODO Auto-generated method stub
+
+        Runnable runner = new Runnable() {
+            public void run() {
+                final String labels[] = {"Chardonnay", "Sauvignon", "Riesling", "Cabernet",
+                        "Zinfandel", "Merlot", "Pinot Noir", "Sauvignon Blanc", "Syrah", "Gewurztraminer"
+                };
+
+                final DefaultComboBoxModel model = new DefaultComboBoxModel(labels);
+
+                JFrame frame =  new JFrame("Shared Data");
+                frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+
+                JPanel panel = new JPanel();
+                JComboBox comboBox1 = new JComboBox(model);
+                comboBox1.setMaximumRowCount(5);
+                comboBox1.setEditable(true);
+
+                JComboBox comboBox2 = new JComboBox(model);
+                comboBox2.setMaximumRowCount(5);
+                comboBox2.setEditable(true);
+                panel.add(comboBox1);
+                panel.add(comboBox2);
+                frame.add(panel, BorderLayout.NORTH);
+
+                JList jlist = new JList(model);
+                JScrollPane scrollPane =  new JScrollPane(jlist);
+                frame.add(scrollPane, BorderLayout.CENTER);
+
+                JButton button = new JButton("Add");
+                frame.add(button, BorderLayout.SOUTH);
+                ActionListener actionListener = new ActionListener() {
+                    public void actionPerformed(ActionEvent event) {
+                        int index = (int)(Math.random()*labels.length);
+                        model.addElement(labels[index]);
+                    }
+                };
+                button.addActionListener(actionListener);
+
+                frame.setSize(300, 200);
+                frame.setVisible(true);
+            }
+        };
+        EventQueue.invokeLater(runner);
+    }
+
+}</pre>
+</div>
+</div>
+<div class="section" id="id16">
+<h2>小结<a class="headerlink" href="#id16" title="Permalink to this headline">¶</a></h2>
+<p>本章演示了如何使用Swing的JList与JComboBox组件。我们已经看到了这两个组件如何他们各自的数据模型，渲染器，选择功能，以及JComboBox组件的自定义编辑器。尽管这些功能是可以自定义的，每一个具有默认配置的组件都可以立即使用。</p>
+<p>在第14章中，我们将会开始探讨Swing文本组件，包括JTextField与JTextArea。</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">List Model Controls</a><ul>
+<li><a class="reference internal" href="#listmodel">ListModel接口</a><ul>
+<li><a class="reference internal" href="#abstractlistmodel">AbstractListModel类</a></li>
+<li><a class="reference internal" href="#defaultlistmodel">DefaultListModel类</a></li>
+<li><a class="reference internal" href="#listdatalistenerlistmodel">使用ListDataListener监听ListModel事件</a></li>
+<li><a class="reference internal" href="#comboboxmodel">ComboBoxModel接口</a></li>
+<li><a class="reference internal" href="#mutablecomboboxmodel">MutableComboBoxModel接口</a></li>
+<li><a class="reference internal" href="#defaultcomboboxmodel">DefaultComboBoxModel类</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#jlist">JList类</a><ul>
+<li><a class="reference internal" href="#id1">创建JList组件</a></li>
+<li><a class="reference internal" href="#id2">JList属性</a></li>
+<li><a class="reference internal" href="#id3">滚动JList组件</a></li>
+<li><a class="reference internal" href="#id4">渲染JList元素</a></li>
+<li><a class="reference internal" href="#id5">选择JList元素</a></li>
+<li><a class="reference internal" href="#id6">显示多列</a></li>
+<li><a class="reference internal" href="#id7">自定义JList观感</a></li>
+<li><a class="reference internal" href="#id8">创建双列表框</a></li>
+<li><a class="reference internal" href="#id9">向列表项添加元素及工具提示</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#jcombobox">JComboBox类</a><ul>
+<li><a class="reference internal" href="#id10">创建JComboBox组件</a></li>
+<li><a class="reference internal" href="#id11">JComboBox属性</a></li>
+<li><a class="reference internal" href="#id12">渲染JComboBox元素</a></li>
+<li><a class="reference internal" href="#id13">选择JComboBox元素</a></li>
+<li><a class="reference internal" href="#id14">编辑JComboBox元素</a></li>
+<li><a class="reference internal" href="#id15">自定义JComboBox观感</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#jcomboboxjlist">为JComboBox与JList共享数据模型</a></li>
+<li><a class="reference internal" href="#id16">小结</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="ch12.html"
+                        title="previous chapter">Bounded Range Components</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="ch14.html"
+                        title="next chapter">Spinner Model Controls</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/ch13.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="ch14.html" title="Spinner Model Controls"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="ch12.html" title="Bounded Range Components"
+             >previous</a> |</li>
+        <li><a href="index.html">The Definitive Guide to Java Swing Third Edtion 0.01 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2014, mylxiaoyi.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2b3.
+    </div>
+  </body>
+</html>

@@ -1,0 +1,1615 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>树 &mdash; The Definitive Guide to Java Swing Third Edtion 0.01 documentation</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.01',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="The Definitive Guide to Java Swing Third Edtion 0.01 documentation" href="index.html" />
+    <link rel="next" title="Tables" href="ch18.html" />
+    <link rel="prev" title="高级文本功能" href="ch16.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="ch18.html" title="Tables"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="ch16.html" title="高级文本功能"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">The Definitive Guide to Java Swing Third Edtion 0.01 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="id1">
+<h1>树<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h1>
+<p>在第16章中，我们了解了如何使用Swing组件集合中的文本文档功能。在本章中，我们将会了解如何使用Swing树类，JTree组件。</p>
+<div class="section" id="id2">
+<h2>树简介<a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h2>
+<p>JTree组件是用于显示层次数据元素的可视化组件，也称之为节点。使用树这个隐喻，可以想像一棵倒长的树。树顶部的节点称之为根。树的根节点的扩展是到其他节点的分支。如果节点没有任何由其展开的分支，这个节点就称之为叶节点。图17-1是一棵简单的树。</p>
+<div class="figure">
+<img alt="Swing_17_1.png" src="_images/Swing_17_1.png" />
+<p class="caption">Swing_17_1.png</p>
+</div>
+<p>在JTree的组合中使用了许多相互连接的类。首先，JTree实现在Scrollable接口，从而我们可以将树放在一个JScrollPane中进行滚动管理。树中每个节点的显示是通过TreeCellRenderer接口的实现来控制的；默认情况下，实现为DefaultTreeCellRenderer类。树的节点使用TreeCellEditor的实现进行编辑。有两个编辑器实现：一个使用DefaultTreeCellEditor提供文本域，而另一个使用DefaultCellEditor提供复选框与组合框，后者是对AbstractCellEditor的扩展。如果这些类并没有提供我们所需要的内容，我们可以在EditorContainer中放置一个自定义编辑器。</p>
+<p>注意，DefaultCellEditor类也可以用作JTable组件的单元编辑器。我们将会在第18章中讨论JTable组件。</p>
+<p>默认情况下，JTree的实际节点是TreeNode接口或是其子接口MutableTreeNode的实现。DefaultMutableTreeNode类就是这样一个并不常用的实现，使用JTree.DynamicUtilTreeNode类的帮助来创建树节点。许多的树节点构成了JTree的TreeModel，默认存储在DefaultTreeModel类的实例中。</p>
+<p>树的选择是通过TreeSelectionModel实现，使用默认的DefaultTreeSelectionModel实现来管理的。如果我们不希望树的节点成为可选择的，我们还可以使用JTree.EmptySelectionModel。由树根到所选择节点的路径是在TreePath内维护的，借助于RowMapper实现将行映射到路径。</p>
+<p>注意，树相关的类位于javax.swing.tree包中。相关的事件类位于javax.swing.event包中。</p>
+</div>
+<div class="section" id="jtree">
+<h2>JTree类<a class="headerlink" href="#jtree" title="Permalink to this headline">¶</a></h2>
+<p>JTree类构成了显示层次结构数据元素集合的基础。</p>
+<div class="section" id="id3">
+<h3>创建JTree<a class="headerlink" href="#id3" title="Permalink to this headline">¶</a></h3>
+<p>有七种不同的方法可以创建JTree，使用五种不同的方法来指定节点：</p>
+<div class="code java highlight-python"><pre>public JTree()
+JTree tree = new JTree();
+public JTree(Hashtable value)
+JTree tree = new JTree(System.getProperties());
+public JTree(Object value[])
+public static void main (String args[]) {
+  JTree tree = new JTree(args);
+  ...
+}
+public JTree(Vector value)
+Vector vector = new Vector();
+vector.add("One");
+vector.add("Two");
+JTree tree = new JTree(vector);
+public JTree(TreeModel value)
+JTree tree = new JTree(aTreeModel);
+public JTree(TreeNode value)
+JTree tree = new JTree(aTreeNode);
+public JTree(TreeNode value, boolean asksAllowsChildren)
+JTree tree = new JTree(aTreeNode, true);</pre>
+</div>
+<p>第一个构造函数是无参数版本。奇怪的是，他有一个带有一些节点的默认数据模型。通常情况下，我们应该在创建之后使用setModel(TreeModel
+newModel)来修改数据模型。</p>
+<p>接下来的三个构造函数看起来是彼此相关的。通过由键/值对构成的Hashtable进行的JTree创建使用键集合用于节点，则值用于孩子，而通过数组或是Vector创建的树使用元素作为节点。这似乎意味着树只有一层深，但是事实上，如果键或是元素本身位于Hashtable，数组或是Vector中时，树的深度可以是无限的。</p>
+<p>其余的三个构造函数使用JTree的自定义数据结构，我们将会在本章稍后进行解释。默认情况下，只有具有孩子的节点者是叶子节点。然而，树可以使用稍后才获得孩子的部分节点进行构建。最后的三个构造函数会使得当我们深度打开一个父节点时引起方法的调用，而不仅仅是父节点查找子节点。</p>
+<p>提示，如果Hashtable中键的值是另一个Hashtable，数组或是Vector，我们可以通过使用顶层的Hashtable作为构造函数的参数来创建多级树。</p>
+<p>正如我们前面所提到的，使用Hashtable，数组或是Vector作为构造函数中的参数，事实上，可以允许我们创建多层次树。然而这有两个小问题：根节点是不可见的，而且他自动有一个root数据元素。Hashtable，数组，或是Vector类型的其他节点的文本标签是toString()的结果。在这些树的实例中，默认文本并不是必须的。我们可以获得数组的Object类的toString()方法的结果或是包含Hashtable或是Vector中所有元素列表的标签。在Object数组的情况下，输出的结果也许是如[Ljava.lang.Object;&#64;fa8d8993的样子。这并不是我们希望显示给用户的内容。</p>
+<p>尽管我们并不能重写toString()方法（因为没有数组类来派生），我们可以派生Hashtable或是Vector来提供一个不同的toString()行为。为这个新类的构造函数提供一个名字可以允许我们提供当Hashtable或是Vector不是根节点时树中所用的文本标签。列表17-1中所示的类为Vector子类定义了这种行为。除了为构造函数提供名字，类同时添加了将Vector初始化为数组内容的构造函数。</p>
+<div class="code java highlight-python"><pre>package swingstudy.ch17;
+
+import java.util.Vector;
+
+public class NamedVector&lt;E&gt; extends Vector&lt;E&gt; {
+
+    String name;
+    NamedVector(String name) {
+        this.name = name;
+    }
+    NamedVector(String name, E elements[]) {
+        this.name = name;
+        for(int i=0, n=elements.length; i&lt;n; i++) {
+            add(elements[i]);
+        }
+    }
+    public String toString() {
+        return "["+name+"]";
+    }
+}</pre>
+</div>
+<p>图17-2显示了NamedVector类实战的示例。</p>
+<div class="figure">
+<img alt="Swing_17_2.png" src="_images/Swing_17_2.png" />
+<p class="caption">Swing_17_2.png</p>
+</div>
+<p>列表17-2显示了用来生成图17-2中示例的源码。</p>
+<div class="code java highlight-python"><pre>package swingstudy.ch17;
+
+import java.awt.BorderLayout;
+import java.awt.EventQueue;
+import java.util.Vector;
+
+import javax.swing.JFrame;
+import javax.swing.JTree;
+
+public class TreeArraySample {
+
+    /**
+     * @param args
+     */
+    public static void main(final String[] args) {
+        // TODO Auto-generated method stub
+
+        Runnable runner = new Runnable() {
+            public void run() {
+                JFrame frame = new JFrame("JTreeSample");
+                frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+
+                Vector&lt;String&gt; oneVector = new NamedVector&lt;String&gt;("One", args);
+                Vector&lt;String&gt; twoVector = new NamedVector&lt;String&gt;("Two", new String[] {"Mercury", "Venus", "Mars"});
+                Vector&lt;Object&gt; threeVector = new NamedVector&lt;Object&gt;("Three");
+                threeVector.add(System.getProperties());
+                threeVector.add(twoVector);
+                Object rootNodes[] = {oneVector, twoVector, threeVector};
+                Vector&lt;Object&gt; rootVector = new NamedVector&lt;Object&gt;("Root", rootNodes);
+                JTree tree =  new JTree(rootVector);
+                frame.add(tree, BorderLayout.CENTER);
+                frame.setSize(300, 300);
+                frame.setVisible(true);
+            }
+        };
+        EventQueue.invokeLater(runner);
+    }
+
+}</pre>
+</div>
+</div>
+<div class="section" id="id4">
+<h3>滚动树<a class="headerlink" href="#id4" title="Permalink to this headline">¶</a></h3>
+<p>如果我们创建并运行列表17-2中的程序，我们就会注意到一个小问题。当所有的父节点被展开时，树对于初始的屏幕尺寸显得过大。不仅是这样，而且我们不能看到位于树底部的节点。要解决这个问题，需要将JTree树的实例放在一个JScrollPane中，从而滚动面板可以管理树的滚动。类似于我们在第15章中所讨论的JTextArea，JTree类实现了JScrollable接口用于滚动支持。</p>
+<p>将列表17-2中的示例中的两行粗体代码替换为下面的三行代码可以将树放在一个滚动面板中。这会使得当树对于可用的显示空间过大时树会显示在一个可滚动的区域中。</p>
+<div class="code java highlight-python"><pre>// Change from
+JTree tree = new JTree(rootVector);
+frame.add(tree, BorderLayout.CENTER);
+// To
+JTree tree = new JTree(rootVector);
+JScrollPane scrollPane = new JScrollPane(tree);
+frame.add(scrollPane, BorderLayout.CENTER);</pre>
+</div>
+<p>除了使用JScrollPane用于滚动以外，我们可以在滚动区域中手动滚动可视化内容。使用public
+void scrollPathToVisible(TreePath path)与public void
+scrollRowToVisible(int
+row)方法可以将一个特定的树路径或是行移动到可视区域部分。节点的行标识了在当前节点以上到树的顶部的节点数目。这与树的层次不同，他是一个节点所具有的祖先节点（或父节点）的个数。图17-3也许会有助于我们理解这种区别。在左边的窗口中，soccer节点的位于第2层与第8行。当colors节点被关闭时，如右边的窗口所示，scoccer节点仍然位于第2层，但是却移动到第4行，因为blue，violet，red与yellow行不再可见。</p>
+<div class="figure">
+<img alt="Swing_17_3.png" src="_images/Swing_17_3.png" />
+<p class="caption">Swing_17_3.png</p>
+</div>
+</div>
+<div class="section" id="id5">
+<h3>JTree属性<a class="headerlink" href="#id5" title="Permalink to this headline">¶</a></h3>
+<p>表17-1列出了JTree的40个特定属性。当我们了解构成JTree的不同类时我们将会探讨这些属性。</p>
+<div class="figure">
+<img alt="Swing_table_17_1_1.png" src="_images/Swing_table_17_1_1.png" />
+<p class="caption">Swing_table_17_1_1.png</p>
+</div>
+<div class="figure">
+<img alt="Swing_table_17_1_2.png" src="_images/Swing_table_17_1_2.png" />
+<p class="caption">Swing_table_17_1_2.png</p>
+</div>
+<div class="figure">
+<img alt="Swing_table_17_1_3.png" src="_images/Swing_table_17_1_3.png" />
+<p class="caption">Swing_table_17_1_3.png</p>
+</div>
+<p>JTree的一些属性是彼此紧密相关的。例如，当rowHeight属性为正数时，他意味着每一行的节点是以固定的高度显示的，而不论树中节点的尺寸是多少。当rowHeight属性为负数时，cellRenderer属性决定rowHeight。所以，rowHeight的值决定了fixedRowHeight属性的设置。将rowHeight的值修改为例如12像素会导致fixedRowHeight属性的设置为true。</p>
+<p>largeModel属性设置是TreeUI的一个建议帮助其显示树。初始时，这个设置为false，因为树有许多的数据元素而我们并不希望用户界面组件缓存关于树的过多信息（例如节点渲染器数目）。对于较小的模型，缓存关于树的信息并不会需要较多的内存。</p>
+<p>lastSelectedPathComponent属性的当前设置是最后一个被选中的节点的内容。在任何时候，我们都可以询问树哪一个被选中。如果没有任何内容被选中，这个属性的值将会null。因为树支持多项选中，lastSelectedPathComponent的属性并没有必要返回所有被选中的节点。我们也可以使用anchorSelectionPath与leadSelectionPath属性来修改选中路径。</p>
+<p>三个选中行属性－leadSelectionRow，minSelectionRow与maxSelectionRow，是比较有趣的，因为他们这些行值会依据其他的父节点是打开还是关闭而变化。我们可以使用selectionRows属性来获取所有选中行索引的数组。然而，并没有办法将一个行号映射到树中的一个节点。相反，使用selectionPaths属性，他提供了一个TreePath元素数组。正如我们将要看到的，每一个TreePath包含被选中的节点以及路径上由根节点到选中节点的所有节点。</p>
+<p>有三个树的可视化相关的设置。我们可以通过设置visibleRowCount属性来设置显示树的合适行数。默认情况下，这个设置为20。只有当这个树位于JScrollPane或是其他的一些使用Scrollable接口的组件中时这个设置才可用。第二个可视化相关的属性与根节点是否可见有关。当树是由Hashtable，数组或是Vector构造函数创建时，根是不可见的。否则，根节点在初始时是可见的。修改rootVisible属性可以使得我们修改这一设置。其他的可视化相关的属性设置与根节点旁边的图标有关。默认情况下，在根层次并没有图标来显示树根打开或是关闭的状态。所有的非根节点总是有这个图标类型。要显示在根图标，将showsRootHandles属性设置为true。</p>
+<p>还有三个额外的面向选中的属性。toggleClickCount属性可以使得我们控制在一个父节点上多少次点击可以触发选中或是节点展开。默认设置为2。scrollsOnExpand属性会在当节点被展开从而有过多的子节点要显示时使得树滚动。默认情况下，这个设置为true。第三个属性，expandsSelectedPath，默认情况下为true，会使得节点的选中路径在编程选中时展开。然而，如果我们并不希望在编程选中时展开树，我们可以将其设置为false，并且将路径隐藏。</p>
+</div>
+<div class="section" id="id6">
+<h3>自定义JTree观感<a class="headerlink" href="#id6" title="Permalink to this headline">¶</a></h3>
+<p>每一个可安装的Swing观感都提供了一个不同的JTree外观以及默认的UIResoure值集合。图17-4显示了预安装的观感类型：Motif，Widnows与Ocean下的JTree容器外观。</p>
+<div class="figure">
+<img alt="Swing_17_4.png" src="_images/Swing_17_4.png" />
+<p class="caption">Swing_17_4.png</p>
+</div>
+<p>表17-2显示了JTree的可用的UIResource相关属性的集合。对于JTree组件，有43个不同的属性。</p>
+<div class="figure">
+<img alt="Swing_table_17_2_1.png" src="_images/Swing_table_17_2_1.png" />
+<p class="caption">Swing_table_17_2_1.png</p>
+</div>
+<div class="figure">
+<img alt="Swing_table_17_2_2.png" src="_images/Swing_table_17_2_2.png" />
+<p class="caption">Swing_table_17_2_2.png</p>
+</div>
+<div class="figure">
+<img alt="Swing_table_17_2_3.png" src="_images/Swing_table_17_2_3.png" />
+<p class="caption">Swing_table_17_2_3.png</p>
+</div>
+<p>在这些不同的JTree资源中，五个用于JTree中所显示的各种图标。要了解这五个图标是如何放置的，可以参考图17-5。如果我们只是希望修改树的图标（以及可能的颜色），我们所需要做的就是修改图标属性，如下面的代码行所示：</p>
+<div class="code java highlight-python"><pre>UIManager.put("Tree.openIcon", new DiamondIcon(Color.RED, false));</pre>
+</div>
+<div class="figure">
+<img alt="Swing_17_5.png" src="_images/Swing_17_5.png" />
+<p class="caption">Swing_17_5.png</p>
+</div>
+<p>Tree.has颜色属性的目的也许并不明显。这一颜色用于绘制连接节点的线。对于Metal观感以及Ocean主题，默认情况下，使用角度线连接节点。要允许这些线的绘制，我们必须设置JTree.lineStyle客户属性。这个属性并不是一个UIResource属性，而是一个通过JComponent的public
+final void putClientProperty(Object key, Object
+value)方法设置的客户属性。JTree.lineStyle属性具有下列的可用设置：</p>
+<ul class="simple">
+<li>None，用于不绘制连接节点的线</li>
+<li>Angled，Ocean的默认设置，用于以Tree.has颜色绘制连接节点的线</li>
+<li>Horizontal，用于以Tree.line颜色绘制第一层节点之间的水平线</li>
+</ul>
+<p>注意，JTree.lineStyle客户属性只为Metal观感所用。如果当前的观感类型并不是Metal，则该属性设置会被忽略。其他系统提供的观感类并不使用这个设置。</p>
+<p>对于客户属性，我们首先必须创建树，然后设置属性。客户属性是特定于树组件的，而且他并不为所有的树进行设置。所以，创建一个没有连接线的树可以使用下面的代码：</p>
+<div class="code java highlight-python"><pre>JTree tree = new JTree();
+tree.putClientProperty("JTree.lineStyle", "None");</pre>
+</div>
+<p>图17-6显示了这一结果。</p>
+<div class="figure">
+<img alt="Swing_17_6.png" src="_images/Swing_17_6.png" />
+<p class="caption">Swing_17_6.png</p>
+</div>
+<p>下面的代码在第一层节点之间生成水平线：</p>
+<div class="code java highlight-python"><pre>UIManager.put("Tree.line", Color.GREEN);
+JTree tree = new JTree();
+tree.putClientProperty("JTree.lineStyle", "Horizontal");</pre>
+</div>
+<p>图17-7显示水平线的样子。</p>
+<div class="figure">
+<img alt="Swing_17_7.png" src="_images/Swing_17_7.png" />
+<p class="caption">Swing_17_7.png</p>
+</div>
+</div>
+</div>
+<div class="section" id="treecellrenderer">
+<h2>TreeCellRenderer接口<a class="headerlink" href="#treecellrenderer" title="Permalink to this headline">¶</a></h2>
+<p>JTree中的每一个节点都有一个已安装的单元渲染器。渲染器负责绘制节点并且清晰的显示其状态。默认的渲染器是一个基本的JLabel，可以使得我们在一个节点内同时具有文本与图标。然而，任意的组件都可以作为节点渲染器。默认的渲染器显示一个代表节点状态的图标。</p>
+<p>注意，树单元渲染器仅是一个渲染器。假定，如果渲染器是一个JButton，他将是不可选择的，但是绘制可以看起来像是一个JButton。</p>
+<p>每一个节点渲染器的配置都是由TreeCellRenderer接口来定义的。任何实现了这个接口的类都可以作为我们JTree的渲染器。</p>
+<div class="code java highlight-python"><pre>public interface TreeCellRenderer {
+  public Component getTreeCellRendererComponent(JTree tree, Object value,
+    boolean selected, boolean expanded, boolean leaf, int row, boolean hasFocus);
+}</pre>
+</div>
+<p>当需要绘制树节点时，树会询问他所注册的TreeCellRenderer如何显示特定的节点。节点本身被作为value参数传递，从而渲染器可以访问其当前状态来确定如何渲染其状态。要修改已安装的渲染器，使用
+public void setCellRenderer(TreeCellRenderer renderer)。</p>
+<div class="section" id="defaulttreecellrenderer">
+<h3>DefaultTreeCellRenderer类<a class="headerlink" href="#defaulttreecellrenderer" title="Permalink to this headline">¶</a></h3>
+<p>DefaultTreeCellRenderer类作为默认的树单元渲染器。这个类是JLable类的一个子类，所以他支持例如显示工具提示文本或是特定于节点的弹出菜单的功能。他只有一个无参数的构造函数。</p>
+<p>当被JTree使用时，DefaultTreeCellRenderer使用各种默认图标（如前面的图17-5所示）来显示节点的当前状态与节点数据的文本表示。文本表示是通过树的每个节点的toString()方法获得的。</p>
+</div>
+<div class="section" id="id7">
+<h3>DefaultTreeCellRenderer属性<a class="headerlink" href="#id7" title="Permalink to this headline">¶</a></h3>
+<p>表17-3显示了DefaultTreeCellRenderer添加（或修改）的14个属性。因为默认的渲染器恰好是一个JLabel，我们也可以由其获得许多额外的属性。</p>
+<div class="figure">
+<img alt="Swing_table_17_3.png" src="_images/Swing_table_17_3.png" />
+<p class="caption">Swing_table_17_3.png</p>
+</div>
+<p>如果我们不想使用UIManager或是仅希望修改单个树的图标，字体或是颜色，我们并不需要创建一个自定义的树单元渲染器。相反，我们可以向树请求其渲染器，并且进行自定义来显示我们希望的图标，字体或是颜色。图17-8显示了一个使用修改渲染器的JTree。无需创建新的渲染器，已存在的默认渲染器使用下面的代码进行定制：</p>
+<div class="code java highlight-python"><pre>JTree tree = new JTree();
+DefaultTreeCellRenderer renderer = (DefaultTreeCellRenderer)tree.getCellRenderer();
+// Swap background colors
+Color backgroundSelection = renderer.getBackgroundSelectionColor();
+renderer.setBackgroundSelectionColor(renderer.getBackgroundNonSelectionColor());
+renderer.setBackgroundNonSelectionColor(backgroundSelection);
+// Swap text colors
+Color textSelection = renderer.getTextSelectionColor();
+renderer.setTextSelectionColor(renderer.getTextNonSelectionColor());
+renderer.setTextNonSelectionColor(textSelection);</pre>
+</div>
+<div class="figure">
+<img alt="Swing_17_8.png" src="_images/Swing_17_8.png" />
+<p class="caption">Swing_17_8.png</p>
+</div>
+<p>记住TreeUI缓存渲染器尺寸信息。如果渲染器的修改改变了渲染器的尺寸，缓存不会更新。为了解决这一问题，有必要通知树缓存已经无效。这样的通知就是修改rowHeight属性。只要当前rowHeight属性设置不为负数，TreeUI必须向渲染器查询其高度。所以，将这个值减少1具有使得缓存的渲染器尺寸信息无效的副作用，从而使得树为所有的渲染器使用相应的初始尺寸进行显示。将下面的代码添加到前面的示例中会演示这一效果。</p>
+<div class="code java highlight-python"><pre>renderer.setFont(new Font("Dialog", Font.BOLD | Font.ITALIC, 32));
+int rowHeight = tree.getRowHeight();
+if (rowHeight &lt;= 0) {
+  tree.setRowHeight(rowHeight - 1);
+}</pre>
+</div>
+<p>图17-9中左边的窗口显示了图17-8中所产生的额外作用。如查我们没有修改rowHeight属性来使得显示缓存无效，我们就会得到右边窗口所显示的效果。</p>
+<div class="figure">
+<img alt="Swing_17_9.png" src="_images/Swing_17_9.png" />
+<p class="caption">Swing_17_9.png</p>
+</div>
+</div>
+<div class="section" id="id8">
+<h3>创建自定义的渲染器<a class="headerlink" href="#id8" title="Permalink to this headline">¶</a></h3>
+<p>如果我们树中的节点由过于复杂的信息构成而不能在一个JLabel中进行文本显示时，我们可以创建我们自己的渲染器。作为一个示例，考虑这样一棵树，这棵树中的节点通过标题，作者，价格来描述一本书，如图17-10所示。在这种情况下，渲染器可以是一个容器，其中使用单独的组件显示每一部分。</p>
+<div class="figure">
+<img alt="Swing_17_10.png" src="_images/Swing_17_10.png" />
+<p class="caption">Swing_17_10.png</p>
+</div>
+<p>要描述这个示例中的第一本书，我们需要定义一个存储必须信息的类，如列表17-3所示。</p>
+<div class="code java highlight-python"><pre>package swingstudy.ch17;
+
+public class Book {
+
+    String title;
+    String authors;
+    float price;
+
+    public Book(String title, String authors, float price) {
+        this.title = title;
+        this.authors = authors;
+        this.price = price;
+    }
+
+    public String getTitle() {
+        return title;
+    }
+
+    public String getAuthors() {
+        return authors;
+    }
+
+    public float getPrice() {
+        return price;
+    }
+}</pre>
+</div>
+<p>要将一本书渲染为树中的一个节点，我们需要创建一个TreeCellRenderer实现。因为书是叶子节点，自定义的渲染器将会使用DefaultTreeCellRenderer来渲染所有的其他节点。渲染器的核心部分是getTreeCellRendererComponent()。如果这个方法所接收到的节点数据是Book类型，他会在不同的标签中存储相应的信息并且返回一个JPanel作为渲染器，并有相应的标签用于每本书的标题，作者与价格。否则，getTreeCellRendererComponent()方法返回默认渲染器。</p>
+<p>列表17-4包含这个自定义渲染器的源码。注意，他使用与树中其他节点相同的选择颜色，从而书节点不会显示在外。</p>
+<div class="code java highlight-python"><pre>package swingstudy.ch17;
+
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.GridLayout;
+
+import javax.swing.BorderFactory;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JTree;
+import javax.swing.tree.DefaultMutableTreeNode;
+import javax.swing.tree.DefaultTreeCellRenderer;
+import javax.swing.tree.TreeCellRenderer;
+
+public class BookCellRenderer implements TreeCellRenderer {
+
+    JLabel titleLabel;
+    JLabel authorsLabel;
+    JLabel priceLabel;
+    JPanel renderer;
+
+    DefaultTreeCellRenderer defaultRenderer = new DefaultTreeCellRenderer();
+
+    Color backgroundSelectionColor;
+    Color backgroundNonSelectionColor;
+
+    public BookCellRenderer() {
+        renderer = new JPanel(new GridLayout(0,1));
+        titleLabel =  new JLabel(" ");
+        titleLabel.setForeground(Color.BLUE);
+        renderer.add(titleLabel);
+        authorsLabel = new JLabel(" ");
+        authorsLabel.setForeground(Color.BLUE);
+        renderer.add(authorsLabel);
+        priceLabel =  new JLabel(" ");
+        priceLabel.setHorizontalAlignment(JLabel.RIGHT);
+        priceLabel.setForeground(Color.RED);
+        renderer.add(priceLabel);
+        renderer.setBorder(BorderFactory.createLineBorder(Color.BLACK));
+        backgroundSelectionColor = defaultRenderer.getBackgroundSelectionColor();
+        backgroundNonSelectionColor = defaultRenderer.getBackgroundNonSelectionColor();
+    }
+    @Override
+    public Component getTreeCellRendererComponent(JTree tree, Object value,
+            boolean selected, boolean expanded, boolean leaf, int row, boolean hasFocus) {
+        // TODO Auto-generated method stub
+        Component returnValue = null;
+        if((value != null) &amp;&amp; (value instanceof DefaultMutableTreeNode)) {
+            Object userObject = ((DefaultMutableTreeNode)value).getUserObject();
+            if(userObject instanceof Book) {
+                Book book = (Book)userObject;
+                titleLabel.setText(book.getTitle());
+                authorsLabel.setText(book.getAuthors());
+                priceLabel.setText(""+book.getPrice());
+                if(selected) {
+                    renderer.setBackground(backgroundSelectionColor);
+                }
+                else {
+                    renderer.setBackground(backgroundNonSelectionColor);
+                }
+                renderer.setEnabled(tree.isEnabled());
+                returnValue = renderer;
+            }
+        }
+        if(returnValue == null) {
+            returnValue = defaultRenderer.getTreeCellRendererComponent(tree, value, selected, expanded, leaf, row, hasFocus);
+        }
+        return returnValue;
+    }
+
+}</pre>
+</div>
+<p>提示，JLabel组件是使用由空格构成的初始文本标签创建的。使用非空的标签会为每一个组件指定一些维度。TreeUI缓存节点尺寸来改进性能。为标签指定初始尺寸可以保证缓存被正确初始化。</p>
+<p>最后一部分是测试程序，如列表17-5所示。其主体部分只是创建了一个Book对象数组。他重用了列表17-1中的NamedVector类来创建树分枝。用于修改树单元渲染器的代码以粗体显示。运行这个程序演示了自定义渲染器，如前面的图17-10所示。</p>
+<div class="code java highlight-python"><pre>package swingstudy.ch17;
+
+import java.awt.BorderLayout;
+import java.awt.EventQueue;
+import java.util.Vector;
+
+import javax.swing.JFrame;
+import javax.swing.JScrollPane;
+import javax.swing.JTree;
+import javax.swing.tree.TreeCellRenderer;
+
+public class BookTree {
+
+    /**
+     * @param args
+     */
+    public static void main(String[] args) {
+        // TODO Auto-generated method stub
+
+        Runnable runner = new Runnable() {
+            public void run() {
+                JFrame frame = new JFrame("Book Tree");
+                frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+
+                Book javaBooks[] = {
+                        new Book("Core Java 2", "Horstmann/Cornell", 49.99f),
+                        new Book("Effective Java", "Bloch", 34.99f),
+                        new Book("Java Collections", "Zukowski", 49.95f)
+                };
+
+                Book netBooks[] = {
+                        new Book("Beginning VB.NET 1.1 Databases", "Maharry", 49.99f),
+                        new Book("Beginning VB.NET Databases", "Willis", 39.99f)
+                };
+
+                Vector&lt;Book&gt; javaVector = new NamedVector&lt;Book&gt;("Java Books", javaBooks);
+                Vector&lt;Book&gt; netVector = new NamedVector&lt;Book&gt;(".NET Books", netBooks);
+                Object rootNodes[] = {javaVector, netVector};
+                Vector&lt;Object&gt; rootVector = new NamedVector&lt;Object&gt;("Root", rootNodes);
+                JTree tree = new JTree(rootVector);
+                TreeCellRenderer renderer = new BookCellRenderer();
+                tree.setCellRenderer(renderer);
+                JScrollPane scrollPane = new JScrollPane(tree);
+                frame.add(scrollPane, BorderLayout.CENTER);
+                frame.setSize(300, 300);
+                frame.setVisible(true);
+            }
+        };
+        EventQueue.invokeLater(runner);
+    }
+
+}</pre>
+</div>
+<p>注意，不要担心DefaultMutableTreeNode的细节。除非指定，每棵树的所有节点都是DefaultMutableTreeNode。放置在列表17-5中的Vector中的每一个数组元素定义了特定节点的数据。然后这个数据在存储在DefaultMutableTreeNode的userObject属性中。</p>
+</div>
+<div class="section" id="id9">
+<h3>使用树工具提示<a class="headerlink" href="#id9" title="Permalink to this headline">¶</a></h3>
+<p>如果我们希望树为节点显示工具提示，我们必须将组件注册到ToolTipManager。如果我们没有注册组件，渲染器就不会获得显示工具提示的机会。渲染器显示提示，而不是树显示提示，所以为树设置工具提示文本会被忽略。下面的代码显示了我们如何向ToolTipManager注册特定的树。</p>
+<p>ToolTipManager.sharedInstance().registerComponent(aTree);</p>
+<p>一旦我们通知ToolTipManager我们希望树显示工具提示文本，我们必须通知渲染器要显示什么文本。尽管我们可以使用下面的代码直接设置文本，这会导致所有节点的固定设置。</p>
+<div class="code java highlight-python"><pre>DefaultTreeCellRenderer renderer = (DefaultTreeCellRenderer)aTree.getCellRenderer();
+renderer.setToolTipText("Constant Tool Tip Text");</pre>
+</div>
+<p>除了提供固定的设置，另一种方法就是为渲染器提供一个工具提示字符串表格，从而渲染器可以在运行时决定要显示了工具提示文本的字符串。列表17-6中的渲染器就是依赖java.util.Dictionary实现（类似Hashtable）来存储节点到工具提示文本映射的示例。如果存在特定节点的提示，渲染器会将提示与其相关联。</p>
+<div class="code java highlight-python"><pre>package swingstudy.ch17;
+
+import java.awt.Component;
+import java.util.Dictionary;
+
+import javax.swing.JTree;
+import javax.swing.tree.DefaultMutableTreeNode;
+import javax.swing.tree.DefaultTreeCellRenderer;
+import javax.swing.tree.TreeCellRenderer;
+
+public class ToolTipTreeCellRenderer implements TreeCellRenderer {
+
+    DefaultTreeCellRenderer renderer = new DefaultTreeCellRenderer();
+    Dictionary tipTable;
+
+    public ToolTipTreeCellRenderer(Dictionary tipTable) {
+        this.tipTable = tipTable;
+    }
+
+    @Override
+    public Component getTreeCellRendererComponent(JTree tree, Object value,
+            boolean selected, boolean expanded, boolean leaf, int row, boolean hasFocus) {
+        // TODO Auto-generated method stub
+        renderer.getTreeCellRendererComponent(tree, value, selected, expanded, leaf, row, hasFocus);
+        if(value != null) {
+            Object tipKey;
+            if(value instanceof DefaultMutableTreeNode) {
+                tipKey = ((DefaultMutableTreeNode)value).getUserObject();
+            }
+            else {
+                tipKey = tree.convertValueToText(value, selected, expanded, leaf, row, hasFocus);
+            }
+            renderer.setToolTipText((String)tipTable.get(tipKey));
+        }
+        return renderer;
+    }
+
+}</pre>
+</div>
+<p>注意，列表17-6中的示例利用了JTree的public String
+convertValueToText(Object value, boolean selected, boolean expanded,
+boolean leaf, int row, boolean
+hasFocus)来将树节点的值转换为文本字符串。value参数通常是DefaultMutableTreeNode，我们将在本章稍后描述。当value参数不是DefaultMutableTreeNode时，使用convertValueToText()允许渲染器支持其他的树节点类型。</p>
+<p>使用新的ToolTipTreeCellRenderer类简单的创建了Properties列表，使用所必要节点的工具提示进行填充，然后将渲染器关联到树。图17-11显示了运行中的渲染器。</p>
+<div class="figure">
+<img alt="Swing_17_11.png" src="_images/Swing_17_11.png" />
+<p class="caption">Swing_17_11.png</p>
+</div>
+<p>用于生成图17-11中的屏幕完整代码显示在下面的列表17-7中。这棵树使用系统属性列表作为树节点。工具提示文本是特定属性的当前设置。当使用ToolTipTreeCellRenderer时，确保要使用ToolTipManager来注册树。</p>
+<div class="code java highlight-python"><pre>package swingstudy.ch17;
+
+import java.awt.BorderLayout;
+import java.awt.EventQueue;
+import java.util.Properties;
+
+import javax.swing.JFrame;
+import javax.swing.JScrollPane;
+import javax.swing.JTree;
+import javax.swing.ToolTipManager;
+import javax.swing.tree.TreeCellRenderer;
+
+public class TreeTips {
+
+    /**
+     * @param args
+     */
+    public static void main(String[] args) {
+        // TODO Auto-generated method stub
+
+        Runnable runner = new Runnable() {
+            public void run() {
+                JFrame frame = new JFrame("Tree Tips");
+                frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+
+                Properties props = System.getProperties();
+                JTree tree = new JTree(props);
+                ToolTipManager.sharedInstance().registerComponent(tree);
+                TreeCellRenderer renderer = new ToolTipTreeCellRenderer(props);
+                tree.setCellRenderer(renderer);
+                JScrollPane scrollPane =  new JScrollPane(tree);
+                frame.add(scrollPane, BorderLayout.CENTER);
+                frame.setSize(300, 150);
+                frame.setVisible(true);
+            }
+        };
+        EventQueue.invokeLater(runner);
+    }
+
+}</pre>
+</div>
+<p>尽管这个示例创建了一个新的树单元渲染器，其行为仅是自定义DefaultTreeCellRenderer的功能。无需我们亲自配置图标与文本，默认的渲染器可以为我们完成这些工作。然后添加工具提示文本。</p>
+</div>
+</div>
+<div class="section" id="id10">
+<h2>编辑树节点<a class="headerlink" href="#id10" title="Permalink to this headline">¶</a></h2>
+<p>除了支持单个的树单元渲染器，JTree组件还可以是可编辑的，从而以许用户修改树的节点的内容。默认情况下，树是只读的。要使得树成为可编辑的，只需要将editable属性设置修改为true即可：</p>
+<p>aTree.setEditable(true);</p>
+<p>默认情况下，编辑器是一个文本域。同时对由组合框或是复选框中选择也具有内建支持。如果我们喜欢，我们可以为树创建一个自定义的编辑器，就像我们可以创建一个自定义单元渲染器一样。</p>
+<p>注意，不幸的是，内建的复选框编辑器在表格中的表现要优于树中的表现，其中列标签是名字而值是单元。</p>
+<p>图17-12显示了一个使用默认编辑器的树。要打开编辑器，选择一个节点，然后双击。如果节点不是叶子节点，选择该节点同时会显示或隐藏其子节点。</p>
+<div class="figure">
+<img alt="Swing_17_12.png" src="_images/Swing_17_12.png" />
+<p class="caption">Swing_17_12.png</p>
+</div>
+<p>有一系列的类支持编辑树节点。许多是为JLabel组件所共享的，因为他们都支持可编辑单元。CellEditor接口形成了TreeCellEditor接口的基础。JTree的任何编辑器实现必须实现TreeCellEditor接口。DefaultCellEditor（其扩展了AbstractCellEditor）提供了一个这样的实现，而DefaultTreeCellEditor提供了另一个实现。下面我们详细探讨这些接口与类。</p>
+<div class="section" id="celleditor">
+<h3>CellEditor接口<a class="headerlink" href="#celleditor" title="Permalink to this headline">¶</a></h3>
+<p>CellEditor接口定义了JTree或JTable以及需要编辑器的第三方组件所用的编辑器的基础。除了定义如何管理CellEditorListener对象列表，接口描述了如何确定一个节点或是单元是否是可编辑的及编辑器在修改了其值以后其新值是什么。</p>
+<div class="code java highlight-python"><pre>public interface CellEditor {
+  // Properties
+  public Object getCellEditorValue();
+  // Listeners
+  public void addCellEditorListener(CellEditorListener l);
+  public void removeCellEditorListener(CellEditorListener l);
+  // Other methods
+  public void cancelCellEditing();
+  public boolean isCellEditable(EventObject event);
+  public boolean shouldSelectCell(EventObject event);
+  public boolean stopCellEditing();
+}</pre>
+</div>
+</div>
+<div class="section" id="treecelleditor">
+<h3>TreeCellEditor接口<a class="headerlink" href="#treecelleditor" title="Permalink to this headline">¶</a></h3>
+<p>TreeCellEditor接口的作用类似于TreeCellRenderer接口。然而，getXXXComponent()方法并没有分辨编辑器是否具有输入焦点的参数，因为在编辑器的情况下，他必须具有焦点。任何实现了TreeCellEditor接口的类都可以作为我们的JTree所用的编辑器。</p>
+<div class="code java highlight-python"><pre>public interface TreeCellEditor implements CellEditor {
+  public Component getTreeCellEditorComponent(JTree tree, Object value,
+    boolean isSelected, boolean expanded, boolean leaf, int row);
+}</pre>
+</div>
+</div>
+<div class="section" id="defaultcelleditor">
+<h3>DefaultCellEditor类<a class="headerlink" href="#defaultcelleditor" title="Permalink to this headline">¶</a></h3>
+<p>DefaultCellEditor类用作树节点与表格单元的编辑器。这个类可以使得我们很容易提供文本编辑器，组合框编辑器，或是复选框编辑器来修改节点或是单元的内容。</p>
+<p>下面将要描述DefaultTreeCellEditor类，使用这个类可以为自定义的文本域提供一个编辑器，维护基于TreeCellRenderer的相应节点类型图标。</p>
+<p><strong>创建DefaultCellEditor</strong></p>
+<p>当我们创建DefaultCellEditor实例时，我们提供JTextField，JComboBox或是JCheckBox来用作编辑器。</p>
+<div class="code java highlight-python"><pre>public DefaultCellEditor(JTextField editor)
+JTextField textField = new JTextField();
+TreeCellEditor editor = new DefaultCellEditor(textField);
+public DefaultCellEditor(JComboBox editor)
+public static void main (String args[]) {
+  JComboBox comboBox = new JComboBox(args);
+  TreeCellEditor editor = new DefaultCellEditor(comboBox);
+  ...
+}
+public DefaultCellEditor(JCheckBox editor)
+JCheckBox checkBox = new JCheckBox();
+TreeCellEditor editor = new DefaultCellEditor(checkBox);</pre>
+</div>
+<p>对于JTree，如果我们需要一个JTextField编辑器，我们应该使用DefaultTreeCellEditor。这个文本域将会共享相同的字体并且使用树的相应的编辑器边框。当JCheckBox被用作编辑器时，树的节点应该是一个Boolean值或是一个可以转换为Boolean的String。（如果我们不熟悉String到Boolean的转换，可以参考接收String的Boolean构造函数的Javadoc。）</p>
+<p>在创建了编辑器之后，我们使用类似的tree.setCellEditor(editor)来使用这个编辑器。并且不要忘记使用tree.setEditable(true)来使得树可编辑。例如，如果我们希望一个可编辑器的组合框作为我们的编辑器，下面的代码可以实现相应的目的：</p>
+<div class="code java highlight-python"><pre>JTree tree = new JTree(...);
+tree.setEditable(true);
+String elements[] = { "Root", "chartreuse", "rugby", "sushi"} ;
+JComboBox comboBox = new JComboBox(elements);
+comboBox.setEditable(true);
+TreeCellEditor editor = new DefaultCellEditor(comboBox);
+tree.setCellEditor(editor);</pre>
+</div>
+<p>上面的代码将会产生如图17-13所示的编辑basketball节点时的屏幕。注意，树并没有图标来标识正在被编辑的节点的类型。这可以通过DefaultTreeCellEditor类来修正。DefalutCellEditor最初是用于JTable的，而不是用于JTree。</p>
+<div class="figure">
+<img alt="Swing_17_13.png" src="_images/Swing_17_13.png" />
+<p class="caption">Swing_17_13.png</p>
+</div>
+<p>注意，当我们使用一个不可编辑的JComboBox作为单元编辑器时，如果选项集合不包括原始的代码设置，一旦节点的值发生变化，他就有可能回到原始的设置。</p>
+<p>要了解当使用DefaultCellEditor作为TreeCellEditor时，JCheckBox笨拙的外观，可以参看图17-14。</p>
+<div class="figure">
+<img alt="Swing_17_14.png" src="_images/Swing_17_14.png" />
+<p class="caption">Swing_17_14.png</p>
+</div>
+<p>图17-14使用下面的代码：</p>
+<div class="code java highlight-python"><pre>Object array[] =
+  {Boolean.TRUE, Boolean.FALSE, "Hello"}; // Hello will map to false
+JTree tree = new JTree(array);
+tree.setEditable(true);
+tree.setRootVisible(true);
+JCheckBox checkBox = new JCheckBox();
+TreeCellEditor editor = new DefaultCellEditor(checkBox);
+tree.setCellEditor(editor);</pre>
+</div>
+<p>JCheckBox编辑器的笨拙以及DefaultTreeCellEditor中自定义的文本域编辑器使得JComboBox成为我们可以由DefaultCellEditor中获得的唯一的TreeCellEditor。然而，也许我们仍然希望将组合框编辑器放在DefaultTreeCellEditor中来显示与图标紧邻的相应的类型图标。</p>
+<p><strong>DefaultCellEditor属性</strong></p>
+<p>DefaultCellEditor只有三个属性，如表17-4所示。编辑器可以是任意的AWT组件，而不仅仅是轻量级的Swing组件。记住，如果我们确实要选择使用一个重量级组件作为编辑器，我们就要承担混合重量级组件与轻量级组件的风险。如查我们在确定编辑器组件的当前设置是什么，我们可以请求cellEditorValue属性设置。</p>
+<div class="figure">
+<img alt="Swing_table_17_4.png" src="_images/Swing_table_17_4.png" />
+<p class="caption">Swing_table_17_4.png</p>
+</div>
+</div>
+<div class="section" id="defaulttreecelleditor">
+<h3>DefaultTreeCellEditor类<a class="headerlink" href="#defaulttreecelleditor" title="Permalink to this headline">¶</a></h3>
+<p>当我们使得树成为可编辑的，但是并没有向树关联编辑器时，JTree自动所用的TreeCellEditor就是DefaultTreeCellEditor。DefaultTreeCellEditor组合了TreeCellRenderer的图标与TreeCellEditor来返回一个组合的编辑器。</p>
+<p>编辑器所用的默认组件是JTextField。文本编辑器比较特殊，因为他会尝试将其高度限制为原始的单元渲染器并且使用树的字体，从而不会出现不合适的显示。编辑器使用两个公开的内联类来实现在这一目的：DefaultTreeCellEditor.EidtorContainer与DefaultTreeCellEditor.DefaultTextField。</p>
+<p>DefaultTreeCellEditor有两个构造函数。通常我们并不需要调用第一个构造函数，因为他是当确定节点为可编辑器的时由用户界面自动为我们创建的。然而，如果我们希望以某种方式自定义默认编辑器时，第一个构造函数则是必需的。</p>
+<div class="code java highlight-python"><pre>public DefaultTreeCellEditor(JTree tree, DefaultTreeCellRenderer renderer)
+JTree tree = new JTree(...);
+DefaultTreeCellRenderer renderer = (DefaultTreeCellRenderer)tree.getCellRenderer();
+TreeCellEditor editor = new DefaultTreeCellEditor(tree, renderer);
+public DefaultTreeCellEditor(JTree tree, DefaultTreeCellRenderer renderer,
+  TreeCellEditor editor)
+public static void main (String args[]) {
+  JTree tree = new JTree(...);
+  DefaultTreeCellRenderer renderer =
+    (DefaultTreeCellRenderer)tree.getCellRenderer();
+  JComboBox comboBox = new JComboBox(args);
+  TreeCellEditor comboEditor = new DefaultCellEditor(comboBox);
+  TreeCellEditor editor = new DefaultTreeCellEditor(tree, renderer, comboEditor);
+  ...
+}</pre>
+</div>
+</div>
+<div class="section" id="id11">
+<h3>为树创建合适的组合框编辑器<a class="headerlink" href="#id11" title="Permalink to this headline">¶</a></h3>
+<p>如图17-13所示，通过DefaultCellEditor使用JComboBox作为TreeCellEditor并不会在编辑器旁边放置合适的代码类型图标。如果我们希望显示图标，我们需要组合DefaultCellEditor与DefaultTreeCellEditor来获得一个同时具有图标与编辑器的编辑器。事实上他并没有听起来这样困难。他只涉及到两个额外的步骤：获得树的渲染器（由其获得图标），然后组合图标与编辑器从而获得一个新的编辑器。下面的代码演示了这一操作：</p>
+<div class="code java highlight-python"><pre>JTree tree = new JTree();
+tree.setEditable(true);
+DefaultTreeCellRenderer renderer = (DefaultTreeCellRenderer)tree.getCellRenderer();
+String elements[] = { "Root", "chartreuse", "rugby", "sushi"} ;
+JComboBox comboBox = new JComboBox(elements);
+comboBox.setEditable(true);
+TreeCellEditor comboEditor = new DefaultCellEditor(comboBox);
+TreeCellEditor editor = new DefaultTreeCellEditor(tree, renderer, comboEditor);
+tree.setCellEditor(editor);</pre>
+</div>
+<p>改进的输入如图17-15所示。</p>
+<div class="figure">
+<img alt="Swing_17_15.png" src="images/Swing_17_15.png" />
+<p class="caption">Swing_17_15.png</p>
+</div>
+</div>
+<div class="section" id="id12">
+<h3>只为叶节点创建编辑器<a class="headerlink" href="#id12" title="Permalink to this headline">¶</a></h3>
+<p>在某些情况下，我们希望只有叶子节点是可以编辑的。由getTreeCellEditorComponent()请求返回null等效于使得一个节点不可以编辑。不幸的是，这会使得用户界面类抛出NullPointerException。</p>
+<p>不能返回null，我们可以覆盖public boolean isCellEditable(EventObject
+object)方法的默认行为，他是CellEditor接口的一部分。如果原始的返回值为true，我们可以进行额外的检测以确定所选中的树的节点是否是叶子节点。树的节点实现了TreeNode接口（在本章稍后进行描述）。这个接口恰好具有方法public
+boolean
+isLeaf()，该方法可以为我们提供所寻求的答案。叶子节点的单元编辑器的类定义显示在列表17-8中。</p>
+<div class="code java highlight-python"><pre>package swingstudy.ch17;
+
+import java.util.EventObject;
+
+import javax.swing.JTree;
+import javax.swing.tree.DefaultTreeCellEditor;
+import javax.swing.tree.DefaultTreeCellRenderer;
+import javax.swing.tree.TreeCellEditor;
+import javax.swing.tree.TreeNode;
+
+public class LeafCellEditor extends DefaultTreeCellEditor {
+
+    public LeafCellEditor(JTree tree, DefaultTreeCellRenderer renderer) {
+        super(tree, renderer);
+    }
+
+    public LeafCellEditor(JTree tree, DefaultTreeCellRenderer renderer, TreeCellEditor editor) {
+        super(tree, renderer, editor);
+    }
+
+    public boolean isCellEditable(EventObject event) {
+        // Get initial setting
+        boolean returnValue = super.isCellEditable(event);
+        // If still possible, check if current tree nod is a leaf
+        if(returnValue) {
+            Object node = tree.getLastSelectedPathComponent();
+            if((node != null) &amp;&amp; (node instanceof TreeNode)) {
+                TreeNode treeNode = (TreeNode)node;
+                returnValue = treeNode.isLeaf();
+            }
+        }
+        return returnValue;
+    }
+}</pre>
+</div>
+<p>我们使用LeafCellEditor的方式类似于DefaultTreeCellRenderer。其构造函数要求JTree与DefaultTreeCellRenderer。另外，他支持一个额外的TreeCellEditor。如果没有提供，则JTextField会被用作编辑器。</p>
+<div class="code java highlight-python"><pre>JTree tree = new JTree();
+tree.setEditable(true);
+DefaultTreeCellRenderer renderer = (DefaultTreeCellRenderer)tree.getCellRenderer();
+TreeCellEditor editor = new LeafCellEditor(tree, renderer);
+tree.setCellEditor(editor);</pre>
+</div>
+</div>
+<div class="section" id="celleditorlistenerchangeevent">
+<h3>CellEditorListener接口与ChangeEvent类<a class="headerlink" href="#celleditorlistenerchangeevent" title="Permalink to this headline">¶</a></h3>
+<p>在探讨完整的TreeCellEditor创建之前，我们先来了解一下CellEditorListener接口定义。这个接口包含CellEditor所用的两个方法。</p>
+<div class="code java highlight-python"><pre>public interface CellEditorListener implements EventListener {
+  public void editingCanceled(ChangeEvent changeEvent);
+  public void editingStopped(ChangeEvent changeEvent);
+}</pre>
+</div>
+<p>编辑器调用所注册的监听器的editingCanceled()方法来通知节点值的编辑器已经退出。editingStopped()方法被调用来通知编辑会话的完成。</p>
+<p>通常情况下，并没有必要创建CellEditorListener。然而，当创建一个TreeCellEditor（或是任意的CellEditor），管理其监听器列表并且在需要的时候通知这些监听器是必需的。幸运的是，这是借助于AbstractCellEditor为我们进行自动管理的。</p>
+</div>
+<div class="section" id="id13">
+<h3>创建更好的复选框节点编辑器<a class="headerlink" href="#id13" title="Permalink to this headline">¶</a></h3>
+<p>当配合JTree使用时，使用DefaultCellEditor类所提供的JCheckBox编辑器并不是一个很好的选择。尽管编辑器可以被包装进DefaultTreeCellEditor来获得相应的树图标，我们不能在复选框内显示文本（也就是除了true或是false）。其他的文本字符串也可以显示在树中，但是一旦一个节点被编辑，被编辑器节点的文本标签只能是true或是false。</p>
+<p>要使得具有文本标签的可编辑复选框作为树的单元编辑器，我们必须自己创建。完整的过程涉及到创建三个类－用于树中每个节点的数据模型，渲染自定义数据结构的树单元渲染器以及实际的编辑器－外加一个将他们连接在一起的测试程序。</p>
+<p>注意，在这里创建的渲染器与编辑器只支持用于编辑叶子节点的类复选框数据。如果我们要支持非叶节点的复选框，我们需要移除检测叶节点的代码。</p>
+<p><strong>创建CheckBoxNode类</strong></p>
+<p>我们所要创建的第一个类用于处理树中叶节点的数据模型。我们可以使用与JCheckBox类相同的数据模型，但是这个数据模型包含我们并不需要额外的节点信息。我们所需要的信息仅是节点的被选中状态与其文本标签。列表17-9包含了这个类的基本定义，其中包含用于状态与标签的setter与getter方法。其他类的构建则没有这么容易。</p>
+<div class="code java highlight-python"><pre>package swingstudy.ch17;
+
+public class CheckBoxNode {
+
+    String text;
+    boolean selected;
+
+    public CheckBoxNode(String text, boolean selected) {
+        this.text = text;
+        this.selected = selected;
+    }
+
+    public boolean isSelected() {
+        return selected;
+    }
+
+    public void setSelected(boolean newValue) {
+        selected = newValue;
+    }
+
+    public String getText() {
+        return text;
+    }
+
+    public void setText(String newValue) {
+        text = newValue;
+    }
+
+    public String toString() {
+        return getClass().getName()+"["+text+"/"+selected+"]";
+    }
+}</pre>
+</div>
+<p><strong>创建CheckBoxNodeRenderer类</strong></p>
+<p>渲染器包含两部分。对于非叶节点，我们可以使用DefaultTreeCellRenderer，因为这些节点本来不是CheckBoxNode元素。对于CheckBoxNode类型的叶节点的渲染器，我们需要将数据结构映射为相应的渲染器。因为这些节点包含一个选中状态与文本标签，JCheckBox可以作为叶节点的很好渲染器。</p>
+<p>这两部分中比较容易解释的是非叶子节点的渲染器。在这个例子中，如通常一样，他简单的配置一个DefaultTreeCellRenderer；而并不做任何特殊的事情。</p>
+<p>叶子节点的渲染器需要更多的工作。在配置任何节点之前，我们需要使其看起来像是默认渲染哭喊。构造函数需要渲染器的观感所提供的必须的字体与各种颜色，从而保证两个渲染器看起来比较相似。</p>
+<p>树单元渲染器CheckBoxNodeRenderer类的定义显示在列表17-10中。</p>
+<div class="code java highlight-python"><pre>package swingstudy.ch17;
+
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.Font;
+
+import javax.swing.JCheckBox;
+import javax.swing.JTree;
+import javax.swing.UIManager;
+import javax.swing.tree.DefaultMutableTreeNode;
+import javax.swing.tree.DefaultTreeCellRenderer;
+import javax.swing.tree.TreeCellRenderer;
+
+public class CheckBoxNodeRenderer implements TreeCellRenderer {
+
+    private JCheckBox leafRenderer = new JCheckBox();
+    private DefaultTreeCellRenderer nonLeafRenderer = new DefaultTreeCellRenderer();
+    Color selectionBorderColor, selectionForeground, selectionBackground, textForeground, textBackground;
+
+    protected JCheckBox getLeafRenderer() {
+        return leafRenderer;
+    }
+
+    public CheckBoxNodeRenderer() {
+        Font fontValue;
+        fontValue = UIManager.getFont("Tree.font");
+        if(fontValue != null) {
+            leafRenderer.setFont(fontValue);
+        }
+        Boolean booleanValue = (Boolean)UIManager.get("Tree.drawsFocusBorderAroundIcon");
+        leafRenderer.setFocusPainted((booleanValue != null) &amp;&amp; (booleanValue.booleanValue()));
+
+        selectionBorderColor = UIManager.getColor("Tree.selectionBorderColor");
+        selectionForeground = UIManager.getColor("Tree.selectionForeground");
+        selectionBackground = UIManager.getColor("Tree.selectionBackground");
+        textForeground = UIManager.getColor("Tree.textForeground");
+        textBackground = UIManager.getColor("Tree.textBackground");
+    }
+
+    @Override
+    public Component getTreeCellRendererComponent(JTree tree, Object value,
+            boolean selected, boolean expanded, boolean leaf, int row, boolean hasFocus) {
+        // TODO Auto-generated method stub
+
+        Component returnValue;
+
+        if(leaf) {
+            String stringValue = tree.convertValueToText(value, selected, expanded, leaf, row, false);
+            leafRenderer.setText(stringValue);
+            leafRenderer.setSelected(false);
+
+            leafRenderer.setEnabled(tree.isEnabled());
+
+            if(selected) {
+                leafRenderer.setForeground(selectionForeground);
+                leafRenderer.setBackground(selectionBackground);
+            }
+            else {
+                leafRenderer.setForeground(textForeground);
+                leafRenderer.setBackground(textBackground);
+            }
+
+            if((value != null) &amp;&amp; (value instanceof DefaultMutableTreeNode)) {
+                Object userObject = ((DefaultMutableTreeNode)value).getUserObject();
+                if(userObject instanceof CheckBoxNode) {
+                    CheckBoxNode node = (CheckBoxNode)userObject;
+                    leafRenderer.setText(node.getText());
+                    leafRenderer.setSelected(node.isSelected());
+                }
+            }
+            returnValue = leafRenderer;
+        }
+        else {
+            returnValue = nonLeafRenderer.getTreeCellRendererComponent(tree, value, selected, expanded, leaf, row, hasFocus);
+        }
+        return returnValue;
+    }
+
+}</pre>
+</div>
+<p>注意，getLeafRenderer()方法是我们在编辑器中所需要的助手方法。</p>
+<p><strong>创建CheckBoxNodeEditor类</strong></p>
+<p>CheckBoxNodeEditor类是创建更好的复选框编辑器的最后一部分。他作为TreeCellEditor实现，允许我们支持其叶子节点数据是CheckBoxNode类型的树的编辑。TreeCellEditor接口是CellEditor实现的扩展，所以我们必须实现两个接口的方法。我们不能扩展DefaultCellEditor或是DefaultTreeCellEditor，因为他们会要求我们使用他们所提供的JCheckBox编辑器实现，而不是我们在这里所创建的新编辑器。然而，我们可以扩展AbstractCellEditor，并且添加必需的TreeCellEditor接口实现。AbstractCellEditor为我们管理CellEditorListener对象列表，并且具有依据停止或是关闭编辑来通知监听器列表的方法。</p>
+<p>因为编辑器承担渲染器的角色，我们需要使用前面的CheckBoxNodeRenderer来获得基本的渲染器外观。这将保证编辑器的外观与渲染器的外观类似。因为叶节点的渲染器是JCheckBox，这可以完美的使得我们可以修改节点状态。编辑器JCheckBox将会是活动的并且是可修改的，从而允许用户由选中状态修改为非选中状态，以及相反的操作。如果编辑器是标准的DefaultTreeCellRenderer，我们需要管理选中变化的创建。</p>
+<p>现在已经设置了类的层次结构，所要检测的第一个方法是CellEditor的public
+Object
+getCellEditorValue()方法。这个方法的目的就是将存储在节点编辑器的数据转换为存储在节点中的数据。用户界面会在他确定用户已经成功的修改了编辑器中的数据之后调用这个方法来获得编辑器的值。在这个方法中，每次我们需要创建一个新对象。否则，相同的代码会在树中出现多次，使得所有的节点与与最后一个编辑的节点的渲染器相同。要将编辑器转换为数据模型，需要向编辑器询问其当前标签与选中状态是什么，然后创建并返回新节点。</p>
+<div class="code java highlight-python"><pre>public Object getCellEditorValue() {
+  JCheckBox checkbox = renderer.getLeafRenderer();
+  CheckBoxNode checkBoxNode =
+    new CheckBoxNode(checkbox.getText(), checkbox.isSelected());
+  return checkBoxNode;
+}</pre>
+</div>
+<p>注意，直接访问树中的节点并更新并不是编辑器的工作。getCellEditorValue()方法会返回相应的节点对象，从而用户界面可以通知树的任何变化。</p>
+<p>如果我们要自己实现CellEditor接口，我们也需要自己管理CellEditorListener列表。我们需要使用addCellEditorListener()与removeCellEditorListener()方法管理列表，并且提供通知接口中每个方法的监听器列表的方法。但是，因为我们要派生AbstractCellEditor，我们并没有必要自己做这些事情。我们只需要知道为了在合适的时候通知监听器列表，该类提供了fireEditingCanceled()与fireEditingStopped()方法。</p>
+<p>下一个CellEditor方法，cancelCellEditing()，会在树中的一个新节点被选中时调用，表明前一个选中的编辑过程已经被停止，并且中间的更新已经中止。这个方法能够做任何事情，例如销毁编辑器所需要的中间对象。然而，这个方法应该做的就是调用fireEditingCanceled()；这可以保证所注册的CellEditorListener对象会得到关闭的通知。AbstractCellEditor会为我们完成这些工作。除非我们需要做一些临时操作，否则没有必要重写这一行为。</p>
+<p>CellEditor接口的stopCellEditing()方法返回boolean。这个方法被调用来检测当前节点的编辑是否可以停止。如果需要进行一些验证来确认编辑是否可以停止，我们需要在这里进行检测。对于这个例子中的CheckBoxNodeEditor，并没有验证检测的必要。所以，编辑总是可以停止
+，使得方法总是返回true。</p>
+<p>当我们希望编辑器停止编辑时，我们可以调用fireEditingStopped()方法。例如，如果编辑器是一个文本域，在文本域中按下Enter可以作为停止编辑的信号。在JCheckBox编辑器的例子中，选中可以作为停止编辑器的信号。如果没有调用fireEditingStopped()方法，树的数据模型就不会被更新。</p>
+<p>要在JCheckBox选中之后停止编辑，向其关联一个ItemListener。</p>
+<div class="code java highlight-python"><pre>ItemListener itemListener = new ItemListener() {
+  public void itemStateChanged(ItemEvent itemEvent) {
+    if (stopCellEditing()) {
+      fireEditingStopped();
+    }
+  }
+};
+editor.addItemListener(itemListener);</pre>
+</div>
+<p>我们要了解的CellEditor接口的下一个方法是public boolean
+isCellEditable(EventObject
+event)。这个方法返回一个boolean来表明事件源的节点是否是可编辑的。要确定某一事件是否发生在一个特定的节点上，我们需要一个到编辑器被使用的树的引用。我们可以将这一需要添加到编辑器的构造函数。</p>
+<p>要确定在事件过程中在某一个特定的位置上是哪一个节点，我们可以向树请求到事件位置的节点的路径。这个路径被作为TreePath对象返回，我们会在本章稍后进行探讨。树路径的最后一个组件就是事件发生的特定节点。这就是我们必须检测来确定他是否可编辑的节点。如果他是可编辑的，方法会返回true；如果是不可编辑的，则会返回false。在这里要创建的树的例子中，如果节点是叶节点则是可编辑的，并且他包含CheckBoxNode数据。</p>
+<div class="code java highlight-python"><pre>JTree tree;
+public CheckBoxNodeEditor(JTree tree) {
+  this.tree = tree;
+}
+public boolean isCellEditable(EventObject event) {
+  boolean returnValue = false;
+  if (event instanceof MouseEvent) {
+    MouseEvent mouseEvent = (MouseEvent)event;
+    TreePath path = tree.getPathForLocation(mouseEvent.getX(), mouseEvent.getY());
+    if (path != null) {
+      Object node = path.getLastPathComponent();
+      if ((node != null) &amp;&amp;  (node instanceof DefaultMutableTreeNode)) {
+        DefaultMutableTreeNode treeNode = (DefaultMutableTreeNode)node;
+        Object userObject = treeNode.getUserObject();
+        returnValue = ((treeNode.isLeaf()) &amp;&amp; (userObject instanceof CheckBoxNode));
+      }
+    }
+  }
+  return returnValue;
+}</pre>
+</div>
+<p>CellEditor接口的shouldSselectCell()方法允许我们决定一个节点是否是可选择的。对于这个例子中的编辑器，所有可编辑的单元都应被选中。然而，这个方法允许我们查看特定的节点以确定他是否是可选中的。默认情况下，AbstractCellEditor会为这个方法返回true。</p>
+<p>其他的方法，getTreeCellEditorComponent()来自于TreeCellEditor接口。我们需要一个到CheckBoxNodeRenderer的引用来获取并将其用作编辑器。除了仅是传递所有的参数以外还有两个小小的变化。编辑器应总是被选中并且具有输入焦点。这简单的强制两个参数总是为true。当节点被选中时，背景会被填充。当获得焦点时，在UIManager.get(&#8220;Tree.drawsFocusBorderAroundIcon&#8221;)返回true时会有边框环绕编辑器。</p>
+<div class="code java highlight-python"><pre>CheckBoxNodeRenderer renderer = new CheckBoxNodeRenderer();
+public Component getTreeCellEditorComponent(JTree tree, Object value,
+    boolean selected, boolean expanded, boolean leaf, int row) {
+  // Editor always selected / focused
+  return renderer.getTreeCellRendererComponent(tree, value, true, expanded, leaf,
+    row, true);
+}</pre>
+</div>
+<p>列表17-11将所有的内容组合在一起，构成了完整的CheckBoxNodeEditor类的源码。</p>
+<div class="code java highlight-python"><pre>package swingstudy.ch17;
+
+import java.awt.Component;
+import java.awt.event.ItemEvent;
+import java.awt.event.ItemListener;
+import java.awt.event.MouseEvent;
+import java.util.EventObject;
+
+import javax.swing.AbstractCellEditor;
+import javax.swing.JCheckBox;
+import javax.swing.JTree;
+import javax.swing.event.ChangeEvent;
+import javax.swing.tree.DefaultMutableTreeNode;
+import javax.swing.tree.TreeCellEditor;
+import javax.swing.tree.TreePath;
+
+public class CheckBoxNodeEditor extends AbstractCellEditor implements
+        TreeCellEditor {
+
+    CheckBoxNodeRenderer renderer = new CheckBoxNodeRenderer();
+
+    ChangeEvent changeEvent = null;
+
+    JTree tree;
+
+    public CheckBoxNodeEditor(JTree tree) {
+        this.tree = tree;
+    }
+    @Override
+    public Object getCellEditorValue() {
+        // TODO Auto-generated method stub
+        JCheckBox checkbox = renderer.getLeafRenderer();
+        CheckBoxNode checkBoxNode = new CheckBoxNode(checkbox.getText(), checkbox.isSelected());
+        return checkBoxNode;
+    }
+
+    public boolean isCellEditable(EventObject event) {
+        boolean returnValue = false;
+        if(event instanceof MouseEvent) {
+            MouseEvent mouseEvent = (MouseEvent)event;
+            TreePath path = tree.getPathForLocation(mouseEvent.getX(), mouseEvent.getY());
+            if(path != null) {
+                Object node = path.getLastPathComponent();
+                if((node != null ) &amp;&amp; (node instanceof DefaultMutableTreeNode)) {
+                    DefaultMutableTreeNode treeNode = (DefaultMutableTreeNode)node;
+                    Object userObject = treeNode.getUserObject();
+                    returnValue = ((treeNode.isLeaf()) &amp;&amp; (userObject instanceof CheckBoxNode));
+                }
+            }
+        }
+        return returnValue;
+    }
+    @Override
+    public Component getTreeCellEditorComponent(JTree tree, Object value,
+            boolean selected, boolean expanded, boolean leaf, int row) {
+        // TODO Auto-generated method stub
+        Component editor = renderer.getTreeCellRendererComponent(tree, value, true, expanded, leaf, row, true);
+
+        // Editor always selected / focused
+        ItemListener itemListener = new ItemListener() {
+            public void itemStateChanged(ItemEvent event) {
+                if(stopCellEditing()) {
+                    fireEditingStopped();
+                }
+            }
+        };
+
+        if(editor instanceof JCheckBox) {
+            ((JCheckBox)editor).addItemListener(itemListener);
+        }
+        return editor;
+    }
+
+}</pre>
+</div>
+<p>注意，在树节点中并没有对数据的直接修改。修改节点并不是编辑器的角色。编辑器仅是获得新节点值，并且使用getCellEditorValue()方法返回。</p>
+<p><strong>创建测试程序</strong></p>
+<p>列表17-12中的测试由创建CheckBoxNode元素的基础构成。除了创建树数据，树必须有渲染器以及与渲染器相关联的编辑器，并且是可编辑的。</p>
+<div class="code java highlight-python"><pre>package swingstudy.ch17;
+
+import java.awt.BorderLayout;
+import java.awt.EventQueue;
+import java.util.Vector;
+
+import javax.swing.JFrame;
+import javax.swing.JScrollPane;
+import javax.swing.JTree;
+
+public class CheckBoxNodeTreeSample {
+
+    /**
+     * @param args
+     */
+    public static void main(String[] args) {
+        // TODO Auto-generated method stub
+
+        Runnable runner = new Runnable() {
+            public void run() {
+                JFrame frame = new JFrame("CheckBox Tree");
+                frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+
+                CheckBoxNode accessibilityOptions[] = {
+                        new CheckBoxNode("Move System caret with focus/selection changes", false),
+                        new CheckBoxNode("Always exand alt text for images", true)
+                };
+
+                CheckBoxNode browsingOptions[] = {
+                    new CheckBoxNode("Notify when downloads complete", true),
+                    new CheckBoxNode("Disabel script debugging", true),
+                    new CheckBoxNode("Use AutoComplete", true),
+                    new CheckBoxNode("Browse in a new process", false)
+                };
+
+                Vector&lt;CheckBoxNode&gt; accessVector = new NamedVector&lt;CheckBoxNode&gt;("Accessibility", accessibilityOptions);
+                Vector&lt;CheckBoxNode&gt; browseVector = new NamedVector&lt;CheckBoxNode&gt;("Browsing", browsingOptions);
+
+                Object rootNodes[] = {accessVector, browseVector };
+                Vector&lt;Object&gt; rootVector = new NamedVector&lt;Object&gt;("Root", rootNodes);
+                JTree tree = new JTree(rootVector);
+
+                CheckBoxNodeRenderer renderer = new CheckBoxNodeRenderer();
+                tree.setCellRenderer(renderer);
+
+                tree.setCellEditor(new CheckBoxNodeEditor(tree));
+                tree.setEditable(true);
+
+                JScrollPane scrollPane = new JScrollPane(tree);
+                frame.add(scrollPane, BorderLayout.CENTER);
+                frame.setSize(300, 150);
+                frame.setVisible(true);
+            }
+        };
+        EventQueue.invokeLater(runner);
+    }
+
+}</pre>
+</div>
+<p>运行这个程序并且选择CheckBoxNode会打开编辑器。在编辑器被打开之后，再一次选择编辑器会使得树中节点的状态发生变化。编辑器会保持使能状态直到另一个不同的树节点被选中。图17-16显示了使用中的编辑器的示例。</p>
+<div class="figure">
+<img alt="Swing_17_16.png" src="_images/Swing_17_16.png" />
+<p class="caption">Swing_17_16.png</p>
+</div>
+</div>
+</div>
+<div class="section" id="id14">
+<h2>使用树节点<a class="headerlink" href="#id14" title="Permalink to this headline">¶</a></h2>
+<p>当我们创建一个JTree，树中任意位置的对象类型可以是任意的Object。并没有要求树的节点实现任何接口或是继承任何类。然而，Swing组件库提供一对接口与一类来处理树节点。树的默认数据模型，DefaultTreeModel，使用这些接口与类。然而，树数据类型接口，TreeModel，允许任意的数据类型做为树的节点。</p>
+<p>树的基本接口是TreeNode，他定义了描述只读，父子聚合关系的一系列方法。TreeNode的扩展是MutableTreeNode接口，这个接口允许我们编程实现连接节点并且在每一个节点存储信息。实现这两个接口的类是DefaultMutableTreeNode类。除了实现两个接口的方法以外，该类还提供了一个方法集合用于遍历树并且查询各种节点的状态。</p>
+<p>记住，尽管有这些节点对象可用，但是很多的工作仍然无需这些接口与类就可以完成，正如本章前面所示。</p>
+<div class="section" id="treenode">
+<h3>TreeNode接口<a class="headerlink" href="#treenode" title="Permalink to this headline">¶</a></h3>
+<p>TreeNode接口描述了树单独部分的一个可能定义。他为TreeNode的一个实现，DefaultTreeModel类，用来存储到描述一棵树层次数据的引用。这个接口可以使得我们确定当前节点的父节点是哪一个节点，以及获取关于节点集合的信息。当父节点为null时，此节点就是树的根。</p>
+<div class="code java highlight-python"><pre>public interface TreeNode {
+  // Properties
+  public boolean getAllowsChildren();
+  public int getChildCount();
+  public boolean isLeaf();
+  public TreeNode getParent();
+  // Other methods
+  public Enumeration children();
+  public TreeNode getChildAt(int childIndex);
+  public int getIndex(TreeNode node);
+}</pre>
+</div>
+<p>注意，通常情况下，只有非叶节点允许有子节点。然而，安全限制也许会限制非叶子节点具有子节点，或者是至少限制子节点的显示。想像一个目录树，其中我们并没有某个特定目录的读取权限。尽管该目录并不是叶子节点，他也不能有子节点，因为我们并没有查找其子节点的权限。</p>
+</div>
+<div class="section" id="mutabletreenode">
+<h3>MutableTreeNode接口<a class="headerlink" href="#mutabletreenode" title="Permalink to this headline">¶</a></h3>
+<p>尽管TreeNode接口允许我们获取关于树节点层次结构的信息，但是他并不允许我们创建这个层次结构。TreeNode只是提供我们访问只读树层次结构的能力。另一方面，MutableTreeNode接口允许我们创建这个层次并且在树中的特定节点存储信息。</p>
+<div class="code java highlight-python"><pre>public interface MutableTreeNode implements TreeNode {
+  // Properties
+  public void setParent(MutableTreeNode newParent);
+  public void setUserObject(Object object);
+  // Other methods
+  public void insert(MutableTreeNode child, int index);
+  public void remove(MutableTreeNode node);
+  public void remove(int index);
+  public void removeFromParent();
+}</pre>
+</div>
+<p>当创建树节点的层次结构时，我们可以创建子节点并将其添加到父节点或是创建父节点并且添加子节点。要将一个节点关联到你节点，我们使用setParent()方法设置其父节点。使用insert()方法可以使得我们将子节点添加到父节点。insert()方法的参数包含一个索引参数。索引表示子节点集合中的位置。索引是由零开始的，所以索引为零将会把节点添加为树的第一个子节点。将节点添加到为最后一个子节点，而不是第一个，需要我们使用getChildCount()方法查询节点有多少个子节点，然后加1：</p>
+<p>mutableTreeNode.insert(childMutableTreeNode,
+mutableTreeNode.getChildCount()+1);</p>
+<p>至少对于下面将要描述了DefaultMutableTreeNode类来说，setParent()将节点设置子节点的父节点，尽管他并没有子节点作为父节点的一个孩子。换句话说，我们不要自己调用setParent()方法；调用insert()方法，而这个方法会相应的设置父节点。</p>
+<p>注意，insert()方法不允许循环祖先，其中子节点被添加为父节点的祖先节点。如果这样做，就会抛出IllegalArgumentException。</p>
+</div>
+<div class="section" id="defaultmutabletreenode">
+<h3>DefaultMutableTreeNode类<a class="headerlink" href="#defaultmutabletreenode" title="Permalink to this headline">¶</a></h3>
+<p>DefaultMutableTreeNode类提供了MutableTreeNode接口的实现（其实现了TreeNode接口）。当我们由一个Hashtable，数组或是Vector构造函数创建树时，JTree会自动将节点创建为DefaultMutableTreeNode类型集合。另一方面，如果我们希望自己创建节点，我们需要为我们树中的每一个节点创建一个DefaultMutableTreeNode的类型实例。</p>
+<p><strong>创建DefaultMutableTreeNode</strong></p>
+<p>有三个构造函数可以用来创建DefaultMutableTreeNode实例：</p>
+<div class="code java highlight-python"><pre>public DefaultMutableTreeNode()
+DefaultMutableTreeNode node = new DefaultMutableTreeNode();
+public DefaultMutableTreeNode(Object userObject)
+DefaultMutableTreeNode node = new DefaultMutableTreeNode("Node");
+public DefaultMutableTreeNode(Object userObject, boolean allowsChildren)
+DefaultMutableTreeNode node = new DefaultMutableTreeNode("Node", false);</pre>
+</div>
+<p>存储在每一个节点中的信息被称之为用户对象。当没有通过构造函数进行指定时，用户对象为null。另外，我们可以指定一个节点是否允许具有子节点。</p>
+<p><strong>构建DefaultMutableTreeNode层次</strong></p>
+<p>构建DefaultMutableTreeNode类型的节点层次需要创建一个DefaultMutableTreeNode类型的实例，为其孩子创建节点，然后连接他们。在使用DefaultMutableTreeNode直接创建层次之前，首先我们来看一下如何使用新的NamedVector类来创建四个节点的树：一个根节点以及三个叶节点。</p>
+<div class="code java highlight-python"><pre>Vector vector = new NamedVector("Root", new String[]{ "Mercury", "Venus", "Mars"} );
+JTree tree = new JTree(vector);</pre>
+</div>
+<p>当JTree获得一个Vector作为其构造函数参数时，树为根节点创建一个DefaultMutableTreeNode，然后为Vector中的每个元素创建一个，使得每一个元素节点成为根节点的子节点。不幸的是，根节点的数据并不是我们所指定的Root，而是没有显示的root。</p>
+<p>相反，如果我们希望使用DefaultMutableTreeNode来手动创建一个棵树的节点，或者是我们希望显示根节点，则需要更多的一些代码行，如下所示：</p>
+<div class="code java highlight-python"><pre>DefaultMutableTreeNode root = new DefaultMutableTreeNode("Root");
+DefaultMutableTreeNode mercury = new DefaultMutableTreeNode("Mercury");
+root.insert(mercury, 0);
+DefaultMutableTreeNode venus = new DefaultMutableTreeNode("Venus");
+root.insert(venus, 1);
+DefaultMutableTreeNode mars = new DefaultMutableTreeNode("Mars");
+root.insert(mars, 2);
+JTree tree = new JTree(root);</pre>
+</div>
+<p>除了使用MutableTreeNode中的insert()方法来将一个节点关联到父节点，DefaultMutableTreeNode还有一个add()方法可以自动的将子节点添加到尾部，而不是需要提供索引。</p>
+<div class="code java highlight-python"><pre>DefaultMutableTreeNode root = new DefaultMutableTreeNode("Root");
+DefaultMutableTreeNode mercury = new DefaultMutableTreeNode("Mercury");
+root.add(mercury);
+DefaultMutableTreeNode venus = new DefaultMutableTreeNode("Venus");
+root.add(venus);
+DefaultMutableTreeNode mars = new DefaultMutableTreeNode("Mars");
+root.add(mars);
+JTree tree = new JTree(root);</pre>
+</div>
+<p>前面的两个代码块都可以创建如图17-17所示的树。</p>
+<div class="figure">
+<img alt="Swing_17_17.png" src="_images/Swing_17_17.png" />
+<p class="caption">Swing_17_17.png</p>
+</div>
+<p>如果我们并不需要根节点并且希望我们使用NamedVector作为树根节点的行为，我们可以使用下面的代码来实现：</p>
+<div class="code java highlight-python"><pre>String elements[] = { "Mercury", "Venus", "Mars"} ;
+JTree tree = new JTree(elements);</pre>
+</div>
+<p><strong>DefaultMutableTreeNode属性</strong></p>
+<p>如表17-5所示，DefaultMutableTreeNode有22个属性。大多数的属性都是只读的，使得我们可以确定关于树节点位置与关系的信息。userObject属性包含特定节点的数据，该节点是在节点被创建时提供给DefaultMutableTreeNode的节点。userObjectPath属性包含一个用户对象数组，由根（索引0）到当前节点（可以为根）。</p>
+<div class="figure">
+<img alt="Swing_table_17_5_1.png" src="_images/Swing_table_17_5_1.png" />
+<p class="caption">Swing_table_17_5_1.png</p>
+</div>
+<div class="figure">
+<img alt="Swing_table_17_5_2.png" src="_images/Swing_table_17_5_2.png" />
+<p class="caption">Swing_table_17_5_2.png</p>
+</div>
+<p><strong>查询节点关系</strong></p>
+<p>DefaultMutableTreeNode类提供了若干方法来确定两个节点之间的关系。另外，我们可以使用下面的方法来确定两个节点是否共享相同的父节点：</p>
+<ul class="simple">
+<li>isNodeAncestor(TreeNode
+aNode)：如果aNode是当前节点划当前节点的父节点则返回true。这会迭代检测getParent()方法直到aNode或遇到null为止。</li>
+<li>isNodeChild(Tree aNode)：如果当前节点为aNode的父节点则返回true。</li>
+<li>isNodeDescendant(DefaultMutableTreeNode
+aNode)：如果当前节点为aNode或是aNode的祖先节点时返回true。</li>
+<li>isNodeRelated(DefaultMutableTreeNode
+aNode)：如果当前节点与aNode共享相同的根节点则返回true。</li>
+<li>isNodeSibling(TreeNode
+aNode)：如果两个节点共享相同的父节点则返回true。</li>
+</ul>
+<p>每个方法都返回一个boolean值，表明节点之间的关系是否存在。</p>
+<p>如果两个节点相关，我们可以请求树的根查找共享的祖先节点。然而，这个祖先节点也许并不是树中最近的祖先节点。如果一个普通的节点位于树中的较低层次，我们可以使用public
+TreeNode getSharedAncestor(DefaultMutableTreeNode
+aNode)方法来获得其较近祖先节点。如果由于两个节点不在同一棵树中而不存在，则会返回null。</p>
+</div>
+<div class="section" id="id15">
+<h3>遍历树<a class="headerlink" href="#id15" title="Permalink to this headline">¶</a></h3>
+<p>TreeNode接口与DefaultMutableTreeNode类提供了若干遍历特定节点以下所有节点的方法。给定一个特定的TreeNode，我们可以通过每个节点的children()方法遍历到每一个子孙节点，包括初始节点。给定一个特定的DefaultMutableTreeNode，我们可以通过getNextNode()与getPreviousNode()方法查找所有的子孙节点直到没有额外的节点为止。下面的代码片段演示了在给定一个起始节点的情况下使用TreeNode的children()方示来遍历整个树。</p>
+<div class="code java highlight-python"><pre>public void printDescendants(TreeNode root) {
+  System.out.println(root);
+  Enumeration children = root.children();
+  if (children != null) {
+    while(children.hasMoreElements()) {
+      printDescendants((TreeNode)children.nextElement());
+    }
+  }
+}</pre>
+</div>
+<p>尽管TreeNode的DefaultMutableTreeNode实现允许我们通过getNextNode()与getPreviousNode()方法来遍历树，但是这些方法效率低下，是应该避免使用的。相反，使用DefaultMutableTreeNode的特殊方法来生成节点所有子节点的Enumeration。在了解特定的方法之前，图17-18显示了一个要遍历的简单树。</p>
+<div class="figure">
+<img alt="Swing_17_18.png" src="_images/Swing_17_18.png" />
+<p class="caption">Swing_17_18.png</p>
+</div>
+<p>图17-18有助于我们理解DefaultMutableTreeNode的三个特殊方法。这些方法允许我们使用下面的三种方法之五来遍历树，这些方法中的每一个都是public并且返回一个Enumeration：</p>
+<ul class="simple">
+<li>preOrderEnumeration()：返回节点的Enumeration，类似于printDescendants()方法。Enumeration中的第一个节点是节点本身。接下来的节点是节点的第一个子节点，然后是第一个子节点的第一个子节点，依次类推。一旦发现没有子节点的叶子节点，其父节点的下一个子节点会被放入Enumeration中，并且其子节点会被添加到相应的列表中，直到没有节点。由图17-18中的树根开始，遍历将会得到以下列顺序出现的节点的Enumeration：root,
+New York, Mets, yankess, Rangers, Footabll, Ginats, Jets, Bills,
+Boston, Red Sox, Celtics, Bruins, Denver, Rockies, Avalanche,
+Broncos。</li>
+<li>depthFirstEnumeration()与postOrderEnumeration()：返回一个与preOrderEnumeration()行为相反的Enumeration。与首先包含当前节点然后添加子节点不同，这些方法首先添加子节点然后将当前节点添加到Enumeration。对于图17-18中的树，这会生成下列顺序的Enumeration：Mets，Yankees，Rangers，Giants，Jets，Bills，Football，New
+York，Red
+Sox，Celtics，Bruins，Boston，Rockies，Avalanche，Broncos，Denver，root。</li>
+<li>breadthFirstEnumeration()：返回一个按层添加的节点的Enumeration。对于图17-18中的树，Enumeration的顺序如下：root，New
+York，Boston，Denver，Mets，Yankees，Rangers，Football，Red
+Sox，Celtics，Bruins，Rockies，Avalanche，Broncos，Giants，Jets，Bills。</li>
+</ul>
+<p>但是还有一个问题：我们如何获得起始节点？当然，第一个节点可以被选为用户动作的结果，或者是我们可以向TreeModel查询根节点。我们稍后就会探讨TreeModel，但是下面显示了获取根节点的源码。因为TreeNode是唯一可以在树中进行排序的对象可能类型，TreeModel的getRoot()方法会返回一个对象。</p>
+<div class="code java highlight-python"><pre>TreeModel model = tree.getModel();
+Object rootObject = model.getRoot();
+if ((rootObject != null) &amp;&amp; (rootObject instanceof DefaultMutableTreeNode)) {
+  DefaultMutableTreeNode root = (DefaultMutableTreeNode)rootObject;
+  ...
+}</pre>
+</div>
+</div>
+<div class="section" id="jtree-dynamicutiltreenodes">
+<h3>JTree.DynamicUtilTreeNodes类<a class="headerlink" href="#jtree-dynamicutiltreenodes" title="Permalink to this headline">¶</a></h3>
+<p>JTree包含一个内联类，JTree.DynamicUtilTreeNode，树使用这个类来为我们的对创建节点。DynamicUtilTreeNode是DefaultMutableTreeNode的一个子类，该类只有在我们需要时才会创建子节点。当我们展开父节点或者是我们在树中遍历时会需要子节点。尽管我们通常并没有直接使用这个类，我们也许会发现他的用处。为了进行演示，下面的示例使用Hashtable来为树创建节点。在树的根部并没有可见的节点（使用root的userObject属性设置），根节点有一个Root属性。</p>
+<div class="code java highlight-python"><pre>DefaultMutableTreeNode root = new DefaultMutableTreeNode("Root");
+Hashtable hashtable = new Hashtable();
+hashtable.put ("One", args);
+hashtable.put ("Two", new String[]{"Mercury", "Venus", "Mars"});
+Hashtable innerHashtable = new Hashtable();
+Properties props = System.getProperties();
+innerHashtable.put (props, props);
+innerHashtable.put ("Two", new String[]{"Mercury", "Venus", "Mars"});
+hashtable.put ("Three", innerHashtable);
+JTree.DynamicUtilTreeNode.createChildren(root, hashtable);
+JTree tree = new JTree(root);</pre>
+</div>
+<p>上面所列的代码创建了一个与图17-2中的TreeArraySample程序相同的树节点。然而，树中第一层次的结点顺序不同。这是因为在这个示例中节点位于Hashtable中，而不是如TreeArraySample一样位于Vector中。第一层次的树元素是以Hashtable返回的Enumeration的顺序被添加的，而不是按着添加到Vector中的顺序。</p>
+<div class="figure">
+<img alt="Swing_17_19.png" src="_images/Swing_17_19.png" />
+<p class="caption">Swing_17_19.png</p>
+</div>
+</div>
+</div>
+<div class="section" id="treemodel">
+<h2>TreeModel接口<a class="headerlink" href="#treemodel" title="Permalink to this headline">¶</a></h2>
+<p>TreeModel接口描述了基本的JTree数据模型结构。他描述了父子聚合关系，允许任何的对象成为父节点或是子节点。树有一个根节点，而所有其他的节点都是这个节点的后代。除了返回关于不同节点的信息以外，模型要求实现类管理TreeModelListener对象列表，从而当模型中的节点发生变化时可以得到通知。其他的方法，valueForPathChanged()，用来提供修改特定位置节点内容的方法。</p>
+<div class="code java highlight-python"><pre>public interface TreeModel {
+  // Properties
+  public Object getRoot();
+  // Listeners
+  public void addTreeModelListener(TreeModelListener l);
+  public void removeTreeModelListener(TreeModelListener l);
+  // Instance methods
+  public Object getChild(Object parent, int index);
+  public int getChildCount(Object parent);
+  public int getIndexOfChild(Object parent, Object child);
+  public boolean isLeaf(Object node);
+  public void valueForPathChanged(TreePath path, Object newValue);
+}</pre>
+</div>
+<div class="section" id="defaulttreemodel">
+<h3>DefaultTreeModel类<a class="headerlink" href="#defaulttreemodel" title="Permalink to this headline">¶</a></h3>
+<p>JTree自动创建一个DefaultTreeModel实例来存储其数据模型。DefaultTreeModel类提供了一个在每个节点上使用TreeNode实现的TreeModel接口的实现。</p>
+<p>除了实现TreeModel接口的方法并且管理TreeModelListener对象的列表以外，DefaultTreeModel类还添加了一些有用的方法：</p>
+<ul class="simple">
+<li>public void insertNodeInto(MutableTreeNode child, MutableParentNode
+parent, index int)：将子节点添加到父节点的子节点集合中的索引位置。</li>
+<li>public void removeNodeFromParent(MutableTreeNode
+node)：使得节点由树中移除。</li>
+<li>public void nodeChanged(TreeNode node)：通知模型节点已经发生变化。</li>
+<li>public void nodesChanged(TreeNode node, int
+childIndices[])：通知模型节点的子节点已经发生变化。</li>
+<li>public void nodeStructureChanged(TreeNode
+node)：如果节点及子节点已经发生变化则通知模型。</li>
+<li>public void nodesWereInserted(TreeNode node, int
+childIndices[])：通知模型节点作为树节点的子节点被插入。</li>
+<li>public void nodesWereRemoved(TreeNode node, int childIndices[],
+Object
+removedChildren[])：通知模型子节点已经被由树中移除并且在方法调用中包含节点作为参数。</li>
+<li>public void reload()/public void reload(TreeNode
+node)：通知模型节点已经发生了复杂的修改并且由根节点以下或是特定节点以下的模型应重新载入。</li>
+</ul>
+<p>第一对方法用于直接由树中添加或是移除节点。其他的方法用于当树节点被修改时通知树模型。如果我们不使用前两个方法的一个由树模型中插入或是移除节点，则我们要负责调用第二个集合中的方法。</p>
+</div>
+<div class="section" id="treemodellistenertreemodelevent">
+<h3>TreeModelListener接口与TreeModelEvent类<a class="headerlink" href="#treemodellistenertreemodelevent" title="Permalink to this headline">¶</a></h3>
+<p>TreeModel使用TreeModelListener来报告模型的变化。当TreeModel发送一个TreeModelEvent，所注册的监听器就会得到通知。接口包括当节点被插入，移除或是修改时的通知方法，以及当这些操作中的一个或是全部依次完成时的捕获方法。</p>
+<div class="code java highlight-python"><pre>public interface TreeModelListener implements EventListener {
+  public void treeNodesChanged(TreeModelEvent treeModelEvent);
+  public void treeNodesInserted(TreeModelEvent treeModelEvent);
+  public void treeNodesRemoved(TreeModelEvent treeModelEvent);
+  public void treeStructureChanged(TreeModelEvent treeModelEvent);
+}</pre>
+</div>
+</div>
+</div>
+<div class="section" id="treeselectionmodel">
+<h2>TreeSelectionModel接口<a class="headerlink" href="#treeselectionmodel" title="Permalink to this headline">¶</a></h2>
+<p>除了所有的树支持用于排序节点的数据模型，用于显示节点的渲染器，以及用于编辑的编辑器以外，还有一个名为TreeSelectionModel的用于树元素选取操作的数据模型。TreeSelectionModel接口包含用来描述到选定节点的选定路径集合的方法。每一个路径存储在TreePath中，其中包含由根对象到选定节点的树节点的路径。我们会在稍后探讨TreePath类。</p>
+<div class="code java highlight-python"><pre>public interface TreeSelectionModel {
+  // Constants
+  public final static int CONTIGUOUS_TREE_SELECTION;
+  public final static int DISCONTIGUOUS_TREE_SELECTION;
+  public final static int SINGLE_TREE_SELECTION;
+  // Properties
+  public TreePath getLeadSelectionPath();
+  public int getLeadSelectionRow();
+  public int getMaxSelectionRow();
+  public int getMinSelectionRow();
+  public RowMapper getRowMapper();
+  public void setRowMapper(RowMapper newMapper);
+  public int getSelectionCount();
+  public boolean isSelectionEmpty();
+  public int getSelectionMode();
+  public void setSelectionMode(int mode);
+  public TreePath getSelectionPath();
+  public void setSelectionPath(TreePath path);
+  public TreePath[] getSelectionPaths();
+  public void setSelectionPaths(TreePath paths[]);
+  public int[] getSelectionRows();
+  // Listeners
+  public void addPropertyChangeListener(PropertyChangeListener listener);
+  public void removePropertyChangeListener(PropertyChangeListener listener);
+  public void addTreeSelectionListener(TreeSelectionListener listener);
+  public void removeTreeSelectionListener(TreeSelectionListener listener);
+  // Other methods
+  public void addSelectionPath(TreePath path);
+  public void addSelectionPaths(TreePath paths[]);
+  public void clearSelection();
+  public boolean isPathSelected(TreePath path);
+  public boolean isRowSelected(int row);
+  public void removeSelectionPath(TreePath path);
+  public void removeSelectionPaths(TreePath paths[]);
+  public void resetRowSelection();
+}</pre>
+</div>
+<p>TreeSelectiomModel接口支持三种选择模式，每一种模型由一个类常量指定：CONTIGUOUS_TREE_SELECTION,
+DISCONTIGUOUS_TREE_SELECTION或是SINGLE_TREE_SELECTION。当选择模式是CONTIGUOUS_TREE_SELECTION时，只有彼此相连的节点才会被同时选中。DISCONTIGUOUS_TREE_SELECTION模式意味着并没有同时选中的限制。而另一种选择模式，SIGNLE_TREE_SELECTION，每次只能选中一个节点。如果我们不希望任何内容被选中，可以使用null设置。这会使用受保护的JTree.EmptySelectionModel类。</p>
+<p>注意，用于选择多个节点的按键是特定于观感类型的。尝试使用Ctrl或中Shift键组合来选择多个节点。</p>
+<p>除了修改选择模式以外，其他的方法允许我们监视选择牟属性。有些这些方法会使用行数，而有时这些方法会使用TreePath对象。选择模型使用RowMapper来为我们将行映射到路径。抽象的AbstractLayoutCache类提供了一个RowMapper接口的基本实现，并且由FixedHeightLayoutCache与VariableHeightLayoutCache类进行特例化。我们并不需要访问或是修改RowMapper或是其实现。要将行映射到路径（或是将路径映射到行），我们仅需要请求树即可。</p>
+<div class="section" id="defaulttreeselectionmodel">
+<h3>DefaultTreeSelectionModel类<a class="headerlink" href="#defaulttreeselectionmodel" title="Permalink to this headline">¶</a></h3>
+<p>DefaultTreeSelectionModel类提供了TreeSelectionModel接口的实现，这个实现初始时使用DISCONTIGUOUS_TREE_SELECTION模式并且支持所有三种选择模式。这个类引入了一些自己的方法用来获取监听器列表；其他的方法仅是实现了所有的TreeSelectionModel接口方法，包括访问表17-6中所列的11个属性的方法。另外，DefaultTreeSelectionModel重写了Object的clone()方法，从而可以Cloneable。</p>
+<div class="figure">
+<img alt="Swing_table_17_6.png" src="_images/Swing_table_17_6.png" />
+<p class="caption">Swing_table_17_6.png</p>
+</div>
+<p>使用TreeSelectionModel的主要原因在于修改模型的选择模式。例如，下面的两行代码将模式修改为单选模式：</p>
+<div class="code java highlight-python"><pre>TreeSelectionModel selectionModel = tree.getSelectionModel();
+selectionModel.setSelectionMode(TreeSelectionModel.SINGLE_TREE_SELECTION);</pre>
+</div>
+<p>如果我们对找出选定路径感兴趣，我们可以直接请求JTree。我们并不需要由模型获取选定路径。</p>
+</div>
+<div class="section" id="treeselectionlistenertreeselectionevent">
+<h3>TreeSelectionListener接口与TreeSelectionEvent类<a class="headerlink" href="#treeselectionlistenertreeselectionevent" title="Permalink to this headline">¶</a></h3>
+<p>当树中的选定节点集合变化时，就会生成一个TreeSelectionEvent并且TreeSelectionModel所注册的TreeSelectionListener对象会得到通知。TreeSelectionListener可以注册到JTree或是直接注册到TreeSelectionModel。该接口定义如下：</p>
+<div class="code java highlight-python"><pre>public interface TreeSelectionListener implements EventListener {
+  public void valueChanged(TreeSelectionEvent treeSelectionEvent);
+}</pre>
+</div>
+</div>
+<div class="section" id="treepath">
+<h3>TreePath类<a class="headerlink" href="#treepath" title="Permalink to this headline">¶</a></h3>
+<p>我们要探讨的最后一个类就是TreePath。在本章前面的例子中我们已经多次使用这个类。他描述了一个由根节点到另一个节点映射路径的只读节点集合，这里的根可以是一个子树的根也可以是整棵树的根。尽管有两个构造函数可以用来创建TreePath对象，我们通常仅其作为方法的返回值进行处理。我们也可以通过使用public
+TreePath pathByAddingChild(Object
+child)方法向已存在的TreePath添加元素来创建新的路径。</p>
+<p>TreePath可以作为是一个Object数组，其中数组的第一个元素是树的根，而最后一个元素被最后的路径组件。在这两者之间是连接他们的组件。通常情况下，数组的元素是TreeNode类型。然而，因为TreeModel支持任意类型的对象，TreePath的path属性被定义为Object节点数组。表17-7列出了四个TreePath属性。</p>
+<div class="figure">
+<img alt="Swing_table_17_7.png" src="_images/Swing_table_17_7.png" />
+<p class="caption">Swing_table_17_7.png</p>
+</div>
+<p>为了更好的理解TreePath，我们重用图17-18所示的树遍历示例，如图17-20所示。</p>
+<div class="figure">
+<img alt="Swing_17_20.png" src="images/Swing_17_20.png" />
+<p class="caption">Swing_17_20.png</p>
+</div>
+</div>
+</div>
+<div class="section" id="additional-expansion-events">
+<h2>Additional Expansion Events<a class="headerlink" href="#additional-expansion-events" title="Permalink to this headline">¶</a></h2>
+<p>还有两个可以注册到JTree监听器需要探讨：一个TreeExpansionListner与一个TreeWillExapndListener。</p>
+<div class="section" id="treeexpansionalistenertreeexpansionevent">
+<h3>TreeExpansionaListener接口与TreeExpansionEvent类<a class="headerlink" href="#treeexpansionalistenertreeexpansionevent" title="Permalink to this headline">¶</a></h3>
+<p>如果我们对确定一个树节点何时展开与折叠，我们可以向树注册一个TreeExpansionListner。在父节点被展开或是折叠之后所注册的监听器就会得到通知。</p>
+<div class="code java highlight-python"><pre>public interface TreeExpansionListener implements EventListener {
+  public void treeCollapse(TreeExpansionEvent treeExpansionEvent);
+  public void treeExpand(TreeExpansionEvent treeExpansionEvent);
+}</pre>
+</div>
+<p>每一个方法都有一个TreeExpansionEvent作为其参数。TreeExapnsionEvent类只有一个用于获取到展开或是折叠节点路径的方法：public
+TreePath getPath()。</p>
+</div>
+<div class="section" id="treewillexpandlistenerexpandvetoexception">
+<h3>TreeWillExpandListener接口与ExpandVetoException类<a class="headerlink" href="#treewillexpandlistenerexpandvetoexception" title="Permalink to this headline">¶</a></h3>
+<p>JTree支持TreeWillExpandListener的注册，其定义如下：</p>
+<div class="code java highlight-python"><pre>public interface TreeWillExpandListener implements EventListener {
+  public void treeWillCollapse(TreeExpansionEvent treeExpansionEvent)
+    throws ExpandVetoException;
+  public void treeWillExpand(TreeExpansionEvent treeExpansionEvent)
+    throws ExpandVetoException;
+}</pre>
+</div>
+<p>这两个方法签名类似于TreeExpansionListener，并且他们都抛出ExpandVetoException。在父节点展开或是折叠之前所注册的监听器会得到通知。如果监听器不希望展开或是折叠发生，监听器可以抛出异常拒绝请求，阻止节点打开或是关闭。</p>
+<p>为了演示TreeWillExpandListneer，下面的代码不会允许sports节点在默认的数据模型中展开或是colors节点折叠。</p>
+<div class="code java highlight-python"><pre>TreeWillExpandListener treeWillExpandListener = new TreeWillExpandListener() {
+  public void treeWillCollapse(TreeExpansionEvent treeExpansionEvent)
+      throws ExpandVetoException {
+    TreePath path = treeExpansionEvent.getPath();
+    DefaultMutableTreeNode node =
+      (DefaultMutableTreeNode)path.getLastPathComponent();
+    String data = node.getUserObject().toString();
+    if (data.equals("colors")) {
+      throw new ExpandVetoException(treeExpansionEvent);
+    }
+  }
+  public void treeWillExpand(TreeExpansionEvent treeExpansionEvent)
+      throws ExpandVetoException {
+    TreePath path = treeExpansionEvent.getPath();
+    DefaultMutableTreeNode node =
+      (DefaultMutableTreeNode)path.getLastPathComponent();
+    String data = node.getUserObject().toString();
+    if (data.equals("sports")) {
+      throw new ExpandVetoException(treeExpansionEvent);
+    }
+  }
+};</pre>
+</div>
+<p>不要忘记使用类似下面的代码将监听器注册到树中：</p>
+<div class="code java highlight-python"><div class="highlight"><pre><span class="n">tree</span><span class="o">.</span><span class="n">addTreeWillExpandListener</span><span class="p">(</span><span class="n">treeWillExpandListener</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="id16">
+<h2>小结<a class="headerlink" href="#id16" title="Permalink to this headline">¶</a></h2>
+<p>在本章中，我们了解了与JTree组件使用相关的多个类。我们了解了使用TreeCellRenderer接口与DefaultTreeCellRenderer实现的树节点渲染。我们深入了使用TreeCellEditor接口，DefaultCellEditor与DefaultTreeCellEditor实现的树节点编辑。</p>
+<p>在审视了如何显示与编辑树之后，我们了解了用于手动创建树对象的TreeNode接口，MutableTreeNode接口，与DefaultMutableTreeNode类。我们探讨了用于存储树数据模型的的TreeModel接口与DefaultTreeModel实现，以及用于存储树选择模型的TreeSelectionModel接口与DefaultTreeSelectionModel实现。</p>
+<p>另外，我们了解了用于各种树类的事件相关类以及用于描述节点连接路径的TreePath。</p>
+<p>在第18章，我们将会探讨javax.swing.table包及其用于JTable组件的多个类。</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">树</a><ul>
+<li><a class="reference internal" href="#id2">树简介</a></li>
+<li><a class="reference internal" href="#jtree">JTree类</a><ul>
+<li><a class="reference internal" href="#id3">创建JTree</a></li>
+<li><a class="reference internal" href="#id4">滚动树</a></li>
+<li><a class="reference internal" href="#id5">JTree属性</a></li>
+<li><a class="reference internal" href="#id6">自定义JTree观感</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#treecellrenderer">TreeCellRenderer接口</a><ul>
+<li><a class="reference internal" href="#defaulttreecellrenderer">DefaultTreeCellRenderer类</a></li>
+<li><a class="reference internal" href="#id7">DefaultTreeCellRenderer属性</a></li>
+<li><a class="reference internal" href="#id8">创建自定义的渲染器</a></li>
+<li><a class="reference internal" href="#id9">使用树工具提示</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#id10">编辑树节点</a><ul>
+<li><a class="reference internal" href="#celleditor">CellEditor接口</a></li>
+<li><a class="reference internal" href="#treecelleditor">TreeCellEditor接口</a></li>
+<li><a class="reference internal" href="#defaultcelleditor">DefaultCellEditor类</a></li>
+<li><a class="reference internal" href="#defaulttreecelleditor">DefaultTreeCellEditor类</a></li>
+<li><a class="reference internal" href="#id11">为树创建合适的组合框编辑器</a></li>
+<li><a class="reference internal" href="#id12">只为叶节点创建编辑器</a></li>
+<li><a class="reference internal" href="#celleditorlistenerchangeevent">CellEditorListener接口与ChangeEvent类</a></li>
+<li><a class="reference internal" href="#id13">创建更好的复选框节点编辑器</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#id14">使用树节点</a><ul>
+<li><a class="reference internal" href="#treenode">TreeNode接口</a></li>
+<li><a class="reference internal" href="#mutabletreenode">MutableTreeNode接口</a></li>
+<li><a class="reference internal" href="#defaultmutabletreenode">DefaultMutableTreeNode类</a></li>
+<li><a class="reference internal" href="#id15">遍历树</a></li>
+<li><a class="reference internal" href="#jtree-dynamicutiltreenodes">JTree.DynamicUtilTreeNodes类</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#treemodel">TreeModel接口</a><ul>
+<li><a class="reference internal" href="#defaulttreemodel">DefaultTreeModel类</a></li>
+<li><a class="reference internal" href="#treemodellistenertreemodelevent">TreeModelListener接口与TreeModelEvent类</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#treeselectionmodel">TreeSelectionModel接口</a><ul>
+<li><a class="reference internal" href="#defaulttreeselectionmodel">DefaultTreeSelectionModel类</a></li>
+<li><a class="reference internal" href="#treeselectionlistenertreeselectionevent">TreeSelectionListener接口与TreeSelectionEvent类</a></li>
+<li><a class="reference internal" href="#treepath">TreePath类</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#additional-expansion-events">Additional Expansion Events</a><ul>
+<li><a class="reference internal" href="#treeexpansionalistenertreeexpansionevent">TreeExpansionaListener接口与TreeExpansionEvent类</a></li>
+<li><a class="reference internal" href="#treewillexpandlistenerexpandvetoexception">TreeWillExpandListener接口与ExpandVetoException类</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#id16">小结</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="ch16.html"
+                        title="previous chapter">高级文本功能</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="ch18.html"
+                        title="next chapter">Tables</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/ch17.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="ch18.html" title="Tables"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="ch16.html" title="高级文本功能"
+             >previous</a> |</li>
+        <li><a href="index.html">The Definitive Guide to Java Swing Third Edtion 0.01 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2014, mylxiaoyi.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2b3.
+    </div>
+  </body>
+</html>

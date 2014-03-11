@@ -1,0 +1,762 @@
+Undo框架
+========
+
+在第20章中，我们通过探讨可插拨的观感体系结构支持了解了如何自定义基于Swing的程序。在本章中，我们将会探讨由作为Swing包一部分的JFC所提供的Undo框架。
+
+Sun的Swing包包含一个支持我们程序中撤销操作支持的实用程序。他允许我们支持修改我们数据状态的撤销与重做操作。尽管这个框架是Swing包层次结构的一部分，他却可以用在任意的程序中，而不仅是基于组件的程序。
+
+使用Undo框架
+------------
+
+Undo框架位于javax.swing.undo包中，包含五个类，两个接口以及两个异常。要支持Undo框架，在javax.swing.event包中还有一个相关的癌与事件。在其顶部是UndoableEdit接口。这个接口构成了用于封装使用Command设计模式可以撤销或是重做的操作。
+
+可撤销命令的根实现类是AbstractUndoableEdit类。不要叫这个类名迷惑我们，他并不是抽象的。根命令的子命令是CompundEdit与StateEdit命令类。
+
+CompoundEdit类可以使得我们组合多个可撤销的操作，其中一些可撤销的操作则是存储状态变化的StateEdit对象。Swing文本组件会在他们的内容发生变化时创建DefaultDocumentEvent命令。这个命令是CompundEdit的子类，同时也是AbstractDocument的内联类。另一个封装的命令是UndoManager，他是CompundEdit的子类。
+
+UndoManager通过承担UndoableEditListener的角色并且响应UndoableEditEvent的创建来管理可编辑对象上的编辑操作。当UndoableEdit不可撤销时，则会抛出CannotUndoException。另外，当一个UndoableEdit不可以重做时，则会抛出CannotRedoException。
+
+如查我们希望创建支持撤销与重做操作的对象，对象需要实现StateEditable接口，并且他们可以使用UndoableEditSupport类来帮助管理UndoableEdit对象的列表。
+
+在深入单个Undo框架的片段细节之前，我们先来了解一下如何在Swing文本组件中使用Undo框架。如果这些就是我们所需要的，我们就不需要理解其他的工作了。
+
+配合Swing文本组件使用Undo框架
+-----------------------------
+
+Swing文本组件已经支持了必须的撤销与重做功能。我们并不需要使用UndoManager来进行管理并且通知管理器何时撤销/重做。
+
+作为一个示例，考虑一个包含一个JTextArea与两个用于撤销与重做的工具栏按钮，如图21-1所示。
+
+.. figure:: images/Swing_21_1.png
+   :alt: Swing_21_1.png
+
+   Swing\_21\_1.png
+要使得图21-1中的JTextArea支持撤销操作，我们必须将一个UndoableEditListener关联到组件的Document。我们需要做的就是将UndoManager作为我们的监听器。首先，我们创建管理器，然后关联。
+
+.. code:: java
+
+    UndoManager manager = new UndoManager();
+    textArea.getDocument().addUndoableEditListener(manager);
+
+一旦管理器被关联到JTextArea的文档，他就会监听文本域内容的所有变化。因为每一个Swing文本组件都有一个Document数据模型，我们可以直接将UndoManager与这些组件的文档相关联。
+
+在将管理器关联到文本组件之后，我们必须提供一些方法来通知管理器撤销或是重做某一操作。通常这是通过菜单选择或是工具栏按钮选择来实现的。在图21-1中，这是借助于JToolBar上的按钮来实现的，而另一个按钮用于实现重做。对于Undo按钮，我们希望管理撤销一个操作。所以，按钮的ActionListener应该调用UndoManager的public
+void undo()方法。Redo按钮的ActionListener应该调用管理器的public void
+redo()方法。undo()方法与redo()方法都会抛出必须处理的异常。
+
+因为Undo与Redo按钮所必须的功能对于所用的管理器都是相同的，我们将会在列表21-1中包含一个助手类UndoManagerHelper来为我们创建Action对象。这些对象可以为JMenuBar，JToolBar，或是其他可以使用ActionListener响应用于处理撤销与重做操作的组件所用。我们必须向助手类请求Action，然后将Action关联到相应的组件。例如，下面的五行代码将会获取前面所创建的UndoManager，并且为JToolBar添加必要的按钮：
+
+.. code:: java
+
+    JToolBar toolbar = new JToolBar();
+    JButton undoButton = new JButton(UndoManagerHelper.getUndoAction(manager));
+    toolbar.add(undoButton);
+    JButton redoButton = new JButton(UndoManagerHelper.getRedoAction(manager));
+    toolbar.add(redoButton);
+
+使用Swing文本组件的撤销功能就是如此简单。UndoManagerHelper类的定义显示在列表21-1中。如果我们不喜欢默认的按钮标签（显示在图21-1中），还有一些支持自定义的其他方法。另外，如果在撤销或是重做过程中抛出异常，则会弹出一个警告信息。警告信息与弹出容器标题也是可以自定义的。
+
+.. code:: java
+
+
+    package swingstudy.ch21;
+
+    import java.awt.Component;
+    import java.awt.event.ActionEvent;
+
+    import javax.swing.AbstractAction;
+    import javax.swing.Action;
+    import javax.swing.JOptionPane;
+    import javax.swing.UIManager;
+    import javax.swing.undo.CannotRedoException;
+    import javax.swing.undo.CannotUndoException;
+    import javax.swing.undo.UndoManager;
+
+    public class UndoManagerHelper {
+
+        public static Action getUndoAction(UndoManager manager, String label) {
+            return new UndoAction(manager, label);
+        }
+        
+        public static Action getUndoAction(UndoManager manager) {
+            return new UndoAction(manager, (String)UIManager.get("AbstractUndoableEdit.undoText"));
+        }
+        
+        public static Action getRedoAction(UndoManager manager, String label) {
+            return new RedoAction(manager, label);
+        }
+        
+        public static Action getRedoAction(UndoManager manager) {
+            return new RedoAction(manager, (String)UIManager.get("AbstractUndoableEdit.redoText"));
+        }
+        
+        private abstract static class UndoRedoAction extends AbstractAction {
+            UndoManager undoManager = new UndoManager();
+            String errorMessage = "Cannot undo";
+            String errorTitle = "Undo Problem";
+            
+            protected UndoRedoAction(UndoManager manager, String name) {
+                super(name);
+                undoManager = manager;
+            }
+            
+            public void setErrorMessage(String newValue) {
+                errorMessage = newValue;
+            }
+            
+            public void setErrorTitle(String newValue) {
+                errorTitle = newValue;
+            }
+            
+            protected void showMessage(Object source) {
+                if (source instanceof Component) {
+                    JOptionPane.showMessageDialog((Component)source, errorMessage, errorTitle, JOptionPane.WARNING_MESSAGE);
+                }
+                else {
+                    System.err.println(errorMessage);
+                }
+            }
+        }
+        
+        public static class UndoAction extends UndoRedoAction {
+            public UndoAction(UndoManager manager, String name) {
+                super(manager, name);
+                setErrorMessage("Cannot undo");
+                setErrorTitle("Undo Problem");
+            }
+            
+            public void actionPerformed(ActionEvent event) {
+                try {
+                    undoManager.undo();
+                }
+                catch(CannotUndoException cannotUndoException) {
+                    showMessage(event.getSource());
+                }
+            }
+        }
+        
+        public static class RedoAction extends UndoRedoAction {
+            public RedoAction(UndoManager manager, String name) {
+                super(manager, name);
+                setErrorMessage("Cannot redo");
+                setErrorTitle("Redo Problem");
+            }
+            
+            public void actionPerformed(ActionEvent event) {
+                try {
+                    undoManager.redo();
+                }
+                catch(CannotRedoException cannotRedoException) {
+                    showMessage(event.getSource());
+                }
+            }
+        }
+    }
+
+图21-1中所示示例的其余源代码显示在列表21-2中。借助于新创建的UndoManagerHelper类，在Swing文本组件中使用Undo框架的最大困难已经得到了极大的简化。
+
+.. code:: java
+
+
+    package swingstudy.ch21;
+
+    import java.awt.BorderLayout;
+    import java.awt.EventQueue;
+
+    import javax.swing.JButton;
+    import javax.swing.JFrame;
+    import javax.swing.JScrollPane;
+    import javax.swing.JTextArea;
+    import javax.swing.JToolBar;
+    import javax.swing.undo.UndoManager;
+
+    public class UndoSample {
+
+        /**
+         * @param args
+         */
+        public static void main(String[] args) {
+            // TODO Auto-generated method stub
+
+            Runnable runner = new Runnable() {
+                public void run() {
+                    JFrame frame = new JFrame("Undo Sample");
+                    frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+                    JTextArea textArea = new JTextArea();
+                    JScrollPane scrollPane = new JScrollPane(textArea);
+                    
+                    UndoManager manager = new UndoManager();
+                    textArea.getDocument().addUndoableEditListener(manager);
+                    
+                    JToolBar toolbar = new JToolBar();
+                    JButton undoButton = new JButton(UndoManagerHelper.getUndoAction(manager));
+                    toolbar.add(undoButton);
+                    JButton redoButton = new JButton(UndoManagerHelper.getRedoAction(manager));
+                    toolbar.add(redoButton);
+                    
+                    frame.add(toolbar, BorderLayout.NORTH);
+                    frame.add(scrollPane, BorderLayout.CENTER);
+                    frame.setSize(300, 150);
+                    frame.setVisible(true);
+                }
+            };
+            EventQueue.invokeLater(runner);
+        }
+
+    }
+
+如果我们只是希望在Swing文本组件中使用Undo框架，我们可以跳过本章的其他部分。相反，如果我们希望在其他的组件中使用该框架，或者甚至是在非组件设置中使用，我们需要阅读其余部分，我们将会在余下的内容中深入探讨框架的内部实现。
+
+Command设计模式
+---------------
+
+javax.swing.undo包的撤销功能实现了Command设计模式，其包括如下组成部分：
+
+-  Command：UndoableEdit接口定义了用于执行撤销与重做操作的接口。
+-  Concrete
+   Command：AbstractUndoableEdit类的实例，或者是更为特定的子类，实现了必须的Command接口。他们将命令绑定到接收者（Document）来修改其内容。
+-  Client：在Swing文本组件的例子中，Document执行了实际的AbstractUndoableEdit子类的创建，默认为AbstractDocument.DefaultDocumentEvent。
+-  Invoker：UndoManager扮演UndoableEdit命令调用者的角色。通常情况下，其他的参与者会通知调用者何时执行调用。然而，调用者会通知特定的UndoableEdit实例何时撤销或是重做命令。
+-  Receiver：Document是实际的AbstractUndoabelEdit子类中命令的接收者。他知道如何执行请求。
+
+如果我们要Swing文本组件之外使用Undo框架，Document元素将会为特定于我们客户程序的接收者所替代。我们需要创建我们自己的UndoableEdit接口实现来承担模式中Concrete
+Command的任务。无需直接实现接口，我们只需要继承AbstractUndoableEdit类来封装关于我们命令的特定信息。
+
+Command设计模式十分强大。无论我们在模式中使用哪种命令，我们都可以设置功能，例如用于执行自动测试的宏，因为调用会顺序执行这些命令。
+
+Undo框架组件
+------------
+
+我们已经实际了解了Swing文本组件中的Undo框架并且审视了Command设计模式。下面我们来了解一下框架的单独部分。
+
+UndoableEdit接口
+~~~~~~~~~~~~~~~~
+
+第一个Undo框架组成部分就是UndoableEdit接口，其定义如下：
+
+.. code:: java
+
+    public interface UndoableEdit {
+      // Properties
+      public String getPresentationName();
+      public String getRedoPresentationName();
+      public boolean isSignificant();
+      public String getUndoPresentationName();
+      // Other Methods
+      public boolean addEdit(UndoableEdit anEdit);
+      public boolean canRedo();
+      public boolean canUndo();
+      public void die();
+      public void redo() throws CannotRedoException;
+      public boolean replaceEdit(UndoableEdit anEdit);
+      public void undo() throws CannotUndoException;
+    }
+
+这个接口定义了应该支持撤销与重做功能的对象所要完成的操作。除了描述所支持的操作，接口隐式定义了可撤销的操作可以位于的三个状态，如图21-2所示。
+
+状态之间的转换关系如下：
+
+可撤销状态：当UndoableEdit命令第一次被创建时，操作位于可撤销状态。die()方法的目的就在于在垃圾收集器决定清理并且将命令置于完成状态之前释放UndoableEdit的资源。调用undo()方法或者会抛出一个CannotUndoException或者使得命令撤销完成并且状态变化可重做。调用redo()方法或者会抛出CannotRedoException或是使得命令再次完成并且状态保持为可撤销状态。
+
+可重做状态：当操作位于可重做状态时，命令已经撤销完成。调用die()方法会释放所有的资源并且将命令置于完成状态。调用undo()方法或者抛出CannotUndoException或是使得命令再次撤销完成并且状态保持为可重做状态。调用redo()方法或者抛出CannotRedoException或是使得命令重做完成，并且将状态返回可撤销状态。
+
+完成状态：当操作位于完成状态时，调用undo()，redo()或是die()方法会使得操作保持为完成状态。
+
+某些状态变化并不会发生；然而，所有的状态变化都被支持。特殊情况留给我们正在使用Command。例如，如果功能有意义，Microsoft
+Word会允许我们持续重做上一个命令，例如格式化段落或是输入段落。
+
+AbstractUndoableEdit类
+~~~~~~~~~~~~~~~~~~~~~~
+
+AbstractUndoableEdit类为UndoableEdit接口的所有方法提供了默认实现。尽管由其名字我们也许会猜测该类是一个抽象类，事实上并不是。然而，开发者会使用该类的子类，而不是直接使用该类的实例。
+
+默认情况下，AbstractUndoableEdit命令是significant（其isSignificant()会返回true）。我们在significance属性设置上所设置的意义依赖于我们命令的使用。另外，类限制了可撤销状态变化的重复。除非通过子类重写，如果我们尝试在可撤销状态中重做或在可重做状态中撤销时会抛出异常。该类并不支持添加或是替换UndoableEdit操作。
+
+undoPresentationName与redoPresentationName属性的默认表现名字为Undo与Redo。这可以通过查找表21-1中的UIResource相关属性查到。对于presentationName属性并没有默认值。子类应该至少提供表现名来提供有意义的名字，而不是默认设置。
+
+.. figure:: images/Swing_table_21_1.png
+   :alt: Swing_table_21_1.png
+
+   Swing\_table\_21\_1.png
+CompoundEdit类
+~~~~~~~~~~~~~~
+
+CompoundEdit类使得我们可以将多个可撤销操作组合为一个可撤销操作。例如，也许我们希望将输入一个完整单词的所有的按键组合为一个单个的CompoundEdit命令。这可以使得我们连续撤销在多个位置所输入的完整单词。如果没有组合单个的按键，重做上一个命令仅是重做上一次按键。
+
+CompoundEdit类使用一个只读的inProgress属性来报告一个命令是否仍然被组合。初始时，该属性为true。当位于过程中时，可以使用addEdit(UndoableEdit)将其他的命令添加到组合命令中。要标识命令集合的结束，我们可以调用end()方法。只在我们组合所有的命令之后才可以撤销或是重做。如图21-3所示。
+
+.. figure:: images/Swing_21_3.png
+   :alt: Swing_21_3.png
+
+   Swing\_21\_3.png
+使用CompundEdit，如果我们undo()编辑，所有添加的命令都会被撤销。redo()也是如此：集合中的所有命令都会被重做。
+
+UndoManager类
+~~~~~~~~~~~~~
+
+UndoManager类是一个跟踪编辑命令历史的特殊CompoundEdit子类，主要用于整个程序。管理器可以跟踪的可撤销命令数目是由一个可配置的limit属性来定义的，其初始值为100.
+
+当isInProgress()方法对于特定的CompoundEdit报告true时，UndoManager在某种程度上类似于退步的CompoundEdit，其中单个命令可以撤销完成或是重做完成。一旦调用end()方法，UndoManager的作用类似于CompoundEdit，但是没有撤销或是重做单个编辑命令的功能。另外，UndoManager还有另外一个状态－Undoable或是Redoable－用于管理器已经撤销完成至少一个命令，仍然可以撤销更多命令，但是同时可以重做已撤销完成的命令。
+
+除了能够直接使用addEdit()方法添加可编辑的操作外，管理同时承担UndoableEditListener的任务。当UndoableEditEvent发生时，监听器使用addEdit()方法将事件的UndoableEdit命令添加到管理器。另外，我们可以使用public
+void
+discardAllEdits()方法来清除编辑队列。在管理器接收end()方法以外，序列回到图21-3所示的状态，只剩下图表中底部所显示的三个状态（Undoable，Redoable，Done）。整个序列如图21-4所示。
+
+.. figure:: images/Swing_21_4.png
+   :alt: Swing_21_4.png
+
+   Swing\_21\_4.png
+记住，特定的undo()与redo()调用可以抛出异常。另外，当我们请求UndoManager撤销或是重做一个编辑命令时，请求会撤销（或是重做）至到上一个有意义命令的所有命令。
+
+对于某些用户来说UndoManager到CompoundEdit的转换也许会感到迷惑。这个转换可以使得我们有另一个UndoManager用于特定的子操作，也就是一旦完成就会变为一个CompundEdit，并传递给主UndoManager。
+
+UndoableEditListener接口与UndoableEditEvent类
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+UndoManager实现了UndoableEditListener接口，从而当可撤销的操作发生时，他可以得到通知。该监听器的定义如下：
+
+.. code:: java
+
+    public interface UndoableEditListener extends EventListener {
+      public void undoableEditHappened(UndoableEditEvent undoableEditEvent);
+    }
+
+当一个可撤销的命令发生时，UndoableEditListener使用UndoableEditEvent来通知所有感兴趣的对象。UndoableEditEvent类包含一个属性，edit，他会返回事件的UndoableEdit对象：public
+UndoableEdit getEdit()。
+
+在Swing相关的所有包中，只有AbstractDocument类（定义在Document接口中）带有内建的添加这些监听器的支持。当创建我们自己的支持可撤销操作的类时，我们需要借助于UndoableEditSupport类来维护我们自己的监听器列表，如下所述。
+
+UndoableEditSupport类
+~~~~~~~~~~~~~~~~~~~~~
+
+UndoableEditSupport类似于PropertyChangeSupport与VetoableChangeSupport的JavaBean相关类。所有这三个类会管理一个特定类型的监听器列表。在UndoableEditSupport类的例子中，监听器的类型为UnableEditListener。我们使用public
+void addUndoableListener(UndoableEditListener)添加监听器，使用public
+void removeUndoableListener(UndoableEditListener)移除监听器。
+
+当我们希望通知一个UndoableEdit操作发生时，我们调用public void
+postEdit(UndoableEdit)方法，他会创建一个UndoableEditEvent并且调用每一个监听器的undoableEditHappened()方法。
+
+该使用的基本框架显示在列表21-3中。通常情况下，我们将可撤销的事件关联到某些其他操作。在这个示例中，他被关联到ActionEvent发生的时刻，从而所有注册的ActionListener对象需要得到通知。
+
+.. code:: java
+
+
+    package swingstudy.ch21;
+
+    import java.awt.AWTEventMulticaster;
+    import java.awt.event.ActionEvent;
+    import java.awt.event.ActionListener;
+
+    import javax.swing.event.UndoableEditListener;
+    import javax.swing.undo.AbstractUndoableEdit;
+    import javax.swing.undo.UndoableEditSupport;
+
+    public class AnUndoableComponent {
+
+        UndoableEditSupport undoableEditSupport = new UndoableEditSupport(this);
+        ActionListener actionListenerList = null;
+        
+        public void addActionListener(ActionListener actionListener) {
+            actionListenerList = AWTEventMulticaster.add(actionListener, actionListenerList);
+        }
+        
+        public void removeActionListener(ActionListener actionListener) {
+            actionListenerList = AWTEventMulticaster.remove(actionListener, actionListenerList);
+        }
+        
+        public void addUndoableEditListener(UndoableEditListener undoableEditListener) {
+            undoableEditSupport.addUndoableEditListener(undoableEditListener);
+        }
+        
+        public void removeUndoableEditListener(UndoableEditListener undoableEditListener) {
+            undoableEditSupport.removeUndoableEditListener(undoableEditListener);
+        }
+        
+        protected void fireActionPerformed(ActionEvent event) {
+            if(actionListenerList != null) {
+                actionListenerList.actionPerformed(event);
+            }
+            // Need to create your custom type of undoable operation
+            undoableEditSupport.postEdit(new AbstractUndoableEdit());
+        }
+    }
+
+一个完整的可撤销程序示例
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+现在我们已经了解了Swing
+Undo框架的主要类，下面我们来看一下定义自定义可撤销类的完整示例。这个可撤销类是一个绘制面板，其中每一次鼠标点击定义了一个要在区域中绘制的点。图21-5显示了在撤销操作之前与之后的可绘制面板。
+
+列表21-4中的主程序看起来与前面列表21-2中的在Swing文本组件中支持撤销与重做操作的示例相同。我们只需要简单的的创建一个UndoManager来管理可撤销的操作并且将其关联到可撤销的对象。在这里Undo框架的使用与此相同，所不同的是可撤销的对象是将要创建的UndoableDrawingPanel类。
+
+.. code:: java
+
+
+    package swingstudy.ch21;
+
+    import java.awt.BorderLayout;
+    import java.awt.EventQueue;
+
+    import javax.swing.JButton;
+    import javax.swing.JFrame;
+    import javax.swing.JToolBar;
+    import javax.swing.undo.UndoManager;
+
+    public class UndoDrawing {
+
+        /**
+         * @param args
+         */
+        public static void main(String[] args) {
+            // TODO Auto-generated method stub
+
+            Runnable runner = new Runnable() {
+                public void run() {
+                    JFrame frame = new JFrame("Drawing Sample");
+                    frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+                    
+                    UndoableDrawingPanel drawingPanel = new UndoableDrawingPanel();
+                    
+                    UndoManager manager = new UndoManager();
+                    drawingPanel.addUndoableEditListener(manager);
+                    
+                    JToolBar toolbar = new JToolBar();
+                    JButton undoButton = new JButton(UndoManagerHelper.getUndoAction(manager));
+                    toolbar.add(undoButton);
+                    JButton redoButton = new JButton(UndoManagerHelper.getRedoAction(manager));
+                    toolbar.add(redoButton);
+                    
+                    frame.add(toolbar, BorderLayout.NORTH);
+                    frame.add(drawingPanel, BorderLayout.CENTER);
+                    frame.setSize(300, 150);
+                    frame.setVisible(true);
+                }
+            };
+            EventQueue.invokeLater(runner);
+        }
+
+    }
+
+UndoableDrawingPanel类是一个依据区域内的点集合在其内部绘制多边形的组件。当鼠标被释放时新点就被添加到多边形中。如果我们不希望组件支持可撤销的操作，则除了收集用于绘制面板的点以外我们不需要做任何事情。
+
+为使得面板支持可撤销的操作，他需要做两件事情：
+
+#. 他必须包含一个UndoableEditListener对象列表。这可以很容易的通过UndoableEditSupport类实现，如前面的列表21-3所示。
+#. 第二个任务需要创建一个UndoableEdit对象，依据状态变化将其发送到注册的监听器。因为绘制面板的状态是多连形，这个属性必须在绘制类中公开。
+
+列表21-5显示了UndoableDrawingPanel类的定义。这个类不需要特别解释。当定义一个可撤销的类时需要记住的一件重要事情就是可撤销的事情必须在组件状态变化之前创建。（UndoableEdit接口的实现类，UndoableDrawEdit，在稍后的列表21-6中显示。）
+
+package swingstudy.ch21;
+
+import java.awt.Graphics; import java.awt.Polygon; import
+java.awt.event.MouseAdapter; import java.awt.event.MouseEvent; import
+java.awt.event.MouseListener;
+
+import javax.swing.JPanel; import
+javax.swing.event.UndoableEditListener; import
+javax.swing.undo.UndoableEditSupport;
+
+public class UndoableDrawingPanel extends JPanel {
+
+| ``   UndoableEditSupport undoableEditSupport = new UndoableEditSupport(this);``
+| ``   Polygon polygon = new Polygon();``
+| ``   ``
+| ``   public UndoableDrawingPanel() {``
+| ``       MouseListener mouseListener = new MouseAdapter() {``
+| ``           public void mouseReleased(MouseEvent event) {``
+| ``               undoableEditSupport.postEdit(new UndoableDrawEdit(UndoableDrawingPanel.this));``
+| ``               polygon.addPoint(event.getX(), event.getY());``
+| ``               repaint();``
+| ``           }``
+| ``       };``
+| ``       addMouseListener(mouseListener);``
+| ``   }``
+| ``   ``
+| ``   public void addUndoableEditListener(UndoableEditListener undoableEditListener) {``
+| ``       undoableEditSupport.addUndoableEditListener(undoableEditListener);``
+| ``   }``
+| ``   ``
+| ``   public void removeUndoableEditListener(UndoableEditListener undoableEditListener) {``
+| ``       undoableEditSupport.removeUndoableEditListener(undoableEditListener);``
+| ``   }``
+| ``   ``
+| ``   public void setPolygon(Polygon newValue) {``
+| ``       polygon = newValue;``
+| ``       repaint();``
+| ``   }``
+| ``   ``
+| ``   public Polygon getPolygon() {``
+| ``       Polygon returnValue;``
+| ``       if(polygon.npoints == 0) {``
+| ``           returnValue = new Polygon();``
+| ``       }``
+| ``       else {``
+| ``           returnValue = new Polygon(polygon.xpoints, polygon.ypoints, polygon.npoints);``
+| ``       }``
+| ``       return returnValue;``
+| ``   }``
+| ``   ``
+| ``   protected void paintComponent(Graphics g) {``
+| ``       super.paintComponent(g);``
+| ``       g.drawPolygon(polygon);``
+| ``   }``
+
+}
+
+.. raw:: html
+
+   </syntaxhighlight>
+
+当定义自定义的UndoableEdit接口实现时，我们可以选择实现完整的接口，或是我们可以继承AbstractUndoableEdit类并且重写相应的方法。更为通常的情况是，我们只是继承AbstractUndoableEdit。尽管要重写的最小方法就是undo()与redo()，但是我们也可以选择重写getPresentationName()方法来为可撤销的操作提供一个更好的名字。
+
+因为Command设计需要Concrete
+Command（也就是UndoableEdit实现）调用操作，构造函数必须保存使得操作可撤销所必需的信息。在绘制面板的例子中，我们需要保存到面板及其当前多边形的引用。那么当请求操作撤销时，原始的多边形可以重新载入。要支持重做与撤销操作，undo()方法必须同时保存新多边形；否则，redo()操作将不会知道如何将事物回复到以前状态。这听起来需要大量的工作，但是实际上并不是这样。UndoableEdit实现的完整类定义显示在列表21-6中。
+
+.. code:: java
+
+    package swingstudy.ch21;
+
+    import java.awt.BorderLayout;
+    import java.awt.EventQueue;
+
+    import javax.swing.JButton;
+    import javax.swing.JFrame;
+    import javax.swing.JToolBar;
+    import javax.swing.undo.UndoManager;
+
+    public class UndoDrawing {
+
+        /**
+         * @param args
+         */
+        public static void main(String[] args) {
+            // TODO Auto-generated method stub
+
+            Runnable runner = new Runnable() {
+                public void run() {
+                    JFrame frame = new JFrame("Drawing Sample");
+                    frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+                    
+                    UndoableDrawingPanel drawingPanel = new UndoableDrawingPanel();
+                    
+                    UndoManager manager = new UndoManager();
+                    drawingPanel.addUndoableEditListener(manager);
+                    
+                    JToolBar toolbar = new JToolBar();
+                    JButton undoButton = new JButton(UndoManagerHelper.getUndoAction(manager));
+                    toolbar.add(undoButton);
+                    JButton redoButton = new JButton(UndoManagerHelper.getRedoAction(manager));
+                    toolbar.add(redoButton);
+                    
+                    frame.add(toolbar, BorderLayout.NORTH);
+                    frame.add(drawingPanel, BorderLayout.CENTER);
+                    frame.setSize(300, 150);
+                    frame.setVisible(true);
+                }
+            };
+            EventQueue.invokeLater(runner);
+        }
+
+    }
+
+这就是全部的代码。最后两个类使得UndoDrawing示例类可以工作。当创建我们自己的可撤销类时，我们需要继承一个不可撤销的类，然后添加必要的支持使其可撤销。另外，我们需要定义一个UndoableEdit实现来支持我们的特定类。
+
+使用外部对象管理Undo状态
+------------------------
+
+在前面的示例中，我们自定义的UndoableEdit实现要负责维护可撤销对象的之前与之后状态。Swing
+Undo框架同时支持使用可撤销编辑实现之外的对象来管理状态的能力。当使用一个外部对象用于状态管理时，我们并不需要实现UndoableEdit接口。相反，我们可以使用StateEdit类作为UndoableEdit实现。然后StateEdit类依赖一个类实现StateEditable接口来管理可撤销对象（在Hashtable中）之前与之后的状态存储。
+
+StateEditable接口
+~~~~~~~~~~~~~~~~~
+
+StateEditable接口由两个方法与一个无意义的字符串常量组成。
+
+.. code:: java
+
+    public interface StateEditable {
+      public final static String RCSID;
+      public void restoreState(Hashtable state);
+      public void storeState(Hashtable state);
+    }
+
+支持操作撤销的对象使用storeState(Hashtable)方法存储其状态。这是关于可以修改的对象的状态的全部信息。然后使用restoreState(Hashtable)方法重新载入对象的状态。
+
+为了进行演示，我们来看一下如何重新实现前面的UndoableDrawingPanel示例。在更新的版本中使用这个接口，可撤销的绘制面板需要实现此接口，并且存储与获取前面图21-5中所示的多边形。这是因为多边形是我们关心撤销的唯一状态信息。源码显示在列表21-7中。
+
+.. code:: java
+
+    package swingstudy.ch21;
+
+    import java.awt.Polygon;
+    import java.util.Hashtable;
+
+    import javax.swing.JPanel;
+    import javax.swing.undo.StateEditable;
+
+    public class UndoableDrawingPanel2 extends JPanel implements StateEditable {
+
+        private static String POLYGON_KEY = "Polygon";
+        
+        @Override
+        public void storeState(Hashtable state) {
+            // TODO Auto-generated method stub
+            state.put(POLYGON_KEY, getPolygon());
+        }
+
+        @Override
+        public void restoreState(Hashtable state) {
+            // TODO Auto-generated method stub
+            Polygon polygon = (Polygon)state.get(POLYGON_KEY);
+            if(polygon != null) {
+                setPolgyon(polygon);
+            }
+        }
+
+    }
+
+restoreState()方法返回的Hashtable只包含可以修改的键/值对。也有可能Hashtable的get()方法会为我们使用put()方法显式放入散列表中的内容返回null。所以，如列表21-7所示，我们需要在由散列表获取状态信息之后添加一个if-null检测语句。
+
+StateEdit类
+~~~~~~~~~~~
+
+在我们实现了StateEditable接口之后，我们可以使用StateEdit类作为UndoableEdit实现。其中前面的UndoableDrawingPanel示例创建了一个自定义的UndoableDrawingEdit，新类创建了一个StateEdit实例。
+
+StateEdit构造函数接受一个我们将要修改的StateEditable对象与一个可选的表示名字。在创建StateEdit对象之后，修改StateEditable对象然后通知StateEdit来end()
+StateEditable对象的修改。当StateEdit对象被通知修改已经结束时，他会对比状态可编辑对象的之前与之后状态并且由散列表中移除没有变化的键/值对。然后我们可以通过由UndoableEditSupport类维护的一个列表将UndoabelEdit发送到UndoableEditListener对象的列表。
+
+.. code:: java
+
+    StateEdit stateEdit = new StateEdit(UndoableDrawingPanel2.this);
+    // Change state of UndoableDrawingPanel2
+    polygon.addPoint(mouseEvent.getX(), mouseEvent.getY());
+    // Done changing state
+    stateEdit.end();
+    undoableEditSupport.postEdit(stateEdit);
+
+在编辑被发送之后，UndoManager管理UndoableEdit的StateEdit实例，类似于其他的可撤销编辑对象。然后UndoManager请求StateEdit对象来通知其StateEditable对象来载入其前一个状态。对于其他的UndoableEdit对象也是如此。所以，其他的代码不需要修改。
+
+一个完整的StateEditable/StateEdit示例
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+改写的UndoableDrawingPanel示例显示在列表21-8中，与列表21-5的不同之处以粗体显示。这个版本使用我们刚刚所描述的StateEditable/StateEdit组合。前面的测试程序被包含在main()方法来保持示例的完整。除了修改了绘制面板的类名，测试并没有进行修改并且将会得到与我们在图21-5中所见到的相同的结果，假定多边形具有相同的点集合。
+
+.. code:: java
+
+
+    package swingstudy.ch21;
+
+    import java.awt.BorderLayout;
+    import java.awt.EventQueue;
+    import java.awt.Graphics;
+    import java.awt.Polygon;
+    import java.awt.event.MouseAdapter;
+    import java.awt.event.MouseEvent;
+    import java.awt.event.MouseListener;
+    import java.util.Hashtable;
+
+    import javax.swing.JButton;
+    import javax.swing.JFrame;
+    import javax.swing.JPanel;
+    import javax.swing.JToolBar;
+    import javax.swing.event.UndoableEditListener;
+    import javax.swing.undo.StateEdit;
+    import javax.swing.undo.StateEditable;
+    import javax.swing.undo.UndoManager;
+    import javax.swing.undo.UndoableEditSupport;
+
+    public class UndoableDrawingPanel2 extends JPanel implements StateEditable {
+
+        private static String POLYGON_KEY = "Polygon";
+        UndoableEditSupport undoableEditSupport = new UndoableEditSupport(this);
+        Polygon polygon = new Polygon();
+        
+        public UndoableDrawingPanel2() {
+            MouseListener mouseListener = new MouseAdapter() {
+                public void mouseReleased(MouseEvent event) {
+                    StateEdit stateEdit = new StateEdit(UndoableDrawingPanel2.this);
+                    polygon.addPoint(event.getX(), event.getY());
+                    stateEdit.end();
+                    undoableEditSupport.postEdit(stateEdit);
+                    repaint();
+                }
+            };
+            addMouseListener(mouseListener);
+        }
+        
+        public void addUndoableEditListener(UndoableEditListener undoableEditListener) {
+            undoableEditSupport.addUndoableEditListener(undoableEditListener);
+        }
+        
+        public void removeUndoableEditListener(UndoableEditListener undoableEditListener) {
+            undoableEditSupport.removeUndoableEditListener(undoableEditListener);
+        }
+        
+        @Override
+        public void storeState(Hashtable state) {
+            // TODO Auto-generated method stub
+            state.put(POLYGON_KEY, getPolygon());
+        }
+
+        @Override
+        public void restoreState(Hashtable state) {
+            // TODO Auto-generated method stub
+            Polygon polygon = (Polygon)state.get(POLYGON_KEY);
+            if(polygon != null) {
+                setPolygon(polygon);
+            }
+        }
+
+        public void setPolygon(Polygon newValue) {
+            polygon = newValue;
+            repaint();
+        }
+        
+        public Polygon getPolygon() {
+            Polygon returnValue;
+            if(polygon.npoints == 0) {
+                returnValue = new Polygon();
+            }
+            else {
+                returnValue = new Polygon(polygon.xpoints, polygon.ypoints, polygon.npoints);
+            }
+            return returnValue;
+        }
+        
+        protected void paintComponent(Graphics g) {
+            super.paintComponent(g);
+            g.drawPolygon(polygon);
+        }
+        
+        public static void main(String[] args) {
+            Runnable runner = new Runnable() {
+                public void run() {
+                    JFrame frame = new JFrame("Drawing Sample2");
+                    frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+                    UndoableDrawingPanel2 drawingPanel = new UndoableDrawingPanel2();
+                    
+                    UndoManager manager = new UndoManager();
+                    drawingPanel.addUndoableEditListener(manager);
+                    
+                    JToolBar toolbar = new JToolBar();
+                    JButton undoButton = new JButton(UndoManagerHelper.getUndoAction(manager));
+                    toolbar.add(undoButton);
+                    JButton redoButton = new JButton(UndoManagerHelper.getRedoAction(manager));
+                    toolbar.add(redoButton);
+                    
+                    frame.add(toolbar, BorderLayout.NORTH);
+                    frame.add(drawingPanel, BorderLayout.CENTER);
+                    frame.setSize(300, 150);
+                    frame.setVisible(true);
+                }
+            };
+            EventQueue.invokeLater(runner);
+        }
+    }
+
+小结
+----
+
+在本章我们简单了解并且探讨了javax.swing.undo包中的Undo框架以及javax.swing.evnet的支持。我们了解框架在Swing文本组件中的支持。另外，我们了解了如何在我们自己的类中构建支持。通过使用Undo框架中的接口与类，我们可以使得任意可编辑的类同时支持撤销与重做功能。
+
+下一章将会介绍Swing组件集合的可访问性支持。到时我们将会了解组件的辅助技术与声音支持。

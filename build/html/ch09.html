@@ -1,0 +1,2076 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Pop-Ups and Choosers &mdash; The Definitive Guide to Java Swing Third Edtion 0.01 documentation</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.01',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="The Definitive Guide to Java Swing Third Edtion 0.01 documentation" href="index.html" />
+    <link rel="next" title="布局管理器" href="ch10.html" />
+    <link rel="prev" title="Root Pane Containers" href="ch08.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="ch10.html" title="布局管理器"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="ch08.html" title="Root Pane Containers"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">The Definitive Guide to Java Swing Third Edtion 0.01 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="pop-ups-and-choosers">
+<h1>Pop-Ups and Choosers<a class="headerlink" href="#pop-ups-and-choosers" title="Permalink to this headline">¶</a></h1>
+<p>在第8章中，我们了解了顶层容器，例如JFrame与JApplet。另外，我们探讨了用来创建弹出窗口来显示信息或是获取用户输入的JDialog类。尽管JDialog类可以工作得很好，Swing组件集合同时提供了一些更为简单的方法来由弹出窗口获取用户输入，我们将会在本章进行探讨。</p>
+<p>JOptionPane类对于显示信息，获取文本用户输入，或是获取问题答案十分有用。ProgressMonitor与ProgressMonitorInputStream类可以使得我们监视长时间任务的过程。另外，JColorChooser与JFileChooser类提供了特性弹出窗口用来由用户获取颜色选择，或是获取文件或目录名。通过使用这些类，我们的界面开发任务可以更为快速与简单的实现。</p>
+<div class="section" id="joptionpane-class">
+<h2>JOptionPane Class<a class="headerlink" href="#joptionpane-class" title="Permalink to this headline">¶</a></h2>
+<p>JOptionPane是一个可以用来创建放在弹出窗口中的面板的一个特殊类。面板的目的是向用户显示信息或是由用户获取响应。要实现这一任务，面板在四个区域显示内容（如图9-1）：</p>
+<ul class="simple">
+<li>Icon：图标区域用来显示一个图标，标识显示给用户的信息类型。为特定的消息类型提供默认的图标是所安装的观感的责任，但是如果我们希望显示其他的图标类型，我们可以提供我们自己的图标。</li>
+<li>Message：这一区域的基本目的是显示一个文本信息。另外，这一区域还可以包含其他的可选对象集合来使得消息提供更多的信息。</li>
+<li>Input：输入区域允许用户提供消息的响应。响应可以是自由格式，文本域，或组合框中选择列表或是列表控件。要显示是或否类型的问题，应该使用按钮区域。</li>
+<li>Button：按钮区域也可以用来获取用户输入。在这个区域的按钮选择通知了JOptionPane使用的结束。可以使用按钮标签的默认集合，或者我们可以显示任意数量的按钮，也可以没有，并使用我们所希望的标签。</li>
+</ul>
+<div class="figure">
+<img alt="Swing_9_1.png" src="_images/Swing_9_1.png" />
+<p class="caption">Swing_9_1.png</p>
+</div>
+<p>所有这些区域都是可选的（尽管没有消息与按钮的面板使得选项面板毫无用处）。</p>
+<p>除了作为一个在弹出窗口中具有四部分的面板以外，JOptionPane还具有自动将其自身放在一个弹出窗口中并管理用户响应的获取的能力。依据我们所提供给用户的GUI类型，他也可以将自身放在一个JDialog或是一个JInternalFrame中。借助于Icon与JButton组件集合，JOptionPane可以很容易配置来显示多种消息与输入对话框。</p>
+<p>注意，因为JOptionPane可以自动将其自身放在一个JDialog中，所以我们并不需要直接创建JDialog。</p>
+<div class="section" id="joptionpane">
+<h3>创建JOptionPane<a class="headerlink" href="#joptionpane" title="Permalink to this headline">¶</a></h3>
+<p>我们可以使用JOptionPane的七个构造函数或是使用本章稍后将会讨论的25个工厂方法来创建一个JOptionPane。当手动创建JOptionPane时，我们拥有最大的控制。然而，然后我们必须将其放在一个弹出窗口中，显示窗口，最后管理响应。</p>
+<p>由于自动完成所有事情所提供的方法的简便，我们也许会认为当使用JOptionPane时应只使用工厂方法。然而，通过本章，我们将会发现手动完成一些事情的其他原因。另外，当我们使用一个可视化编程环境时，环境会将JOptionPane看作一个JavaBean组件，并且会忽略其工厂方法。</p>
+<p>对于七个构造函数，我们可以有6个不同参数的不同组合。参数可以使得我们配置图9-1中所显示的不同区域的一部分。六个参数是消息，消息类型，可选类型，图标，选项数组，以及初始的选项设置。参数的用法与工厂方法相同。</p>
+<p>我们首先来看一下七个构造函数，然后探讨不同的参数。注意构造参数是级联的，并且只在前一个构造函数中添加额外的参数。</p>
+<div class="code java highlight-python"><pre>public JOptionPane()
+JOptionPane optionPane = new JOptionPane();
+
+public JOptionPane(Object message)
+JOptionPane optionPane = new JOptionPane("Printing complete");
+
+public JOptionPane(Object message, int messageType)
+JOptionPane optionPane = new JOptionPane("Printer out of paper",
+  JOptionPane.WARNING_MESSAGE);
+
+public JOptionPane(Object message, int messageType, int optionType)
+JOptionPane optionPane = new JOptionPane("Continue printing?",
+  JOptionPane.QUESTION_MESSAGE, JOptionPane.YES_NO_OPTION);
+
+public JOptionPane(Object message, int messageType, int optionType,
+  Icon icon)
+Icon printerIcon = new ImageIcon("printer.jpg");
+JOptionPane optionPane = new JOptionPane("Continue printing?",
+  JOptionPane.QUESTION_MESSAGE, JOptionPane.YES_NO_OPTION, printerIcon);
+
+public JOptionPane(Object message, int messageType, int optionType, Icon icon,
+  Object options[ ])
+Icon greenIcon = new DiamondIcon(Color.GREEN);
+Icon redIcon = new DiamondIcon(Color.RED);
+Object optionArray[] = new Object[] { greenIcon, redIcon} ;
+JOptionPane optionPane = new JOptionPane("Continue printing?",
+  JOptionPane.QUESTION_MESSAGE, JOptionPane.YES_NO_OPTION, printerIcon,
+  optionArray);
+
+public JOptionPane(Object message, int messageType, int optionType, Icon icon,
+  Object options[], Object initialValue)
+JOptionPane optionPane = new JOptionPane("Continue printing?",
+  JOptionPane.QUESTION_MESSAGE, JOptionPane.YES_NO_OPTION, printerIcon,
+  optionArray, redIcon);</pre>
+</div>
+<p><strong>JOptionPane消息参数</strong></p>
+<p>message参数是一个Object，而不是一个String。当我们通常将一个引起来的字符串作为Object的参数时，我们仅仅可以在消息区域显示我们希望显示的任何内容。在本章稍后的“理解消息属性”一节中，我们将会了解这一参数的高级用法。然而，概括来说，有四个基本的规则可以解释Object类型消息参数意义。对于Object中的元素，依次遵循下列规则：</p>
+<ul class="simple">
+<li>如果消息是一个对象数组（Object[]），会使得JOptionPane在单独行放置每一项。</li>
+<li>如果消息是一个Component，则将该组件放置在消息区域。</li>
+<li>如果消息是一个Icon，会在JLable中放置Icon，并且在消息区域显示标签。</li>
+<li>如果消息是一个Object，使用toString()方法将其转换为String，将String放在JLabel中，并在消息区域显示标签。</li>
+</ul>
+<p><strong>JOptionPane消息类型与图标参数</strong></p>
+<p>messageType构造函数参数用来表示显示在JOptionPane中的消息类型。如果我们没有为JOptionPane指定自定义的图标，已安装的观感使用messageType参数设置来决定在图标区域使用哪个图标。JOptionPane提供了五个不同的消息类型常量：</p>
+<ul class="simple">
+<li>ERROR_MESSAGE用来显示一个错误消息</li>
+<li>INFORMATION_MESSAGE用来显示一个信息提示消息</li>
+<li>QUESTION_MESSAGE用来显示一个查询消息</li>
+<li>WARNING_MESSAGE用来显示一个警告消息</li>
+<li>PLAIN_MESSAGE用来显示任何其他类型的消息</li>
+</ul>
+<p>如果我们使用了同时带有messageType与icon作为参数的构造函数，并且希望JOptionPane为messageType使用默认图标，只需要将icon参数的值指定为null。如果icon参数不为null，则会使用所指定的图标，而不论是何种消息类型。</p>
+<p>如果没有指定构造函数的messageType参数，则默认的消息类型为PLAIN_MESSAGE。</p>
+<p><strong>JOptionPane选项类型参数</strong></p>
+<p>optionType构造函数参数用来决定按钮区域的按钮集合配置。如果提供了一个下面所描述的options参数，则optionType参数会被忽略，而按钮集合配置则会由options获取。JOptionPane有四个不同的选项类型常量：</p>
+<ul class="simple">
+<li>DEFAULT_OPTION用于一个OK按钮</li>
+<li>OK_CANCEL_OPTION用来OK与Cancel按钮</li>
+<li>YES_NO_CANCEL_OPTION用于Yes，No与Cancel按钮</li>
+<li>YES_NO_OPTION用于Yes与No按钮</li>
+</ul>
+<p>如果没有指定optionType构造函数参数，则默认的选项类型为DEFAULT_OPTION。</p>
+<p><strong>JOptionPane选项以及初始值参数</strong></p>
+<p>options参数是一个用来构建用在JOptionPane按钮区域的JButton对象集合的Object数组。如果这个参数为null（或者是使用了一个没有这个参数的构造函数），则按钮标签会由optionType参数来决定。否则，这个数组的作用类似于消息参数，但是并不支持迭代数组：</p>
+<ul class="simple">
+<li>如果options数组元素是一个Component，则会将这个组件放在按钮区域。</li>
+<li>如果options数组元素是一个Icon，则会将这个Icon放在一个JButton中，然后将按钮放在按钮区域。</li>
+<li>如果options数组元素是一个Object，则使用toString()方法将其转换为一个String，将这个String放在一个JButton中，然后将按钮放在按钮区域。</li>
+</ul>
+<p>通常，options参数是一个String对象的数组。也许我们希望JButton上带有一个Icon，尽管最终的按钮不会带有标签。如果我们希望按钮上同时带有图标与文本标签，我们可以手动创建一个JButton，并将其放在一个数组中。相对的，我们可以在数组中直接包含其他任意的Component。然而对于后两种方法有一个小问题。我们要负责处理组件选中的响应，并且通知JOptionPane用户何时选择了这个组件。本章稍后的“向按钮区域添加组件”将会讨论如何正确处理这种行为。</p>
+<p>当options参数不为null时，initialValue参数可以指定当面板初始显示时哪一个按钮是默认按钮。如果其为null，则按钮区域的第一个组件为默认按钮。在任何一种情况下，第一个按钮会获得输入焦点，除非在消息区域有一个输入组件，在这种情况下，输入组件会获得初始输入焦点。</p>
+</div>
+<div class="section" id="id1">
+<h3>显示JOptionPane<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h3>
+<p>在我们使用一个构造函数创建了JOptionPane之后，我们所获得的是一个使用组件填充的面板。换句话说，所获得的JOptionPane还没有位于弹出窗口中。我们需要创建一个JDialog，一个JinternalFrame，或是其他的弹出窗口，然后将JOptionPane放在其中。另外，如果我们选择JOptionPane构造的这种手动风格，我们需要处理弹出窗口的关闭。我们必须监听按钮区域组件的选中，然后在选中之后隐藏弹出窗口。</p>
+<p>因为在这里有如此多的工作要做，JOptionPane包含两个助手方法来将JOptionPane放在一个JDialog或是一个JInternalFrame之中，并且处理前面所描述的所有行为：</p>
+<div class="code java highlight-python"><pre>public JDialog createDialog(Component parentComponent, String title)
+public JInternalFrame createInternalFrame(Component parentComponent, String title)</pre>
+</div>
+<p>注意，当使用createDialog()与createInternalFrame()方法创建弹出窗口时，自动创建的按钮的选中会导致所创建的弹出窗口的关闭。然后我们需要使用getValue()方法来查询JOptionPane用户选中的选项，而且如果需要，可以使用getInputValue()方法获得输入值。</p>
+<p>方法的第一个参数是弹出窗口所在的组件。第二个参数是弹出窗口的标题。一旦我们创建了弹出窗口，无论他是一个JDialog还是一个JInternalFrame，我们要显示他。然后弹出窗口会在按钮区域的一个组件被选中之后关闭，此时，我们的程序继续。下面的代码行演示了显示在一个JDialog中的JOptionPane的创建。所创建的弹出窗口显示在图9-2中。</p>
+<div class="code java highlight-python"><pre>JOptionPane optionPane = new JOptionPane("Continue printing?",
+  JOptionPane.QUESTION_MESSAGE, JOptionPane.YES_NO_OPTION);
+JDialog dialog = optionPane.createDialog(source, "Manual Creation");
+dialog.setVisible(true);</pre>
+</div>
+<div class="figure">
+<img alt="Swing_9_2.png" src="_images/Swing_9_2.png" />
+<p class="caption">Swing_9_2.png</p>
+</div>
+<p>我们创建了JOptionPane，将其放在一个弹出窗口中，显示弹出窗口，并且用户响应之后，我们需要确定用户的选择是什么。选择是通过JOptionPane的public
+Object
+getValue()方法来提供的。getValue()方法返回的值是通过是否向JOptionPane构造函数提供了一个options数组来确定的。如果我们提供了这个数组，则会返回选中的参数。如果我们没有提供数组，则会返回一个Integer对象，而其值表示了选中的按钮在按钮区域中的位置。在另一种情况下，如果没有选择任何内容，getValue()方法会返回null，例如当通过选择弹出窗口标题的相应装饰关闭JDialog时。</p>
+<p>为了更容易获取这种多面响应，列表9-1显示了一个OptionPaneUtils类，其中定义了方法public
+static int getSelection(JOptionPane
+optionPane)。指定一个选项面板，这个方法会将选中值的位置作为int返回，而不论是否提供了选项数组。为了标识没有选中任何内容，JOptionPane.CLOSED_OPTION(-1)会被返回。</p>
+<div class="code java highlight-python"><pre>package swingstudy.ch09;
+
+import javax.swing.JOptionPane;
+
+public final class OptionPaneUtils {
+
+    private OptionPaneUtils() {
+
+    }
+
+    public static int getSelection(JOptionPane optionPane) {
+        // Default return value, signals nothing selected
+        int returnValue = JOptionPane.CLOSED_OPTION;
+
+        // Get selected value
+        Object selectedValue = optionPane.getValue();
+        // if none, then nothing selected
+        if(selectedValue != null) {
+            Object options[] = optionPane.getOptions();
+            if(options == null) {
+                // default buttons, no array specified
+                if(selectedValue instanceof Integer) {
+                    returnValue = ((Integer)selectedValue).intValue();
+                }
+            }
+            else {
+                // array of option buttons specified
+                for(int i=0, n=options.length; i&lt;n; i++) {
+                    if(options[i].equals(selectedValue)) {
+                        returnValue = i;
+                        break; // out of for loop
+                    }
+                }
+            }
+        }
+        return returnValue;
+    }
+}</pre>
+</div>
+<p>借助于这个新的OptionPaneUtils.getSelection(JOptionPane)助手方法，现在我们可以使用一行代码来确定选项面板的选择，并依据响应执行动作。</p>
+<div class="code java highlight-python"><pre>int selection = OptionPaneUtils.getSelection(optionPane);
+switch (selection) {
+  case ...: ...
+    break;
+  case ...: ...
+    break;
+  default: ...
+}</pre>
+</div>
+<p>如果我们使用一个null选项数组创建一个JOptionPane，我们可以使用JOptionPane类中的常量来标识默认按钮标签的位置以及由OptionPaneUtils.getSelection(JOptionPane)方法返回的值。这些常量列在表9-1中。使用这些常量可以使用我们避免硬编码常量，例如0，1，2或是-1。</p>
+<div class="figure">
+<img alt="Swing_table_9_1.png" src="_images/Swing_table_9_1.png" />
+<p class="caption">Swing_table_9_1.png</p>
+</div>
+</div>
+<div class="section" id="id2">
+<h3>在弹出窗口中自动创建JOptionPane<a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h3>
+<p>我们可以手动创建JOptionPane，将其放在一个JDialog或是JInternalFrame中，并获取响应。相对的，我们可以使用JOptionPane工厂方法在JDialog或是JInternalFrame中直接创建JOptionPane组件。使用工厂方法，我们可以使用一行代码创建一个选项面板，将其放在一个弹出窗口中，并且获取响应。</p>
+<p>有25个工厂方法，可以分为两类：创建显示在JDialog中的JOptionPane或是创建显示在JInternalFrame中的JOptionPane。在JInternalFrame中显示JOptionPane的方法以showInternalXXXDialog()的方式命名，而创建显示在JDialog中的面板则以showXXXDialog()的方式命名。</p>
+<p>JOptionPane的工厂方法的第二个分组是填充方法名字中的XXX部分。这表示了我们可以创建并显示的选项面板的各种消息类型。另外，消息类型定义了用户在选项面板中选择某个组件之后所返回的内容。四个不同的消息类型如下：</p>
+<ul class="simple">
+<li>Message：对于消息弹出窗口，没有返回值。所以其方法定义为void
+show[Internal]MessageDialog(...)。</li>
+<li>Input：对于输入弹出窗口，返回值或者是用户在文本域中所输入的内容（String），或者是用户在选项列表中的选择（Object）。所以，依据我们所使用的版本，show[Internal]InputDialog(...)方法或者返回一个String，或者返回一个Object。</li>
+<li>Confirm：对于确认弹出窗口，返回值标识了用户在选项面板内选择的按钮。在一个按钮被选中后，弹出窗口消失，而返回值是显示在表9-1中的整数常量中的一个。所以，在这里方法定义为int
+show[Interal]ConfirmDialog(...)。</li>
+<li>Option：对于选项弹出窗口，返回值是一个int，与确认弹出窗口的返回值类型相同，所以方法定义为itn
+show[Internal]OptionDialog(...)。如果按钮标签是通过一个非null的参数手动指定的，整数表示所选择的按钮的位置。</li>
+</ul>
+<p>表9-2中的信息应该可以帮助我们理解25个方法及其参数。方法名（与返回类型）显示在表的左侧，而其参数列表（与数据类型）显示在右侧。对于每个方法名跨越各个列重复出现的数字标识了此方法的一个特定的参数集合。例如，showInputDialog行在父组件列，消息列，标题列以及消息类型列显示了一个3.所以，showInputDialog方法的一个版本定义如下：</p>
+<div class="code java highlight-python"><pre>public static String showInputDialog(Component parentComponent, Object message, String title, int messageType)</pre>
+</div>
+<p>由于定义了不同的showXXXDialog()方法，我们不再需要亲自确定所选中的按钮或是用户的输入。依据所显示的对话框类型，各种方法的返回值是下列值中的一个：无返回值（void返回类型），表9-1中的int，String或是Object。</p>
+<div class="figure">
+<img alt="Swing_table_9_2.png" src="_images/Swing_table_9_2.png" />
+<p class="caption">Swing_table_9_2.png</p>
+</div>
+<p><strong>工厂方法的JOptionPanl参数</strong></p>
+<p>几乎工厂方法的所有参数都匹配JOptionPane的构造函数参数。本章前面的“创建JOptionPane”中的两个列表描述了消息类型与选项类型参数的可接受的值。另外，同时描述了消息，选项以及初值参数用法。父组件以及标题参数被传递给createDialog()或是createInternalFrame()方法，这依赖于JOptionPane所嵌入的弹出窗口的类型。</p>
+<p>接下来我们需要考虑的是showInputDialog()方法的选择值参数以及初始选中值参数。对于输入对话框，我们可以向用户要求文本输入，并且允许用户输入任何内容，或者是我们可以向用户展示一个预定义的选项列表。showInputDialog()的选择值参数决定了我们如何提供该选项集合。初始选择值表示当JOptionPane首次显示时被选择的特定项。观感将会依据所展示的选项数目来决定义要使用的相应Swing组件。对于较小的列表，可以使用JComboBox。对于大的列表，对于Motif，Metal/Ocean以及Windows观感，多于20将会使用JList。</p>
+<div class="figure">
+<img alt="Swing_table_9_3.png" src="_images/Swing_table_9_3.png" />
+<p class="caption">Swing_table_9_3.png</p>
+</div>
+<p><strong>消息弹出窗口</strong></p>
+<p>sowMessageDialog()与showInternalDialog()方法使用弹出标题“Message”创建一个INFORMATION_MESSAGE弹出窗口，除非我们为消息类型与窗口标题指定了不同的参数设置。因为消息对话框的目的就是要显示一个信息，这些对话框只提供了OK按钮，并且没有返回值。图9-3显示了使用下面的代码所创建的示例消息弹出窗口：</p>
+<blockquote>
+<div>JOptionPane.showMessageDialog(parent, &#8220;Printing complete&#8221;);</div></blockquote>
+<p>JOptionPane.showInternalMessageDialog(desktop, &#8220;Printing complete&#8221;);</p>
+</syntaxhighlight><div class="figure">
+<img alt="Swing_9_3.png" src="_images/Swing_9_3.png" />
+<p class="caption">Swing_9_3.png</p>
+</div>
+<p><strong>确认弹出窗口</strong></p>
+<p>showConfirmDialg()与showInternalConfirmDialog()方法默认情况下使用QUESTION_MESSAGE类型以及“Select
+an
+Option”弹出标题创建一个确认弹出窗口。因为确认对话框询问一个问题，其默认选项类型为YES_NO_CANCEL_OPTION，为其指定Yes，No以及Cancel按钮。对这些方法的调用所获得的返回值是下列JOptionPane常量中的一个：YES_OPTION,NO_OPTION或是CANCEL_OPTION。我们可以很容易猜到哪一个常量对应哪一个按钮。图9-4显示了使用下面代码创建的确认弹出窗口：</p>
+<div class="code java highlight-python"><div class="highlight"><pre><span class="n">JOptionPane</span><span class="o">.</span><span class="n">showConfirmDialog</span><span class="p">(</span><span class="n">parent</span><span class="p">,</span> <span class="s">&quot;Continue printing?&quot;</span><span class="p">);</span>
+<span class="n">JOptionPane</span><span class="o">.</span><span class="n">showInternalConfirmDialog</span><span class="p">(</span><span class="n">desktop</span><span class="p">,</span> <span class="s">&quot;Continue printing?&quot;</span><span class="p">);</span>
+</pre></div>
+</div>
+<div class="figure">
+<img alt="Swing_9_4.png" src="_images/Swing_9_4.png" />
+<p class="caption">Swing_9_4.png</p>
+</div>
+<p><strong>输入弹出窗口</strong></p>
+<p>默认情况下，showInputDialog()与showInternalInputDialog()方法使用“Input”弹出标题创建一个QUESTION_MESASGE弹出窗口。输入对话框的选项类型为OK_CANCEL_OPTION，为其指定一个OK与一个Cancel按钮，而且选项类型是不可以改变的。这些方法的返回数据类型或者是一个String，或者是一个Object。如果我们没有指定选项值，弹出窗口会向用户展示一个文本域，并且将输入作为一个String返回。如果我们指定了选项值，我们会由选项值数组中获取一个Object。图9-5显示了使用下面代码所创建的输入弹出窗口：</p>
+<div class="code java highlight-python"><pre>JOptionPane.showInputDialog(parent, "Enter printer name:");
+// Moons of Neptune
+String smallList[] = {
+  "Naiad", "Thalassa", "Despina", "Galatea", "Larissa", "Proteus",
+  "Triton", "Nereid"} ;
+JOptionPane.showInternalInputDialog(desktop, "Pick a printer", "Input",
+  JOptionPane.QUESTION_MESSAGE, null, smallList, "Triton");
+// Twenty of the moons of Saturn
+String bigList[] = {"Pan", "Atlas", "Prometheus", "Pandora", "Epimetheus",
+  "Janus", "Mimas", "Enceladus", "Telesto", "Tethys", "Calypso", "Dione",
+  "Helene", "Rhea", "Titan", "Hyperion", "Iapetus", "Phoebe", "Skadi",
+  "Mundilfari"};
+JOptionPane.showInputDialog(parent, "Pick a printer", "Input",
+  JOptionPane.QUESTION_MESSAGE, null, bigList, "Titan");</pre>
+</div>
+<div class="figure">
+<img alt="Swing_9_5.png" src="_images/Swing_9_5.png" />
+<p class="caption">Swing_9_5.png</p>
+</div>
+<p><strong>选项弹出窗口</strong></p>
+<p>showOptionDialg()与showInternalOptionDialog()方法提供了最大的灵活性，因为他们允许我们所有的参数。他们没有默认参数，并且返回值是一个int。如果没有指定options参数，则返回值为表9-1中所列出的常量之一。否则，返回值表示了所选择的选项在options参数中的组件位置。图9-6显示了使用下列代码创建的多个输入弹出窗口，其中在按钮上提供了图标（而不是文本）：</p>
+<div class="code java highlight-python"><pre>Icon greenIcon = new DiamondIcon(Color.GREEN);
+Icon redIcon = new DiamondIcon(Color.RED);
+Object iconArray[] = { greenIcon, redIcon} ;
+JOptionPane.showOptionDialog(source, "Continue printing?", "Select an Option",
+  JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null, iconArray,
+  iconArray[1]);
+Icon blueIcon = new DiamondIcon(Color.BLUE);
+Object stringArray[] = { "Do It", "No Way"} ;
+JOptionPane.showInternalOptionDialog(desktop, "Continue printing?",
+  "Select an Option", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE,
+blueIcon, stringArray, stringArray[0]);</pre>
+</div>
+<div class="figure">
+<img alt="Swing_9_6.png" src="_images/Swing_9_6.png" />
+<p class="caption">Swing_9_6.png</p>
+</div>
+</div>
+<div class="section" id="id3">
+<h3>JOptionPane属性<a class="headerlink" href="#id3" title="Permalink to this headline">¶</a></h3>
+<p>表9-3显示了JOptionPane的15个属性。这些属性只有在我们没有使用JOptionPane的工厂方法时才可以访问。对于大多数参数来说，其意义直接与一个构造函数参数相对应。</p>
+<div class="figure">
+<img alt="Swing_table_9_5.png" src="_images/Swing_table_9_5.png" />
+<p class="caption">Swing_table_9_5.png</p>
+</div>
+<p>对于输入对话框或是当selectionValues属性不为null时，wantsInput属性会自动被设置为true。inputValue属性是由一个输入对话框中选择的项。value属性标识了由按钮区域所做的选项。</p>
+<p><strong>显示多行消息</strong></p>
+<p>默认情况下maxCharacterPerLineCount属性设置为一个极大的值，Integer.MAX_VALUE。由于某些奇怪的原因，Swing开发选择不为这个属性提供一个setter方法。如果我们需要修改这个属性，我们必须继承JOptionPane并且重写public
+int
+getMaxCharacterPerLineCount()方法。这使得一个长的文本被分为选项面板中的多行。另外，我们不能使用任何的工厂方法，因为他们并不知道我们的子类。</p>
+<p>为了帮助我们创建短小的JOptionPane组件，我们可以将列表9-2中所示的代码添加到前面列表9-1中所示的OptionPaneUtils类义中。这个新方法提供了指定所需要的选项面板字符宽度的方法。</p>
+<div class="code java highlight-python"><pre>public static JOptionPane getNarrowOptionPane(int maxCharacterPerLineCount) {
+    // our inner class definition
+    class NarrowOptionPane extends JOptionPane {
+        int maxCharacterPerLineCount;
+
+        NarrowOptionPane(int maxCharacterPerLineCount) {
+            this.maxCharacterPerLineCount = maxCharacterPerLineCount;
+        }
+
+        public int getMaxCharacterPerLineCount() {
+            return maxCharacterPerLineCount;
+        }
+    }
+    return new NarrowOptionPane(maxCharacterPerLineCount);
+}</pre>
+</div>
+<p>一旦定义了这个方法与新类，我们可以创建指定字符宽度的选项面板，手动配置所有的属性，将其放在一个弹出窗口中，显示弹出窗口，然后确定用户的响应。下面的代码演示了使用这个新的功能：</p>
+<div class="code java highlight-python"><pre>String msg = "this is a really long message ... this is a really long message";
+JOptionPane optionPane = OptionPaneUtils.getNarrowOptionPane(72);
+optionPane.setMessage(msg);
+optionPane.setMessageType(JOptionPane.INFORMATION_MESSAGE);
+JDialog dialog = optionPane.createDialog(source, "Width 72");
+dialog.setVisible(true);</pre>
+</div>
+<p>图9-7显示了我们没有修改maxCharacterPerLineCount属性时对话框的样子。图9-7同时显示新的短小JOptionPane的样子。</p>
+<div class="figure">
+<img alt="Swing_9_7.png" src="_images/Swing_9_7.png" />
+<p class="caption">Swing_9_7.png</p>
+</div>
+<p>尽管这看起来需要大量的工作，这却是创建多行选项面板的最好方法，除非我们要手动将消息分析为单行。</p>
+<p><strong>理解消息属性</strong></p>
+<p>在本章前面所有使用JOptionPane构造函数的消息参数以及使用工厂方法的例子中，消息仅是一个字符串。正如在前面“JOptionPane消息参数”一节中所描述的，这个参数并不需要是一个字符串。例如，如果这个参数是一个字符串数组，每一个字符串就会在单独的行上显示。这就减少了使用短小JOptionPane的必要，但是需要我们自己计算字符。然而，因为我们是在分割消息，我们可以使用25个厂方法中的一个。例如，下面的代码创建了图9-8中显示的弹出窗口。</p>
+<div class="code java highlight-python"><pre>String multiLineMsg[] = { "Hello,", "World"} ;
+JOptionPane.showMessageDialog(source, multiLineMsg);</pre>
+</div>
+<div class="figure">
+<img alt="Swing_9_8.png" src="_images/Swing_9_8.png" />
+<p class="caption">Swing_9_8.png</p>
+</div>
+<p>消息参数不仅仅支持显示字符串数组，同时他还可以支持任意对象类型的数组。如果数组中的元素是一个Component，他会被直接放置在消息区域中。如果其元素是一个Icon，图标会被放置在一个JLabel中，然后JLabel被放置在消息区域。所有其他的对象会被转换为一个String，将其放在一个JLabel中，并且在消息区域显示，除非对象本身是一个数组；在这种情况下，规则会被迭代应用。</p>
+<p>为了演示这种可能性，图9-9显示了JOptionPane的真正功能。实际的内容并不是要显示特定的内容，只是为了表明我们可以显示多种不同的内容。消息参数是由下面的数组构成的：</p>
+<div class="code java highlight-python"><pre>Object complexMsg[] = {
+   "Above Message", new DiamondIcon(Color.RED), new JButton("Hello"),
+  new JSlider(), new DiamondIcon(Color.BLUE), "Below Message"} ;</pre>
+</div>
+<div class="figure">
+<img alt="Swing_9_9.png" src="_images/Swing_9_9.png" />
+<p class="caption">Swing_9_9.png</p>
+</div>
+<p><strong>向消息区域添加组件</strong></p>
+<p>如果我们要显示图9-9中的弹出窗口，我们就会注意到一个小问题。选项面板并不了解所嵌入的JSlider的设置，这与他自动了解JTextField，JComboBox或是JList组件的输入不同。如果我们希望JOptionPane获取JSlider值，我们需要使得我们的输入组件修改JOptionPane的inputValue属性。当这个值被修改时，选项面板会通知弹出窗口关闭，因为JOptionPane已经获取其输入值。</p>
+<p>将一个ChangeListener关联到JSlider组件可以使得我们确定其值何时发生变化。向前面的列表9-1中显示的OptionPaneUtils类中添加另一个方法可以使得我们更为容易的重用JOptionPane中的这个特殊的JSlider。在列表9-3中以粗体显示了重要的方法调用。相似的代码行需要添加到我们希望在JOptionPane中使用的任意输入组件上。这一行会在用户修改了输入组件的值时通知选项面板。</p>
+<div class="code java highlight-python"><pre>public static JSlider getSlider(final JOptionPane optionPane) {
+    JSlider slider = new JSlider();
+    slider.setMajorTickSpacing(10);
+    slider.setPaintTicks(true);
+    slider.setPaintLabels(true);
+    ChangeListener chageListener =  new ChangeListener() {
+        public void stateChanged(ChangeEvent event) {
+            JSlider theSlider = (JSlider)event.getSource();
+            if(!theSlider.getValueIsAdjusting()) {
+                optionPane.setInputValue(new Integer(theSlider.getValue()));
+            }
+        }
+    };
+    slider.addChangeListener(chageListener);
+    return slider;
+}</pre>
+</div>
+<p>现在创建了这个特殊的JSlider，我们需要将其放置在一个JOptionPane中。这需要我们后动创建JOptionPane组件，奇怪的是，并不要求wantsInput属性的设置。只有当我们希望JOptionPane来提供其自己的输入组件时，wantsInput属性才会被设置为true。因为我们正在提供这样的组件，所以就不需要这个属性。最终弹出窗口显示在图9-10中。</p>
+<div class="code java highlight-python"><pre>JOptionPane optionPane = new JOptionPane();
+JSlider slider = OptionPaneUtils.getSlider(optionPane);
+optionPane.setMessage(new Object[] { "Select a value: " , slider} );
+optionPane.setMessageType(JOptionPane.QUESTION_MESSAGE);
+optionPane.setOptionType(JOptionPane.OK_CANCEL_OPTION);
+JDialog dialog = optionPane.createDialog(source, "My Slider");
+dialog.setVisible(true);
+System.out.println ("Input: " + optionPane.getInputValue());</pre>
+</div>
+<div class="figure">
+<img alt="Swing_9_10.png" src="_images/Swing_9_10.png" />
+<p class="caption">Swing_9_10.png</p>
+</div>
+<p>注意，如果用户并没有移动滑块，JOptionPane.getInputValue()会返回JOptionPane.UNINITIALIZED_VALUE。</p>
+<p><strong>向按钮区域添加组件</strong></p>
+<p>在本章前面的“JOptionPane选项以及初始值参数”一节中，如果我们在JOptionPane的选项数组中有一个Component，我们必须自己配置组件来处理选中。对于我们通过options属性添加其他组件也是如此。当组件被配置为处理选中时，当组件被选中时，JOptionPane被嵌入的弹出窗口会显示。按钮的默认设置如此工作。当安装我们自己的组件时，我们必须通过设置选项面板的value属性在一个组件被选中时通知选项面板。</p>
+<p>为了演示这种机制，创建一个可以放置在选项中具有图标与文本标签的JButton。如果我们没有自己定义这个组件，选项面板仅支持按钮上标签或是图标的显示。当按钮被选中时，按钮会通过将选项面板的value属性设置为按钮当前的文本标签来通知选项面板他被选中。在前面的列表9-1中添加另一个方法来使用我们可以创建一个这样的按钮。列表9-4源码中以粗体显示的代码行是我们需要添加到其他我们希望与组件数组结合作为JOptionPane的选项属性的类似组件上的重要方法调用。这一行代码会在这个组件被选中后调用。</p>
+<div class="code java highlight-python"><pre>public static JButton getButton(final JOptionPane optionPane, String text, Icon icon) {
+    final JButton button = new JButton(text, icon);
+    ActionListener actionListener = new ActionListener() {
+        public void actionPerformed(ActionEvent event) {
+            // return current text label, instead of argument to method
+            optionPane.setValue(button.getText());
+        }
+    };
+    button.addActionListener(actionListener);
+    return button;
+}</pre>
+</div>
+<p>在创建了这个特殊的JButton之后，我们需要将其放在一个JOptionPane中。不幸的，这也需要较长的JOptionPane使用。最终的弹出窗口显示在图9-11中。</p>
+<div class="code java highlight-python"><pre>JOptionPane optionPane = new JOptionPane();
+optionPane.setMessage("I got an icon and a text label");
+optionPane.setMessageType(JOptionPane.INFORMATION_MESSAGE);
+Icon icon = new DiamondIcon (Color.BLUE);
+JButton jButton = OptionPaneUtils.getButton(optionPane, "OK", icon);
+optionPane.setOptions(new Object[] {jButton} );
+JDialog dialog = optionPane.createDialog(source, "Icon/Text Button");
+dialog.setVisible(true);</pre>
+</div>
+<div class="figure">
+<img alt="Swing_9_11.png" src="_images/Swing_9_11.png" />
+<p class="caption">Swing_9_11.png</p>
+</div>
+<p><strong>监听属性变化</strong></p>
+<p>JOptionPane类定义了下列11个常量来辅助监听边界属性的变化：</p>
+<ul class="simple">
+<li>ICON_PROPERTY</li>
+<li>INITIAL_SELECTION_VALUE_PROPERTY</li>
+<li>INITIAL_VALUE_PROPERTY</li>
+<li>INPUT_VALUE_PROPERTY</li>
+<li>MESSAGE_PROPERTY</li>
+<li>MESSAGE_TYPE_PROPERTY</li>
+<li>OPTION_TYPE_PROPERTY</li>
+<li>OPTIONS_PROPERTY</li>
+</ul>
+<p>SELECTION_VALUES_PROPERTY</p>
+<ul class="simple">
+<li>VALUE_PROPERTY</li>
+<li>WANTS_INTUT_PROPERTY</li>
+</ul>
+<p>如果我们没有使用JOptionPane的工厂方法，我们可以使用PropertyChangeListener来监听边界属性的变化。这可以使得我们被动的监听边界属性的变化，而不是在变化后主动获取。</p>
+</div>
+<div class="section" id="id4">
+<h3>自定义JOptionPane观感<a class="headerlink" href="#id4" title="Permalink to this headline">¶</a></h3>
+<p>每一个可安装的Swing观感都提供了不同的JOptionPane外观以及默认的UIResource值集合。图9-12显示了预安装的观感类型Motif，Windows，以及Ocean的JOptionPane窗口的外观。</p>
+<div class="figure">
+<img alt="Swing_9_12.png" src="_images/Swing_9_12.png" />
+<p class="caption">Swing_9_12.png</p>
+</div>
+<p>JOptionPane的消息类型帮助确定要在选项面板的图标区域显示的默认图标。对于普通的消息，并没图标。其余的四个图标－用于信息，问题，警告以及错误消息－显示在表9-4中。</p>
+<div class="figure">
+<img alt="Swing_table_9_6.png" src="_images/Swing_table_9_6.png" />
+<p class="caption">Swing_table_9_6.png</p>
+</div>
+<p>表9-5中显示了JOptionPane可用的UIResource相关属性的集合。对于JOptionPane组件，有56种不同的属性。</p>
+<div class="figure">
+<img alt="Swing_table_9_7_1.png" src="_images/Swing_table_9_7_1.png" />
+<p class="caption">Swing_table_9_7_1.png</p>
+</div>
+<div class="figure">
+<img alt="Swing_table_9_7_2.png" src="_images/Swing_table_9_7_2.png" />
+<p class="caption">Swing_table_9_7_2.png</p>
+</div>
+<div class="figure">
+<img alt="Swing_table_9_7_3.png" src="_images/Swing_table_9_7_3.png" />
+<p class="caption">Swing_table_9_7_3.png</p>
+</div>
+<div class="figure">
+<img alt="Swing_table_9_7_4.png" src="_images/Swing_table_9_7_4.png" />
+<p class="caption">Swing_table_9_7_4.png</p>
+</div>
+<p>表9-5中所列资源的一个很好的用法就是用来自定义默认的按钮标签从而来匹配用户的locale或是语言。例如，要将Cancel，No，OK以及Yes按钮的标签修改为法语，可以在我们的程序中添加下面的代码。（我们也可以由java.util.ResourceBundle中获取翻译的文本。）</p>
+<div class="code java highlight-python"><pre>// Set JOptionPane button labels to French
+UIManager.put("OptionPane.cancelButtonText", "Annuler");
+UIManager.put("OptionPane.noButtonText", "Non");
+UIManager.put("OptionPane.okButtonText", "D'accord");
+UIManager.put("OptionPane.yesButtonText", "Oui");</pre>
+</div>
+<p>现在当我们显示在选项面板时，按钮将会具有本地化的按钮标签。当然，这需要为选项面板翻译消息。图9-13显示在下面的代码所创建的弹出窗口的样子。因为弹出窗口的标题并不是一个属性，我们必须将标题传递给每一个所创建的对话框。</p>
+<div class="code java highlight-python"><pre>int result = JOptionPane.showConfirmDialog(
+  aFrame, "Est-ce que vous avez 18 ans ou plus?", "Choisisez une option",
+  JOptionPane.YES_NO_CANCEL_OPTION);</pre>
+</div>
+<div class="figure">
+<img alt="Swing_9_13.png" src="_images/Swing_9_13.png" />
+<p class="caption">Swing_9_13.png</p>
+</div>
+<p>JOptionPane组件支持本地化的JOptionPane按钮标签。JOptionPane可以为标准的Yes，No，Cancel与OK按钮显示相庆的中文或是日文按钮标签。例如，图9-14中左侧显示了带有日文标签的Yes，No与Cancel按钮标签，而右侧则显示了带有日文标签的OK与Cancel按钮标签。很明显，我们需要修改选项面板中的消息。</p>
+<div class="figure">
+<img alt="Swing_9_14.png" src="_images/Swing_9_14.png" />
+<p class="caption">Swing_9_14.png</p>
+</div>
+<p>幸运的是，JDK
+5.0版本包含了对于标签JOptionPane（同时还有JFileChooser与JColorChooser）标签的翻译。这可以用于德语（de），西班牙语（es），法语（fr），意大利语（it），日语（ja），韩语（ko），英语，瑞典语（sv），以及中文（简体/zh_CN与繁体/zh_TW）。</p>
+</div>
+</div>
+<div class="section" id="progressmonitor">
+<h2>ProgressMonitor类<a class="headerlink" href="#progressmonitor" title="Permalink to this headline">¶</a></h2>
+<p>ProgressMonitor类用来报告需要一段时间完成的任务的状态。这个类是一个特殊的Swing类，他并不是一个GUI组件，也不是一个选项面板或是JavaBean组件。相反，当任务的每一部分完成时，我们通知ProgressMonitor。如果任务需要一段相当长的时间来完成，ProgressMonitor会显示一个类似图9-15所示的弹出窗口。</p>
+<div class="figure">
+<img alt="Swing_9_15.png" src="_images/Swing_9_15.png" />
+<p class="caption">Swing_9_15.png</p>
+</div>
+<p>在ProgressMonitor显示弹出窗口以后，用户可以做下列两件事情。用户可以监视ProgressMontior显示来确认任务已经完成了多少；当任务完成时，ProgressMonitor显示会自动消失。或者，如果用户选择了关闭按钮，这会通知ProgressMonitor任务需要被结束。要检测关闭，任务需要定时查看ProgressMonitor来确认用户是否关闭了任务操作。否则，任务会继续。</p>
+<p>ProgressMonitor类显示的弹出窗口是一个maxCharacterPerLineCount属性设置为60的JOptionPane，允许选项面板自动回行所显示的消息。选项面板会嵌入在一个其标题为“Progress...”的非模态JDialog中。为JDialog是非模态的，用户仍然可以与主程序进行交互。ProgressMonitor的JOptionPane总是可以在其图标区域显示一个信息图标。</p>
+<p>另外，选项面板的消息区域由下面三个对象组件：</p>
+<ul class="simple">
+<li>在消息区域的顶部是在整个JOptionPane生命周期中保持不变的固定消息。与JOptionPane的message属性类似，这个消息可以是一个文本字符串，或者是一个对象数组。</li>
+<li>在消息区域的中部是会随着任务过程而变化的注释或是变化消息。</li>
+<li>在消息区域的底部是一个由已完成任务的增加百分比填充的过程栏（JProgressBar组件）。</li>
+</ul>
+<p>选项面板的按钮区域显示一个关闭按钮。</p>
+<div class="section" id="id5">
+<h3>创建ProgressMonitor<a class="headerlink" href="#id5" title="Permalink to this headline">¶</a></h3>
+<p>当我们创建一个ProgressMonitor时，其构造函数有五个参数：</p>
+<div class="code java highlight-python"><pre>public ProgressMonitor(Component parentComponent, Object message, String note,
+  int minimum, int maximum)</pre>
+</div>
+<p>第一个参数表示当ProgressMonitor需要显示时JOptionPane的父组件。父组件是弹出窗口显示在其上的绷脸的，并且其作用类似于JOptionPane的createDialog()方法中的parentComponent组件。然后我们为JOptionPane的消息区域提供静态或是变化的消息部分。这些消息部分的每一个可以为null，尽管null意味着消息区域的这一部分不会显示。最后，我们需要为过程栏提供minimum与maximum值作为其范围。这两个值之间的区别表示要执行的期望操作数目，例如要载入的文件数或是要读取的文件尺寸。通常，最小设置为零，但是并不做要求。完成操作数决定了过程栏要移动多远。</p>
+<p>初始时，弹出窗口并不显示。默认情况下，过程监视器每半分钟（500毫秒）检测一次来确认正在进行的任务是否会在两秒内结束。如果任务已经显示了某些进程，并且他不会在两秒内结束，那么弹出窗口就会显示。结束时间可以通过修改ProgressMonitor的millisToDecideToPopup与millisToPopup属性来配置。</p>
+<p>下面的代码演示了一个具有200步操作的ProgressMonitor的创建。应该保存到ProgressMonitor的引用，从而他可以在任务过程中得到通知。</p>
+<div class="code java highlight-python"><pre>ProgressMonitor monitor = new ProgressMonitor(
+  parent, "Loading Progress", "Getting Started...", 0, 200);</pre>
+</div>
+</div>
+<div class="section" id="propressmonitor">
+<h3>使用PropressMonitor<a class="headerlink" href="#propressmonitor" title="Permalink to this headline">¶</a></h3>
+<p>一旦我们创建了ProgressMonitor，我们需要启动其过程已经被监视的任务。当任务完成了一步或是多步时，ProgressMonitor需要得到任务进程的通知。通知是通过public
+void setProgress(int
+newValue)方法调用来实现的，其中参数表示现在已经完成的进程，而newValue需要位于初始指定的minimum...maximum范围之间。这个进程值需要在ProgressMonitor之外进行维护，因为我们不能向监视器询问进程已经完成了多少（ProgressMonitor并没有public
+int
+getProgress()方法）。如果进程值在一个名为progress的变化中进行维护，下面两行代码可以更新进程并且通知ProgressMonitor。</p>
+<div class="code java highlight-python"><div class="highlight"><pre><span class="n">progress</span> <span class="o">+=</span> <span class="mi">5</span><span class="p">;</span>
+<span class="n">monitor</span><span class="o">.</span><span class="n">setProgress</span><span class="p">(</span><span class="n">progress</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>progress设置表示到目前为止已经载入的文件数，或者是由文本读取的字节数。除了更新计数，我们还应该更新note来反映进程。如果ProgressMonitor构造函数之间中所用的minimum与maximum参数之间的差值为100，那么当前的进程可以被看作是当前任务的百分比。否则，progress属性仅表示到目前为止已经完成的进程。</p>
+<div class="code java highlight-python"><div class="highlight"><pre><span class="n">monitor</span><span class="o">.</span><span class="n">setNote</span><span class="p">(</span><span class="s">&quot;Loaded &quot;</span> <span class="o">+</span> <span class="n">progress</span> <span class="o">+</span> <span class="s">&quot; files&quot;</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>执行任务代码要负责检测用户是否按下了ProgressMonitor对话框中的Cancel按钮。如果任务被关闭，ProgressMonitor会自动关闭对话框，但是任务必须在代码中的合适位置添加一个简单的检测来主动检测变化：</p>
+<div class="code java highlight-python"><pre>if (monitor.isCanceled()) {
+// Task canceled - cleanup
+  ...
+}  else {
+// Continue doing task
+  ...
+}</pre>
+</div>
+<p>大多数的任务要求ProgressMonitor使用单独的线程来实现，从而避免阻塞主程序的响应。</p>
+<p>列表9-5显示了一个创建ProgressMonitor并且允许我们手动或自动增加其progress属性的程序。这些任务是由屏幕上的按钮来处理的（如图9-16）。选择Start按钮创建ProgressMonitor。选择Manual
+Increase按钮可以使得进程增加5.选择Automatic
+Increase按钮可以使得进程每250毫秒增加5.在自动增加的过程中按下弹出窗口的Cancel按钮演示了操作被关闭时发生的情况；计时器停止发送更新。</p>
+<div class="figure">
+<img alt="Swing_9_16.png" src="_images/Swing_9_16.png" />
+<p class="caption">Swing_9_16.png</p>
+</div>
+<p>列表9-5中开始处的ProgressMonitorHandler内联类对于保证仅由事件线程访问ProgressMonitor是必须。否则，在某些随机的线程内，访问将不是线程安全的。</p>
+<div class="code java highlight-python"><pre>package swingstudy.ch09;
+
+import java.awt.Component;
+import java.awt.EventQueue;
+import java.awt.GridLayout;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+
+import javax.swing.JButton;
+import javax.swing.JFrame;
+import javax.swing.ProgressMonitor;
+import javax.swing.Timer;
+
+public class SampleProgress {
+
+    static ProgressMonitor monitor;
+    static int progress;
+    static Timer timer;
+
+    static class ProgressMonitorHandler implements ActionListener {
+        // Called by Timer
+        public void actionPerformed(ActionEvent event) {
+            if(monitor == null) {
+                return ;
+            }
+            if(monitor.isCanceled()) {
+                System.out.println("Monitor canceled");
+                timer.stop();
+            }
+            else {
+                progress += 3;
+                monitor.setProgress(progress);
+                monitor.setNote("Load "+progress+" files");
+            }
+        }
+    }
+    /**
+     * @param args
+     */
+    public static void main(String[] args) {
+        // TODO Auto-generated method stub
+
+        Runnable runner = new Runnable() {
+            public void run() {
+                JFrame frame = new JFrame("ProgressMonitor Sample");
+                frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+                frame.setLayout(new GridLayout(0,1));
+
+                // define start button
+                JButton startButton = new JButton("Start");
+                ActionListener startActionListener = new ActionListener() {
+                    public void actionPerformed(ActionEvent event) {
+                        Component parent = (Component)event.getSource();
+                        monitor = new ProgressMonitor(parent, "Loading Progress", "Getting Started...", 0, 200);
+                        progress = 0;
+                    }
+                };
+                startButton.addActionListener(startActionListener);
+                frame.add(startButton);
+
+                // define manual increase button
+                // pressing this button increases progress by 5
+                JButton increaseButton = new JButton("Manual Increase");
+                ActionListener increaseActionListener = new ActionListener() {
+                    public void actionPerformed(ActionEvent event) {
+                        if(monitor == null)
+                            return ;
+                        if(monitor.isCanceled()) {
+                            System.out.println("Monitor cancled");
+                        }
+                        else {
+                            progress += 5;
+                            monitor.setProgress(progress);
+                            monitor.setNote("Loaded "+progress+" files");
+                        }
+                    }
+                };
+                increaseButton.addActionListener(increaseActionListener);
+                frame.add(increaseButton);
+
+                // define automatic increase button
+                // start timer to increase progress by 3 every 250 ms
+                JButton autoIncreaseButton = new JButton("Automatic Increase");
+                ActionListener autoIncreaseActionListener = new ActionListener() {
+                    public void actionPerformed(ActionEvent event) {
+                        if(monitor != null) {
+                            if(timer == null) {
+                                timer = new Timer(250, new ProgressMonitorHandler());
+                            }
+                            timer.start();
+                        }
+                    }
+                };
+                autoIncreaseButton.addActionListener(autoIncreaseActionListener);
+                frame.add(autoIncreaseButton);
+
+                frame.setSize(300, 200);
+                frame.setVisible(true);
+            }
+        };
+        EventQueue.invokeLater(runner);
+    }
+
+}</pre>
+</div>
+</div>
+<div class="section" id="id6">
+<h3>ProgressMonitor属性<a class="headerlink" href="#id6" title="Permalink to this headline">¶</a></h3>
+<p>表9-6显示了ProgressMonitor的八个属性。</p>
+<div class="figure">
+<img alt="Swing_table_9_8.png" src="_images/Swing_table_9_8.png" />
+<p class="caption">Swing_table_9_8.png</p>
+</div>
+<p>millisToDecideToPoppup属性表示监视器在决定是否需要显示弹出窗口前要等待的毫秒数。如果progress属性还没有变化，则监视器会在再一次检测之前等待另一个时间间隔。当ProgressMonitor检测并且发现progress属性已经变化时，他会估计任务是否会在millisToPopup属性的毫秒数之内完成。如果ProgressMonitor认为所的任务会及时完成，则不会显示弹出窗口。否则，弹出窗口会在任务开始时刻的millisToPopup毫秒之后显示。</p>
+</div>
+<div class="section" id="id7">
+<h3>自定义ProgressMonitor观感<a class="headerlink" href="#id7" title="Permalink to this headline">¶</a></h3>
+<p>修改ProgressMonitor的外观需要修改JProgressBar以及JLabel的外观，以及ProgressMonitor所用的JOptionPane。</p>
+<p>ProgressMonitor只有一个UIResource相关的属性：</p>
+<ul class="simple">
+<li>String类型的ProgressMonitor.progressText</li>
+</ul>
+</div>
+</div>
+<div class="section" id="progressmonitorinputstream">
+<h2>ProgressMonitorInputStream类<a class="headerlink" href="#progressmonitorinputstream" title="Permalink to this headline">¶</a></h2>
+<p>ProgressMonitorInputStream类表示一个输入流过滤器，这个输入流过滤器使用ProgressMonitor来检测一个输入流的读取。如果读取需要较长的时间完成，则会显示ProgressMonitor，且用户可以选择弹出窗口中的Cancel按钮，从而使得读取被中断并且输入流会抛出一个InterruptedIOException。</p>
+<div class="section" id="id8">
+<h3>创建ProgressMonitorInputStream<a class="headerlink" href="#id8" title="Permalink to this headline">¶</a></h3>
+<p>类似于其他的过滤器流，ProgressMonitorInputStream是使用一个到需要过滤的流的引用来创建的。除了到这个过滤器的引用，ProgressMonitorInputStream的构造函数还需要其ProgressMonitor的两个参数：父组件以及一个消息。正如在这里所看到的，构造函数首先需要ProgressMonitor参数：</p>
+<div class="code java highlight-python"><pre>public ProgressMonitorInputStream(
+  Component parentComponent, Object message, InputStream inputStream)</pre>
+</div>
+<p>与JOptionPane与ProgressMonitor类似，消息参数是一个Object，而不是一个String，所以我们可以在多行上显示一个组件数组或是字符串。下面的代码创建了一个ProgressMonitorInputStream。</p>
+<div class="code java highlight-python"><pre>FileInputStream fis = new FileInputStream(filename);
+ProgressMonitorInputStream pmis =
+  new ProgressMonitorInputStream(parent, "Reading " + filename, fis);</pre>
+</div>
+</div>
+<div class="section" id="id9">
+<h3>使用ProgressMonitorInputStream<a class="headerlink" href="#id9" title="Permalink to this headline">¶</a></h3>
+<p>与所有的输入流一样，一旦我们创建了ProgressMonitorInputStream，我们需要由其中进行读取。如果输入流的读取不够快，底层的ProgressMonitor会使得进程弹出窗口显示。一旦这个窗口显示，用户可以监视进程或是通过选择Cancel按钮关闭读取。如果Cancel按钮被选中，则InterruptedIOException会被抛出，而异常的bytesTransferred或会被设置为已经成功读取的字节数。</p>
+<p>图9-7显示了一个ProgressMonitorInputStream弹出窗口的样子。略为不同的是，弹出窗口在消息区域使用两个JLabel组件，而不是一个。</p>
+<div class="figure">
+<img alt="Swing_9_17.png" src="_images/Swing_9_17.png" />
+<p class="caption">Swing_9_17.png</p>
+</div>
+<p>列表9-6显示了完整的源代码示例。其中粗体显示的代码行是使用ProgressMonitorInputStream的关键。他们设置对话框的消息并且创建输入流。程序使用一个由命令行指定的文件名，读取文件，并且将文件拷贝到标准输出。如果文件足够大，进程监视器将会显示。如果我们按下Cancel按钮，读取停止，并且Canceled会被输出到标准错误。</p>
+<div class="code java highlight-python"><pre>package swingstudy.ch09;
+
+import java.io.BufferedReader;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.InterruptedIOException;
+
+import javax.swing.JLabel;
+import javax.swing.ProgressMonitorInputStream;
+
+public class ProgressInputSample {
+
+    public static final int NORMAL = 0;
+    public static final int BAD_FILE = 1;
+    public static final int CANCELED = NORMAL;
+    public static final int PROBLEM = 2;
+
+    /**
+     * @param args
+     */
+    public static void main(String[] args) {
+        // TODO Auto-generated method stub
+
+        int returnValue = NORMAL;
+        if(args.length != 1) {
+            System.err.println("Usage:");
+            System.err.println("java ProgressInputSample filename");
+        }
+        else {
+            try {
+                FileInputStream fis = new FileInputStream(args[0]);
+                JLabel filenameLabel = new JLabel(args[0], JLabel.RIGHT);
+                Object message[] = {"Reading:", filenameLabel};
+                ProgressMonitorInputStream pmis = new ProgressMonitorInputStream(null, message, fis);
+                InputStreamReader isr = new InputStreamReader(pmis);
+                BufferedReader br = new BufferedReader(isr);
+                String line;
+                while((line = br.readLine()) != null) {
+                    System.out.println(line);
+                }
+                br.close();
+            }
+            catch(FileNotFoundException exception) {
+                System.err.println("Bad File "+exception);
+                returnValue = BAD_FILE;
+            }
+            catch(InterruptedIOException exception) {
+                System.err.println("Canceled");
+                returnValue = CANCELED;
+            }
+            catch(IOException exception) {
+                System.err.println("I/O Exception "+exception);
+                returnValue = PROBLEM;
+            }
+        }
+        System.exit(returnValue);
+    }
+
+}</pre>
+</div>
+</div>
+<div class="section" id="id10">
+<h3>ProgressMonitorInputStream属性<a class="headerlink" href="#id10" title="Permalink to this headline">¶</a></h3>
+<p>表9-7显示了ProgressMonitorInputStream的属性。ProgressMonitor在输入流创建时创建。我们不需要修改ProgressMonitor。然而我们也许需要在弹出窗口显示之前提供一个或长或短的时延（ProgressMonitor的millisToDecideToPopup属性）。</p>
+<div class="figure">
+<img alt="Swing_table_9_9.png" src="_images/Swing_table_9_9.png" />
+<p class="caption">Swing_table_9_9.png</p>
+</div>
+</div>
+</div>
+<div class="section" id="jcolorchooser">
+<h2>JColorChooser类<a class="headerlink" href="#jcolorchooser" title="Permalink to this headline">¶</a></h2>
+<p>我们可以将JColorChooser认为是一个只可以输入的JOptionPane，其输入域要求我们选择一种颜色。与JOptionPane类似，JColorChooser也仅是位于窗口中的一堆组件，而并不是一准备好用来使用的弹出窗口。图9-18显示在了我们自己的程序窗口中JColorChooser的样子。在顶部是三个可选择的颜色选择面板；在底部是一个预览面板。其中“I
+Love Swing”并不是选择器的一部分，而包含选择器的程序所有的。</p>
+<div class="figure">
+<img alt="Swing_9_18.png" src="_images/Swing_9_18.png" />
+<p class="caption">Swing_9_18.png</p>
+</div>
+<p>除了可以在我们的程序窗口显示以外，JColorChooser同时也为自动放置在JDialog的组件集合中提供了支持方法。图9-19显示了一个以这种方式自动创建的弹出窗口。</p>
+<div class="figure">
+<img alt="Swing_9_19.png" src="_images/Swing_9_19.png" />
+<p class="caption">Swing_9_19.png</p>
+</div>
+<p>为了支持这种行为，JColorChooser需要位于javax.swing.colorchooser包中的一些支持类的帮助。JColorChooser的数据模型是ColorSelectionModel接口的一种实现。javax.swing.colorchooser包提供了DefaultColorSelectionModel类作为ColorSelectionModel接口的实现。对于用户界面，JColorChooser依赖ColorChooserComponentFactory来创建选择颜色的默认面板。这些面板是AbstractColorChooserPanel类的特殊子类，如果我们不喜欢默认的集合，我们也可以自己创建。</p>
+<p>默认情况下，当在一个JColorChooser中有有多个选择器面板时，每一个面板显示在JTabbedPane的一个标签上。然而，ColorChooserUI可以以他要求的任何方式处理多个面板。</p>
+<div class="section" id="id11">
+<h3>创建JColorChooser<a class="headerlink" href="#id11" title="Permalink to this headline">¶</a></h3>
+<p>如果我们希望创建一个JColorChooser，并且将其放在我们自己的窗口，我们可以使用下列JColorChooser类的三个构造函数中的一个：</p>
+<div class="code java highlight-python"><pre>public JColorChooser()
+JColorChooser colorChooser = new JColorChooser();
+
+public JColorChooser(Color initialColor)
+JColorChooser colorChooser =
+  new JColorChooser(aComponent.getBackground());
+
+public JColorChooser(ColorSelectionModel model)
+JColorChooser colorChooser = new JColorChooser(aColorSelectionModel);</pre>
+</div>
+<p>默认情况下，选择器的初始颜色为白色。如果我们不希望白色作为默认颜色，我们可以使用Color对象或是ColorSelectionModel来提供初始颜色。</p>
+</div>
+<div class="section" id="id12">
+<h3>使用JColorChooser<a class="headerlink" href="#id12" title="Permalink to this headline">¶</a></h3>
+<p>一旦我们应用构造函数创建了一个JColorChooser，我们可以将其放在任何容器中，类似于其他的组件。例如，列表9-7所示的源码创建了一个前面图9-18所示的GUI。</p>
+<div class="code java highlight-python"><pre>package swingstudy.ch09;
+
+import java.awt.BorderLayout;
+import java.awt.EventQueue;
+import java.awt.Font;
+
+import javax.swing.BorderFactory;
+import javax.swing.JColorChooser;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+
+public class ColorSample {
+
+    /**
+     * @param args
+     */
+    public static void main(String[] args) {
+        // TODO Auto-generated method stub
+
+        Runnable runner = new Runnable() {
+            public void run() {
+                JFrame frame = new JFrame("JColorChooser Popup");
+                frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+
+                final JLabel label = new JLabel("I Love Swing", JLabel.CENTER);
+                label.setFont(new Font("Serif", Font.BOLD | Font.ITALIC, 48));
+                frame.add(label, BorderLayout.SOUTH);
+
+                final JColorChooser colorChooser = new JColorChooser(label.getBackground());
+                colorChooser.setBorder(BorderFactory.createTitledBorder("Pick Foreground Color"));
+
+                frame.add(colorChooser, BorderLayout.CENTER);
+
+                frame.pack();
+                frame.setVisible(true);
+            }
+        };
+
+        EventQueue.invokeLater(runner);
+    }
+
+}</pre>
+</div>
+<p>尽管上面的代码创建了GUI，但是在JColorChooser中选择不同的颜色并不会做任何事情。下面我们看一下使得颜色变化的代码。</p>
+<p><strong>监听颜色选择变化</strong></p>
+<p>JColorChooser使用ColorSelectionModel作为其数据模型。正如下面的接口定义所示，数据模型只包含一个属性，selectedColor，用来管理颜色选择器的状态。</p>
+<div class="code java highlight-python"><pre>public interface ColorSelectionModel {
+  // Listeners
+  public void addChangeListener(ChangeListener listener);
+  public void removeChangeListener(ChangeListener listener);
+  // Properties
+  public Color getSelectedColor();
+  public void setSelectedColor(Color newValue);
+}</pre>
+</div>
+<p>当用户改变了JColorChooser中的颜色，selectedColor属性发生变化，并且JColorChooser生成一个ChangeEvent来通知所注册的ChangeListener对象。</p>
+<p>所以，要完成前一节中的ColorSample示例，并且当用户修改JColorChooser中的颜色选择时使得标签的前景色发生变化，我们需要向颜色选择器注册一个ChangeListener。这涉及到创建一个ChangeListener并将其添加到ColorSelectionModel中。将列表9-8中所示的代码添加到前面的9-7代码中的相应位置。</p>
+<div class="code java highlight-python"><pre>ColorSelectionModel model = colorChooser.getSelectionModel();
+ChangeListener changeListener = new ChangeListener() {
+  public void stateChanged(ChangeEvent changeEvent) {
+    Color newForegroundColor = colorChooser.getColor();
+    label.setForeground(newForegroundColor);
+  }
+};
+model.addChangeListener(changeListener);</pre>
+</div>
+<p>一旦添加了这段代码，这个示例就完成了。运行这个程序会出现图9-18所示的颜色选择器，并且选择一个新的地修改标签的前景色。</p>
+<p><strong>创建并显示一个JColorChooser弹出窗口</strong></p>
+<p>尽管前面的例子对于如果我们仅是希望在我们程序中包含一个JColorChooser的情况来说已经足够了，但是更多的时候，我们希望JColorChooser在一个单独的弹出窗口中显示。这个窗口看起来像是我们在屏幕上选择一个按钮或者是选择一个菜单项目的结果。为了支持这种行为，JColorChooser包含下列的工厂方法：</p>
+<div class="code java highlight-python"><pre>public static Color showDialog(Component parentComponent,
+  String title, Color initialColor)</pre>
+</div>
+<p>当调用这个方法时，showDialog()会使用指定的父组件与标题创建一个模态对话框。在这个对话框中是一个给定了初始颜色值的JColorChooser。正如我们可以在图9-18中所看到的，在底部是三个按钮：OK，Cancel与Rest。当OK按钮被按下时，弹出窗口会消失，而showDialog()方法会返回当前选中的颜色值。当Cancel按钮被按下时，此方法会返回null，而不会返回所选择的颜色值或是初始颜色值。Reset按钮的选择会使得JColorChooser将其所选中的颜色修改为在启动时所提供的初始颜色。</p>
+<p>showDialog()方法的通常作用过程是其初始颜色参数是一个对象的某个颜色属性。然后方法调用的返回值变为相同颜色属性的新值。这种模式用法显示在下面的代码行中，其中颜色属性的变化是一个按钮的背景颜色属性值。类似于JOptionPane，null父组件参数会使得弹出窗口位于屏幕的中间，而不是重叠在某个特定的组件之上。</p>
+<div class="code java highlight-python"><pre>Color initialBackground = button.getBackground();
+Color background = JColorChooser.showDialog(
+  null, "Change Button Background", initialBackground);
+if (background != null) {
+  button.setBackground(background);
+}</pre>
+</div>
+<p>可以将这段代码放在完整的示例程序中，列表9-9显示了这样的一个示例程序，其中提供了一个按钮，当选中时会显示一个JColorChooser。在OK按钮被选中之后颜色选择器中选中的颜色变为按钮的背景色。</p>
+<div class="code java highlight-python"><pre>package swingstudy.ch09;
+
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.EventQueue;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+
+import javax.swing.JButton;
+import javax.swing.JColorChooser;
+import javax.swing.JFrame;
+
+public class ColorSamplePopup {
+
+    /**
+     * @param args
+     */
+    public static void main(String[] args) {
+        // TODO Auto-generated method stub
+
+        Runnable runner = new Runnable() {
+            public void run() {
+                JFrame frame = new JFrame("JColorChooser Sample Popup");
+                frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+
+                final JButton button = new JButton("Pick to Change Background");
+
+                ActionListener actionListener = new ActionListener() {
+                    public void actionPerformed(ActionEvent event) {
+                        Color initialBackground = button.getBackground();
+                        Color background = JColorChooser.showDialog(null, "Change Button Background", initialBackground);
+                        if(background != null) {
+                            button.setBackground(background);
+                        }
+                    }
+                };
+
+                button.addActionListener(actionListener);
+
+                frame.add(button, BorderLayout.CENTER);
+
+                frame.setSize(300, 100);
+                frame.setVisible(true);
+            }
+        };
+
+        EventQueue.invokeLater(runner);
+    }
+
+}</pre>
+</div>
+<p><strong>提供我们自己的OK/Cancel事件监听器</strong></p>
+<p>如果showDialog()方法提供了太多了自动行为，我们也许会更喜欢另一种JColorChooser方法
+，这种方法允许我们在显示之前自定义JColorChooser并且定义当选择OK与Cancel按钮时的所发生的事件。</p>
+<div class="code java highlight-python"><pre>public static JDialog createDialog(Component parentComponent, String title,
+  boolean modal, JColorChooser chooserPane, ActionListener okListener,
+  ActionListener cancelListener)</pre>
+</div>
+<p>在createDialog()方法，父组件与标题参数与showDialog()方法相同。modal参数使得弹出窗口可以是非模态的，这与showDialog()不同，后者弹出窗口总是模态的。当弹出窗口是非模态时，用户仍然可以与程序的其他部分交互。弹出窗口中的OK与Cancel按钮有一个相关联的ActionListener，从而在选择之后可以隐藏弹出窗口。如果我们需要选择之后的额外响应，则我们要负责添加我们自己的监听器。</p>
+<p>为了演示createDialog()的正确使用，列表9-10中的程序重复了列表9-9中的程序的功能。然而，如果新的背景色与前景色相同，则颜色修改会被拒绝，而不会自动接受新的颜色值。另外，如果用户选择Cancel按钮，按钮的背景色会被设置为红色。</p>
+<div class="code java highlight-python"><pre>package swingstudy.ch09;
+
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.EventQueue;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+
+import javax.swing.JButton;
+import javax.swing.JColorChooser;
+import javax.swing.JDialog;
+import javax.swing.JFrame;
+
+public class CreateColorSamplePopup {
+
+    /**
+     * @param args
+     */
+    public static void main(String[] args) {
+        // TODO Auto-generated method stub
+
+        Runnable runner = new Runnable() {
+            public void run() {
+                JFrame frame = new JFrame("JColorChooser Create Popup Sample");
+                frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+
+                final JButton button = new JButton("Pick to Change Background");
+
+                ActionListener actionListener = new ActionListener() {
+                    public void actionPerformed(ActionEvent event) {
+                        Color initialBackground = button.getBackground();
+
+                        final JColorChooser colorChooser = new JColorChooser(initialBackground);
+
+                        // for okay selection, change button background to selected color
+                        ActionListener okActionListener = new ActionListener() {
+                            public void actionPerformed(ActionEvent event) {
+                                Color newColor = colorChooser.getColor();
+                                if(newColor.equals(button.getForeground())) {
+                                    System.out.println("Color change rejected");
+                                }
+                                else {
+                                    button.setBackground(newColor);
+                                }
+                            }
+                        };
+
+                        // for cancel selection, change button background to red
+                        ActionListener cancelActionListener = new ActionListener() {
+                            public void actionPerformed(ActionEvent event) {
+                                button.setBackground(Color.RED);
+                            }
+                        };
+
+                        final JDialog dialog = JColorChooser.createDialog(null, "Change Button Background", true, colorChooser, okActionListener, cancelActionListener);
+
+                        // wait for current event dispatching to complete before showing
+                        Runnable showDialog = new Runnable() {
+                            public void run() {
+                                dialog.setVisible(true);
+                            }
+                        };
+
+                        EventQueue.invokeLater(showDialog);
+                    }
+                };
+
+                button.addActionListener(actionListener);
+                frame.add(button, BorderLayout.CENTER);
+
+                frame.setSize(300, 100);
+                frame.setVisible(true);
+            }
+        };
+
+        EventQueue.invokeLater(runner);
+    }
+
+}</pre>
+</div>
+<p>注意，actionPerformed()方法使用EventQueue.invokeLate()方法来显示选择器。当前的事件处理需在显示选择器之前完成。否则，在选择器显示之前，前一个动作的事件处理还没有完成。</p>
+</div>
+<div class="section" id="id13">
+<h3>JColorChooser属性<a class="headerlink" href="#id13" title="Permalink to this headline">¶</a></h3>
+<p>表9-8列出了JColorChooser的八个属性的信息，包括color属性的三个数据类型。</p>
+<div class="figure">
+<img alt="Swing_table_9_10.png" src="_images/Swing_table_9_10.png" />
+<p class="caption">Swing_table_9_10.png</p>
+</div>
+<p>color属性比较特殊，因为他有三种设置的方法：</p>
+<ul class="simple">
+<li>直接由Color设置</li>
+<li>由一个使用0xAARRGGBB分配形式将红绿蓝值组合在一起的int变量来设置，其中A表示alpha值（被忽略，使用255替换）</li>
+<li>由分别表示红，绿，蓝颜色组件的单独三个int变量设置</li>
+</ul>
+<p>如果我们没有使用showDialog()，我们可以在JColorChooser显示之前进行自定义。除了自定义color属性以外，color属性可以在JColorChooser构造函数中设置，我们还可以自定义在预览区域显示的组件以及选择器面板。</p>
+<p><strong>修改预览面板</strong></p>
+<p>ColorChooserComponentFactory类负责为JColorChooser的预览区域提供默认的组件。对于标准的观感类型，预览面板位于颜色选择器的底部。</p>
+<p>如果我们不需要颜色选择器中的预览面板，我们必须将previewPanel属性设置为一个不为null的组件值。当这个属性设置为null时，则会显示观感的默认预览面板。将这个属性设置为一个空的JPanel可以实现不显示预览面板的目的。</p>
+<div class="code java highlight-python"><pre>colorChooser.setPreviewPanel(new JPanel());</pre>
+</div>
+<p>图9-20显示了一个不带预览面板的颜色选择器的样子。因为当JPanel内没有任何内容时，JPanel没有尺寸，这就有效的移除的面板。</p>
+<div class="figure">
+<img alt="Swing_9_20.png" src="_images/Swing_9_20.png" />
+<p class="caption">Swing_9_20.png</p>
+</div>
+<p>如果我们希望显示预览面板，但是并不喜欢默认的外观，我们可以向这个区域添加我们自己的JComponent。配置要求我们将我们的新预览面板放在一个带有标题边框的容器内，并且当用户选择一个新的颜色时预览面板的前景色发生变化。</p>
+<p>注意，ColorChooserUI实现类（BasicColorChooserUI）中的bug要求额外的步骤来安装预览面板。除了调用setPreviewPanel(newPanel)之外，我们必须设置面板的尺寸与边框，从而使得用户界面正确的配置新的预览面板。</p>
+<p>下面的代码演示了使用JLabel作为自定义预览面板。图9-21演示了使用了这种预览面板后JColorChooser的样子。</p>
+<div class="code java highlight-python"><pre>final JLabel previewLabel = new JLabel("I Love Swing", JLabel.CENTER);
+previewLabel.setFont(new Font("Serif", Font.BOLD | Font.ITALIC, 48));
+previewLabel.setSize(previewLabel.getPreferredSize());
+previewLabel.setBorder(BorderFactory.createEmptyBorder(0,0,1,0));
+colorChooser.setPreviewPanel(previewLabel);</pre>
+</div>
+<div class="figure">
+<img alt="Swing_9_21.png" src="_images/Swing_9_21.png" />
+<p class="caption">Swing_9_21.png</p>
+</div>
+<p>注意，因为预览面板的前景色的初始设置为其背景色，所以面板看起来是空的。这也就是默认预览面板使用限制的背景色显示文本的原因。</p>
+<p><strong>修改颜色选择器面板</strong></p>
+<p>JColorChooser上部的各种标签表示AbstractColorChooserPanel实现。每一个标签都允许用户以一种不同的方式选择颜色。默认情况下，ColorChooserComponentFactory提供具有三个面板的JColorChooser（如图9-22）：</p>
+<ul class="simple">
+<li>样本面板允许用户由一个预定义的颜色样本集合中选择颜色，就如同在一个颜料店一样。</li>
+<li>HSB面板允许用户使用色调饱和度明亮度的颜色模式选择颜色。</li>
+<li>RGB面板允许用户使用红绿蓝颜色模式选择颜色。</li>
+</ul>
+<div class="figure">
+<img alt="Swing_9_22.png" src="_images/Swing_9_22.png" />
+<p class="caption">Swing_9_22.png</p>
+</div>
+<p>如果我们不喜欢默认的选择器面板，或者是我们希望添加其他工作方式不同的颜色选择器面板，我们可以通过继承AbstractColorChooserPanel类来创建我们自己的面板。要将新面板添加到已存在集合中，我们可以调用下面的方法：</p>
+<div class="code java highlight-python"><pre>public void addChooserPanel(AbstractColorChooserPanel panel)</pre>
+</div>
+<p>如果稍后我们决定不再使用新面板，我们可以使用下面的方法来移除：</p>
+<div class="code java highlight-python"><pre>public AbstractColorChooserPanel removeChooserPanel(AbstractColorChooserPanel panel)</pre>
+</div>
+<p>要替换已存在的面板集合，可以调用下面的方法：</p>
+<div class="code java highlight-python"><pre>setChooserPanels(AbstractColorChooserPanel panels[ ])</pre>
+</div>
+<p>创建一个新面板要求我们继承AbstractColorChooserPanel，并且为新面板填充颜色选择的细节。下面的代码行显示了这个类的定义，其中包括了五个抽象方法。这五个方法是我们必须重写的。</p>
+<div class="code java highlight-python"><pre>public abstract class AbstractColorChooserPanel extends JPanel {
+  public AbstractColorChooserPanel();
+  protected abstract void buildChooser();
+  protected Color getColorFromModel();
+  public ColorSelectionModel getColorSelectionModel();
+  public int getDisplayMnemonicIndex();
+  public abstract String getDisplayName();
+  public abstract Icon getLargeDisplayIcon();
+  public int getMnemonic();
+  public abstract Icon getSmallDisplayIcon();
+  public void installChooserPanel(JColorChooser);
+  public void paint(Graphics);
+  public void uninstallChooserPanel(JColorChooser);
+  public abstract void updateChooser();
+}</pre>
+</div>
+<p>为了演示如何使用颜色选择器面板，下面我们来看一下如何来创建显示Color与SystemColor类中的颜色列表的颜色选择面板。由这个列表中，用户必须选择一个颜色。面板使用JComboBox来表示颜色列表。（JComboBox的使用会在第13章进行详细解释）图9-23显示了完成的面板。面板是使用下面的代码创建并添加的：</p>
+<div class="code java highlight-python"><pre>SystemColorChooserPanel newChooser = new SystemColorChooserPanel();
+AbstractColorChooserPanel chooserPanels[] = {newChooser};
+colorChooser.setChooserPanels(chooserPanels);</pre>
+</div>
+<div class="figure">
+<img alt="Swing_9_23.png" src="_images/Swing_9_23.png" />
+<p class="caption">Swing_9_23.png</p>
+</div>
+<p>要定义的第一个方法是public String
+getDisplayName()。这个方法返回一个当存在多个选择器面板时在Tab上显示的文本标签。如果只有一个选择面板，这个名字不会显示。</p>
+<div class="code java highlight-python"><pre>public String getDisplayName() {
+  return "SystemColor";
+}</pre>
+</div>
+<p>由两个Icon方法返回的值与系统的观感类型没有任何关系。我们可以由这两个方法中返回null，或者是返回与这两个方法无关的Icon来检测。自定义的ColorChooserUI需要使用这两个Icon方法，通常用于在选择器面板Tab页上的图标。</p>
+<div class="code java highlight-python"><pre>public Icon getSmallDisplayIcon() {
+  return new DiamondIcon(Color.BLUE);
+}
+public Icon getLargeDisplayIcon() {
+  return new DiamondIcon(Color.GREEN);
+}</pre>
+</div>
+<p>protected void
+buildChooser()方法是由AbstractColorChooserPanel的installChooserPanel()方法在面板被添加到选择器时调用的。我们使用这个方法来向容器添加必要的组件。在示例SystemColorChooserPanel选择器中，这个涉及到创建JComboBox并将其添加到面板。因为AbstractColorChooserPanel是一个JPanel子类，我们就可以使用add()方法添加组合框。组合框必须使用选项进行填充，并且必须安装一个事件处理器用于用户选择组件时的事件处理。事件处理的代码在下面的代码块之后描述。</p>
+<div class="code java highlight-python"><pre>protected void buildChooser() {
+  comboBox = new JComboBox(labels);
+  comboBox.addItemListener(this);
+  add(comboBox);
+}</pre>
+</div>
+<p>注意，另外，如果我们选择重写uninstallChooserPanel(JColorChooser
+enclosingChooser)，我们需要最后调用super.uninstallChooserPanel(JColorChooser
+enclosingChooser)，而不是先调用。</p>
+<p>当用户修改AbstractColorChooserPanel中的颜色时，面板必须通知颜色变化的ColorSelectionModel。在SystemColorChooserPanel面板中，这等同于用户在JComboxBox中选择一个新的选项。所以，当复选框的值发生变化时，确定与选项等同的Color，然后通知模型相应的变化。</p>
+<div class="code java highlight-python"><pre>public void itemStateChanged(ItemEvent itemEvent) {
+  int state = itemEvent.getStateChange();
+  if (state == ItemEvent.SELECTED) {
+    int position = findColorLabel(itemEvent.getItem());
+    // Last position is bad (not selectable)
+    if ((position != NOT_FOUND) &amp;&amp; (position != labels.length-1)) {
+      ColorSelectionModel selectionModel = getColorSelectionModel();
+      selectionModel.setSelectedColor(colors[position]);
+    }
+  }
+}</pre>
+</div>
+<p>最后要实现的AbstractColorChooserPanel方法是public void
+updateChooser()。这个方法也是在启动时由installChooserPanel()方法来调用的。另外，当JColorChooser的ColorSelectionModel发生变化时也会调用这个方法。当updateChooser()方法被调用时，选择器面板必须更新其显示来显示当前被选中的模型颜色。并不是所有的面板都显示当前被选中的是哪一个颜色，所以调用也许会不做任何事情。（系统提供的样品面板就是一个不显示当前颜色的面板。）另外，也有可能当前的颜色在面板上不能显示。例如，在SystemColorChooserPanel中，如果当前选择并不是一个SystemColor或是Color常量，我们可以选择不做任何事情或是显示一些内容来表示自定义的颜色。所以，在updateChooser()实现中，我们需要由ColorSelectionModel中获取当前的颜色，并且修改面板的颜色。实际的设置是通过一个为setColor(Color
+newValue)的助手方法来实现的。</p>
+<div class="code java highlight-python"><pre>public void updateChooser() {
+  Color color = getColorFromModel();
+  setColor(color);
+}</pre>
+</div>
+<p>setColor(Color newValue)方法简单使用由findColorPosition(Color
+newColor)返回的位置在一个查询表中查询颜色。</p>
+<div class="code java highlight-python"><pre>// Change combo box to match color, if possible
+private void setColor(Color newColor) {
+  int position = findColorPosition(newColor);
+  comboBox.setSelectedIndex(position);
+}</pre>
+</div>
+<p>findColorLabel(Object label)与findColorPosition(Color
+newColor)的细节将会在稍后的列表9-11的完整源码中进行显示。</p>
+<p>如果我们不使用显示选择器弹出容器的showDialog()方法，一旦选择器面板已经被定义，而且我们已经创建了一个选择器面板，他可以被通过addChooserPanel()方法放入JColorChooser中。</p>
+<div class="code java highlight-python"><pre>AbstractColorChooserPanel newChooser = new SystemColorChooserPanel();
+colorChooser.addChooserPanel(newChooser);</pre>
+</div>
+<p>在显示JColorChooser并且选择相应的Tab页之后，我们的新选择器就可以使用，如图9-24所示。</p>
+<div class="figure">
+<img alt="Swing_9_24.png" src="_images/Swing_9_24.png" />
+<p class="caption">Swing_9_24.png</p>
+</div>
+<p>SystemColorChooserPanel的完整源码显示在列表9-11中。这个程序应该使用ComboBoxModel来将示例的labels与colors数组存储在一个数据模型中。然而，使用JComboBox的MVC功能的复杂性将会在第13章讨论。我们可以自由的修改示例从而为JComboBox或者是其他可用的集合API类使用合适的数据模型。</p>
+<div class="code java highlight-python"><pre>package swingstudy.ch09;
+
+import java.awt.Color;
+import java.awt.SystemColor;
+import java.awt.event.ItemEvent;
+import java.awt.event.ItemListener;
+
+import javax.swing.Icon;
+import javax.swing.JComboBox;
+import javax.swing.colorchooser.AbstractColorChooserPanel;
+import javax.swing.colorchooser.ColorSelectionModel;
+
+import swingstudy.ch04.DiamondIcon;
+
+public class SystemColorChooserPanel extends AbstractColorChooserPanel implements ItemListener{
+
+    private static int NOT_FOUND = -1;
+
+    JComboBox comboBox;
+    String labels[] = {
+        "BLACK",
+        "BLUE",
+        "CYAN",
+        "DARK_GRAY",
+        "GRAY",
+        "GREEN",
+        "LIGHT_GRAY",
+        "MAGENTA",
+        "ORANGE",
+        "PINK",
+        "RED",
+        "WHITE",
+        "YELLOW",
+        "activeCaption",
+        "activeCaptionBorder",
+        "activeCaptionText",
+        "control",
+        "controlDkShadow",
+        "controlHighlight",
+                "controlLtHighlight",
+        "controlShadow",
+        "controlText",
+        "desktop",
+        "inactiveCaption",
+        "inactiveCaptionBorder",
+        "inactiveCaptionText",
+        "info",
+        "infoText",
+        "menu",
+        "menuText",
+        "scrollbar",
+        "text",
+        "textHighlight",
+        "textHighlightText",
+        "textInactiveText",
+        "textText",
+        "window",
+        "windowBorder",
+        "windowText",
+        "&lt;Custom&gt;"
+    };
+
+    Color colors[] = {
+        Color.BLACK,
+        Color.BLUE,
+        Color.CYAN,
+        Color.DARK_GRAY,
+        Color.GRAY,
+        Color.GREEN,
+        Color.LIGHT_GRAY,
+        Color.MAGENTA,
+        Color.ORANGE,
+        Color.PINK,
+        Color.RED,
+        Color.WHITE,
+        Color.YELLOW,
+        SystemColor.activeCaption,
+        SystemColor.activeCaptionBorder,
+        SystemColor.activeCaptionText,
+        SystemColor.control,
+        SystemColor.controlDkShadow,
+        SystemColor.controlHighlight,
+        SystemColor.controlLtHighlight,
+        SystemColor.controlShadow,
+        SystemColor.controlText,
+        SystemColor.desktop,
+        SystemColor.inactiveCaption,
+        SystemColor.inactiveCaptionBorder,
+        SystemColor.inactiveCaptionText,
+        SystemColor.info,
+        SystemColor.infoText,
+        SystemColor.menu,
+        SystemColor.menuText,
+        SystemColor.scrollbar,
+        SystemColor.text,
+        SystemColor.textHighlight,
+        SystemColor.textHighlightText,
+        SystemColor.textInactiveText,
+        SystemColor.textText,
+        SystemColor.window,
+        SystemColor.windowBorder,
+        SystemColor.windowText,
+        null
+    };
+
+    // change combo box to match color, if possible
+    private void setColor(Color newColor) {
+        int position = findColorPosition(newColor);
+        comboBox.setSelectedIndex(position);
+    }
+
+    // given a label, find the position of the label in the list
+    private int findColorLabel(Object label) {
+        String stringLabel = label.toString();
+        int position = NOT_FOUND;
+        for(int i=0, n=labels.length; i&lt;n; i++) {
+            if(stringLabel.equals(labels[i])) {
+                position = i;
+                break;
+            }
+        }
+        return position;
+    }
+
+    // given a color, find the position whose color matches
+    // this could result in a position different from original if two are equal
+    // since actual color is same, this is considered to be okay
+    private int findColorPosition(Color color) {
+        int position =  colors.length-1;
+        // cannot use equals() to compare Color and SystemColor
+        int colorRGB = color.getRGB();
+        for(int i=0, n=colors.length; i&lt;n; i++) {
+            if((colors[i] != null) &amp;&amp; (colorRGB == colors[i].getRGB())) {
+                position = i;
+                break;
+            }
+        }
+        return position;
+    }
+
+    public void itemStateChanged(ItemEvent event) {
+        int state = event.getStateChange();
+        if(state == event.SELECTED) {
+            int position = findColorLabel(event.getItem());
+            // last position is bad(not selectable)
+            if((position != NOT_FOUND) &amp;&amp; (position != labels.length-1)) {
+                ColorSelectionModel selectionModel = getColorSelectionModel();
+                selectionModel.setSelectedColor(colors[position]);
+            }
+        }
+    }
+
+    public String getDisplayName() {
+        return "SystemColor";
+    }
+
+    public Icon getSmallDisplayIcon() {
+        return new DiamondIcon(Color.BLUE);
+    }
+
+    public Icon getLargeDisplayIcon() {
+        return new DiamondIcon(Color.GREEN);
+    }
+
+    protected void buildChooser() {
+        comboBox =  new JComboBox(labels);
+        comboBox.addItemListener(this);
+        add(comboBox);
+    }
+
+    public void updateChooser() {
+        Color color = getColorFromModel();
+        setColor(color);
+    }
+}</pre>
+</div>
+<p>列表9-12演示了新的选择器面板的使用。这只是前面9-10中所显示的CreateColorSamplePopup程序的简单修改版本。我们可以取消setChooserPanels()语句的注释，并且注释掉addChooserPanel()调用就可以实现由添加一个面板（如图9-23所示）到替换所有面板（如图9-24所示）的转变。</p>
+<div class="code java highlight-python"><pre>package swingstudy.ch09;
+
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.EventQueue;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+
+import javax.swing.JButton;
+import javax.swing.JColorChooser;
+import javax.swing.JDialog;
+import javax.swing.JFrame;
+
+public class CustomPanelPopup {
+
+    /**
+     * @param args
+     */
+    public static void main(String[] args) {
+        // TODO Auto-generated method stub
+
+        Runnable runner = new Runnable() {
+            public void run() {
+                JFrame frame = new JFrame("JColorChooser Custome Panel Sample");
+                frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+
+                final JButton button = new JButton("Pick to Change Background");
+
+                ActionListener actionListener = new ActionListener() {
+                    public void actionPerformed(ActionEvent event) {
+                        Color initialBackground = button.getBackground();
+
+                        final JColorChooser colorChooser = new JColorChooser(initialBackground);
+                        SystemColorChooserPanel newChooser = new SystemColorChooserPanel();
+
+                        // AbstractColorchooserPanel chooserPanels[] = {newChooser};
+                        // colorChooser.setChooserPanels(chooserPanels);
+                        colorChooser.addChooserPanel(newChooser);
+
+                        // for okay button, change button background to selected color
+                        ActionListener okActionListener = new ActionListener() {
+                            public void actionPerformed(ActionEvent event) {
+                                Color newColor = colorChooser.getColor();
+                                if(newColor.equals(button.getForeground())) {
+                                    System.out.println("Color change rejected");
+                                }
+                                else {
+                                    button.setBackground(newColor);
+                                }
+                            }
+                        };
+
+                        // for cancel button, change button background to red
+                        ActionListener cancelActionlistener = new ActionListener() {
+                            public void actionPerformed(ActionEvent event) {
+                                button.setBackground(Color.RED);
+                            }
+                        };
+
+                        final JDialog dialog = JColorChooser.createDialog(null, "Change Button Background", true, colorChooser, okActionListener, cancelActionlistener);
+
+                        // wait for current event dispatching to complete before showing
+                        Runnable showDialog = new Runnable() {
+                            public void run() {
+                                dialog.setVisible(true);
+                            }
+                        };
+                        EventQueue.invokeLater(showDialog);
+                    }
+                };
+
+                button.addActionListener(actionListener);
+                frame.add(button, BorderLayout.CENTER);
+
+                frame.setSize(300, 100);
+                frame.setVisible(true);
+            }
+        };
+        EventQueue.invokeLater(runner);
+    }
+
+}</pre>
+</div>
+<p><strong>使用ColorChooserComponentFactory类</strong></p>
+<p>值得关注的一个类就是ColorChooserComponentFactory。通常这个类在幕后工作，而我们也不需要对其进行处理。</p>
+<p>然而，如果我们希望移除一个默认的颜色选择器，我们不能使用JColorChooser的public
+AbstractColorChooserPanel removeChooserPanel(AbstractColorChooserPanel
+panel)。初始时，JColorChooser的chooserPanels属性为null。当这个属性为null时，默认的ColorChooserUI使用public
+static AbstractColorChooserPanel[]
+getDefaultChooserPanels()方法向ColorChooserComponentFactory查询默认面板。所以在我们修改这个属性之前，不会有面板显示。如果我们希望移除一个默认面板，我们必须获取默认数组，将我们希望保持的面板存入一个新数组，然后将选择器的chooserPanel属性修改为新数组。这是额外的工作，但是这可以使得工作完成。</p>
+<p>ColorChooserComponentFactory类的另一个方法就是public static JComponent
+getPreviewPanel()方法，这个方法会在JColorChooser的previewPanel属性为null时获取默认的预览面板。这就是向JColorChooser的setPreviewPanel()方法提供null参数并不会移除预览面板的原因。对于空面板，我们必须提供一个没有尺寸的JComponent。</p>
+<div class="code java highlight-python"><pre>colorChooser.setPreviewPanel(new JPanel());</pre>
+</div>
+</div>
+<div class="section" id="id14">
+<h3>自定义JColorChooser观感<a class="headerlink" href="#id14" title="Permalink to this headline">¶</a></h3>
+<p>JColorChooser的外观几乎与所有已安装的观感类型相同。唯一的区别与每一个观感如何显示内部组件相关，例如JTabbedPane，JLabel，JButton，或是JSlider。修改这些组件的UIResource相关属性可以影响新创建的JColorChooser的外观。另外，表9-9中列出了JColorChooser类用于自定义的39个UIResource相关属性。这些属性中的大多数与显示在各种默认颜色选择面板上的文本标签有关。</p>
+<div class="figure">
+<img alt="Swing_table_9_11_1.png" src="_images/Swing_table_9_11_1.png" />
+<p class="caption">Swing_table_9_11_1.png</p>
+</div>
+<div class="figure">
+<img alt="Swing_table_9_11_2.png" src="_images/Swing_table_9_11_2.png" />
+<p class="caption">Swing_table_9_11_2.png</p>
+</div>
+<div class="figure">
+<img alt="Swing_table_9_11_3.png" src="_images/Swing_table_9_11_3.png" />
+<p class="caption">Swing_table_9_11_3.png</p>
+</div>
+<div class="figure">
+<img alt="Swing_table_9_11_4.png" src="_images/Swing_table_9_11_4.png" />
+<p class="caption">Swing_table_9_11_4.png</p>
+</div>
+</div>
+</div>
+<div class="section" id="jfilechooser">
+<h2>JFileChooser类<a class="headerlink" href="#jfilechooser" title="Permalink to this headline">¶</a></h2>
+<p>Swing组件集合同时提供了用于选择文件名字与目录的选择器：JFileChooser类。这个选择器替换了原始AWT组件集合中使用FileDialog的需要。类似于其他的Swing选择器组件，JFileChooser并没有自动被放入一个弹出窗口中，但是他可以放在我们程序中用户界面的任何地方。图9-25显示了一个具有Metal观感，Ocean主题的JFileChooser，他被自动放在一个模态JDialog中。</p>
+<div class="figure">
+<img alt="Swing_9_25.png" src="_images/Swing_9_25.png" />
+<p class="caption">Swing_9_25.png</p>
+</div>
+<p>对JFileChooser提供支持的是javax.swing.filechooser包中的大量类。这些支持类包括用于限制列出在JFileChooser的FileView的文件与目录。FileView控制目录与文件如何列在JFileChooser中。FileSystemView是一个尝试由选择器隐藏文件系统相关的操作系统细节的一个抽象类。Java
+2平台提供者将会提供特定操作系统的版本，从而类似列出根分区这样的任务可以实现（使用100%纯Java代码）。</p>
+<p>注意，不要混淆javax.swing.filechooser.FileFilter抽象类与java.io.FileFilter接口。尽管功能类似，但是他们是不同的。他们两个共存是因为java.io.FileFilter接口并不存在于Java
+1.1运行时中。因为原始的Swing JFileChooser需要同时运行在Java 1.1与Java
+2一部
+，选择器需要定义一个替换。除非特别指定，本部分的所有FileFilter引用位于javax.swing.filechooser包中的类。</p>
+<div class="section" id="id15">
+<h3>创建JFileChooser<a class="headerlink" href="#id15" title="Permalink to this headline">¶</a></h3>
+<p>JFileChooser有六个构造函数：</p>
+<div class="code java highlight-python"><pre>public JFileChooser()
+JFileChooser fileChooser = new JFileChooser();
+
+public JFileChooser(File currentDirectory)
+File currentDirectory = new File("."); // starting directory of program
+JFileChooser fileChooser = new JFileChooser(currentDirectory);
+
+public JFileChooser(File currentDirectory, FileSystemView fileSystemView)
+FileSystemView fileSystemView = new SomeFileSystemView(...);
+JFileChooser fileChooser = new JFileChooser(currentDirectory, fileSystemView);
+
+public JFileChooser(FileSystemView fileSystemView)
+JFileChooser fileChooser = new JFileChooser(fileSystemView);
+
+public JFileChooser(String currentDirectoryPath)
+String currentDirectoryPath = "."; // starting directory of program
+JFileChooser fileChooser = new JFileChooser(currentDirectoryPath);
+
+public JFileChooser(String currentDirectoryPath, FileSystemView fileSystemView)
+JFileChooser fileChooser = new JFileChooser(currentDirectoryPath, fileSystemView);</pre>
+</div>
+<p>默认情况下，显示的起始目录是用户主目录（系统属性user.home）。如果我们希望启动JFileChooser指向其他的目录，这个目录可以使用String或是File对象进行指定。</p>
+<p>我们也可以指定一个FileSystemView来指定操作系统顶层目录结构的自定义表示。当没有指定FileSystemView参数时，JFileChooser使用适合于用户操作系统的FileSystemView。</p>
+</div>
+<div class="section" id="id16">
+<h3>使用JFileChooser<a class="headerlink" href="#id16" title="Permalink to this headline">¶</a></h3>
+<p>在由构造函数创建JFileChooser之后，我们可以将其放在任何的Container中，因为他是一个JComponent。位于非弹出窗口对象中的JFileChooser对象看起来有一些奇怪，但是这可以使得我们完成一些无需创建新文件选择器的任务。</p>
+<p>列表9-13演示了带有两个标签以及一个JFileChooser的简单窗体。注意，这个窗体并没有Open或是Cancel按钮，但是位于FileSystemView区域的按钮是可选择的。</p>
+<div class="code java highlight-python"><pre>package swingstudy.ch09;
+
+import java.awt.BorderLayout;
+import java.awt.EventQueue;
+import java.awt.Font;
+
+import javax.swing.JFileChooser;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+
+public class FileSamplePanel {
+
+    /**
+     * @param args
+     */
+    public static void main(String[] args) {
+        // TODO Auto-generated method stub
+
+        Runnable runner = new Runnable() {
+            public void run() {
+                JFrame frame = new JFrame("JFileChooser Popup");
+                frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+
+                final JLabel directoryLabel = new JLabel("");
+                directoryLabel.setFont(new Font("Serif", Font.BOLD | Font.ITALIC, 36));
+                frame.add(directoryLabel, BorderLayout.NORTH);
+
+                final JLabel filenameLabel = new JLabel("");
+                filenameLabel.setFont(new Font("Serif", Font.BOLD | Font.ITALIC, 36));
+                frame.add(filenameLabel, BorderLayout.SOUTH);
+
+                JFileChooser fileChooser = new JFileChooser(".");
+                fileChooser.setControlButtonsAreShown(false);
+                frame.add(fileChooser, BorderLayout.CENTER);
+
+                frame.pack();
+                frame.setVisible(true);
+
+            }
+        };
+
+        EventQueue.invokeLater(runner);
+    }
+
+}</pre>
+</div>
+<p><strong>向JFileChooser添加ActionListener</strong></p>
+<p>JFileChooser允许我们添加ActionListener对象来监听确认或是关闭动作的选择。确认是双击一个文件；关闭是按下Escape按键。要检测激发了哪一个动作，我们可以检测我们的ActionLister所接收到的ActionEvent的动作命令。其动作命令设置可以为用于文件选择的JFileChooser.APPROVE_SELECTION或是用于按下Escape按键的JFileChooser.CANCEL_SELECTION。</p>
+<p>为了完成前面列表9-13中的示例，添加一个ActionListener从而使得我们在用户选择文件时设置两个标签的文本。一旦选择，文本变为当前目录与文件名。一旦按下Escape按键，文本会被清除。列表9-14显示了新的ActionListener。</p>
+<div class="code java highlight-python"><pre>// create ActionListener
+ActionListener actionListener = new ActionListener() {
+    public void actionPerformed(ActionEvent event) {
+        JFileChooser theFileChooser = (JFileChooser)event.getSource();
+        String command = event.getActionCommand();
+        if(command.equals(JFileChooser.APPROVE_SELECTION)) {
+            File selectedFile = theFileChooser.getSelectedFile();
+            directoryLabel.setText(selectedFile.getParent());
+            filenameLabel.setText(selectedFile.getName());
+        }
+        else if(command.equals(JFileChooser.CANCEL_SELECTION)) {
+            directoryLabel.setText("");
+            filenameLabel.setText("");
+        }
+    }
+};
+
+fileChooser.addActionListener(actionListener);</pre>
+</div>
+<p>通过使用这个ActionListener，由选择被激活的角度来说程序是完整的了。图9-26显示了在选中了C:\jdb1.5.0目录下的COPYRIGHT文件之后窗口的样子。</p>
+<div class="figure">
+<img alt="Swing_9_26.png" src="_images/Swing_9_26.png" />
+<p class="caption">Swing_9_26.png</p>
+</div>
+<p><strong>在弹出窗口中显示JFileChooser</strong></p>
+<p>除了可以将JFileChooser放在我们自己的窗口以外，我们更为通常的是将其放在一个模态JDialog中。依据我们希望在确认按钮上所显示的文本，有三种方法可以实现：</p>
+<ul class="simple">
+<li>public int showDialog(Component parentComponent, String
+approvalButtonText)</li>
+<li>public int showOpenDialog(Component parentComponent)</li>
+<li>public int showSaveDialog(Component parentComponent)</li>
+</ul>
+<p>调用这些方法中的任何一个都可以将配置的JFileChooser放在一个模态JDialog中，并且在父组件的中间位置显示对话框。提供一个null父组件参数会将弹出窗口放在屏幕中间。这个方法只有当用户选择确认或是关闭按钮时才会返回。在选择这两个按钮中的一个之后，调用会依据哪一个按钮被选中而返回一个状态值。这个状态值可以是JFileChooser的三个常量之一：APPROVE_OPTION,
+CANCEL_OPTION或是ERROR_OPTION。</p>
+<p>注意，如果用户点击了确认按钮而没有选择任何文件，则CANCEL_OPTION会返回。</p>
+<p>为了执行与前面的例子相同的任务，其中是将一个ActionListener关联到JFileChooser，我们可以显示这个对话框并依据返回状态修改标签，而是不依赖于动作命令，如下所示：</p>
+<div class="code java highlight-python"><pre>JFileChooser fileChooser = new JFileChooser(".");
+int status = fileChooser.showOpenDialog(null);
+if (status == JFileChooser.APPROVE_OPTION) {
+  File selectedFile = fileChooser.getSelectedFile();
+  directoryLabel.setText(selectedFile.getParent());
+  filenameLabel.setText(selectedFile.getName());
+}  else if (status == JFileChooser.CANCEL_OPTION) {
+  directoryLabel.setText(" ");
+  filenameLabel.setText(" ");
+}</pre>
+</div>
+<p>使用这一技术，文件选择器将会在另一个窗口中显示，而不是在具有两个标签的窗口中显示。注意，这个版本是由检测前面示例中的String返回值切换到检测int返回值：[if
+(command.equals(JFileChooser.APPROVE_SELECTION)) versus if (status ==
+JFileChooser.APPROVE_OPTION)].</p>
+</div>
+<div class="section" id="id17">
+<h3>JFileChooser属性<a class="headerlink" href="#id17" title="Permalink to this headline">¶</a></h3>
+<p>一旦我们理解了基本的JFileChooser的使用，我们可以通过修改其属性来自定义组件的行为与外观。表9-10显示了JFileChooser的26个属性。</p>
+<div class="figure">
+<img alt="Swing_table_9_12.png" src="_images/Swing_table_9_12.png" />
+<p class="caption">Swing_table_9_12.png</p>
+</div>
+<div class="figure">
+<img alt="Swing_table_9_12_1.png" src="_images/Swing_table_9_12_1.png" />
+<p class="caption">Swing_table_9_12_1.png</p>
+</div>
+<p>当使用不同的showDialog()方法时，dialogType属性被自动设置为JOptionPane的三个常量之一：OPEN_DIALOG,
+SAVE_DIALOG,
+CUSTOM_DIALOG。如果我们没有使用showDialog()，我们应该依据我们计划使用的对话框类型来设置这个属性。controlButtonsAreShown属性可以使得我们隐藏Open,
+Save与Cancel按钮。</p>
+</div>
+<div class="section" id="id18">
+<h3>使用文件过滤器<a class="headerlink" href="#id18" title="Permalink to this headline">¶</a></h3>
+<p>JFileChooser支持三种过滤其文件与目录列表的方法。前两个涉及到使用FileFilter类，而最后一个涉及到隐藏文件。首先，我们来看一下FileFilter类。</p>
+<p>FileFilter是一个抽象类，其工作方式类似于AWT中的FilenameFilter。然而，这个并不使用目录或是文件名的字符串，而是使用File对象。对于每一个要显示的File对象（文件与目录），过滤器决定File是否要显示在JFileChooser中。除了提供一个接受机制，当向用户显示描述时，过滤器同时提供了描述或名字。在下面的类定义的两个方法反映了这种功能：</p>
+<div class="code java highlight-python"><pre>public abstract class FileFilter {
+  public FileFilter();
+  public abstract String getDescription();
+  public abstract boolean accept(File file);
+}</pre>
+</div>
+<p>注意，由于这个类的抽象特性，他本应是一个接口，但事实上不是。</p>
+<p>为了演示文件过滤器，列表9-15创建了一个可以接受一个文件扩展名数组的过滤器。如果发送给accept()方法的文件是一个目录，则会被自动接受。否则，文件扩展名必须与所提供的数组中的扩展名匹配，而且扩展名前的字符必须是一个句点。对于这个特定的过滤器，比较是大小写敏感的。</p>
+<div class="code java highlight-python"><pre>package swingstudy.ch09;
+
+import java.io.File;
+
+import javax.swing.filechooser.FileFilter;
+
+public class ExtensionFileFilter extends FileFilter {
+
+    String description;
+    String extensions[];
+
+    public ExtensionFileFilter(String description, String extension) {
+        this(description, new String[] {extension} );
+    }
+
+    public ExtensionFileFilter(String description, String extensions[]) {
+        if(description == null) {
+            // since no description, use first extension and # of extensions as description
+            this.description = extensions[0]+"{ "+extensions.length+"} ";
+        }
+        else {
+            this.description = description;
+        }
+
+        // convert array to lowercase
+        // don't alter original entries
+        this.extensions = (String[])extensions.clone();
+        toLower(this.extensions);
+    }
+
+    private void toLower(String array[]) {
+        for(int i=0, n=array.length; i&lt;n; i++) {
+            array[i] = array[i].toLowerCase();
+        }
+    }
+
+    // ignore case, always accept directories
+    // character before extension must be a period
+    @Override
+    public boolean accept(File file) {
+        // TODO Auto-generated method stub
+        if(file.isDirectory()) {
+            return true;
+        }
+        else {
+            String path = file.getAbsolutePath().toLowerCase();
+            for(int i=0, n=extensions.length; i&lt;n; i++) {
+                String extension = extensions[i];
+                if(path.endsWith(extension) &amp;&amp; (path.charAt(path.length()-extension.length()-1)=='.')) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    @Override
+    public String getDescription() {
+        // TODO Auto-generated method stub
+        return description;
+    }
+
+}</pre>
+</div>
+<p>使用这个文件过滤器可以使得我们创建并将其关联到JFileChooser。如果我们只是想使得过滤器可以为用户选择，但是并不是默认的初始选择，可以调用public
+void addChoosableFileFilter(FileFilter
+filter)。这可以使得默认的接受所有文件的过滤器被选中。相反，如果我们希望过滤参选择器第一次出现时设置，调用public
+void setFileFilter(FileFilter
+filter)方法，而文件选择器将会过滤所显示的初始文件集合。</p>
+<p>例如，下面的源码将会向文件选择器添加两个过滤器：</p>
+<div class="code java highlight-python"><pre>FileFilter jpegFilter =
+  new ExtensionFileFilter(null, new String[]{ "JPG", "JPEG"} );
+fileChooser.addChoosableFileFilter(jpegFilter);
+FileFilter gifFilter = new ExtensionFileFilter("gif", new String[]{ "gif"} );
+fileChooser.addChoosableFileFilter(gifFilter);</pre>
+</div>
+<p>当没有文件过滤器与JFileChooser相关联时，JFileChooser.getAcceptAllFileFilter()中的过滤器会被用来提供一个接受所有文件的过滤器，而这也同样适用于底层操作系统。</p>
+<p>图9-27显示了Motif文件选择器中的一个打开的过滤器选择组合框。</p>
+<div class="figure">
+<img alt="Swing_9_27.png" src="_images/Swing_9_27.png" />
+<p class="caption">Swing_9_27.png</p>
+</div>
+<p>提示，在使用addChoosableFileFilter()方法添加过滤器之前使用setFileFilter()方法设置FileFilter会使得接受所有文件的过滤器不可用。要恢复这个过滤器，调用setAcceptAllFileFilterUsed(true)方法。另外，我们可以使用resetChoosableFileFilters()方法重新设置过滤器列表。</p>
+<p>内建的过滤器并不是FileFilter。他关注于隐藏文件，例如Unix文件系统上以句点（.）开始的文件。默认情况下，隐藏文件并不会显示在JFileChooser中。要允许显示隐藏文件，我们必须将fileHidingEnabled属性设置为false：</p>
+<div class="code java highlight-python"><div class="highlight"><pre><span class="n">aFileChooser</span><span class="o">.</span><span class="n">setFileHidingEnabled</span><span class="p">(</span><span class="n">false</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>提示，当创建javax.swing.filechooser.FileFilter子类时，我们也许会希望新类同时实现java.io.FileFilter接口。要实现这一目的，只需要简单的将implements
+java.io.FileFilter添加到类定义。这样做是因为javax.swing.filechooser类中的accept()方法的方法签名与接口定义相匹配：public
+boolean accept(File file)。</p>
+<p><strong>选择目录而不选择文件</strong></p>
+<p>JFileChooser支持三种选择模式：只选择文件，只选择目录，同时选择文件与目录。fileSelectionMode属性设置决定了选择器的模式。可用的设置是通过三个JFileChooser常量来指定的：FILES_ONLY,
+DIRECTORIES_ONLY以及FILES_AND_DIRECTORIES。初始时，文件选择器位于JFileChooser.FILES_ONLY模式。要修改模式，只需要调用public
+void setFileSelectionMode(int newMode)。</p>
+<p>除了fileSelectionMode属性，我们可以使用只读的fileSelectionEnabled与directorySelectionEnabled属性来决定文件选择当前所支持的输入类型。</p>
+<p><strong>添加附加面板</strong></p>
+<p>JFileChooser支持附加组件的添加。这个组件可以加强选择器的功能，包括预览图片或文档，或是播放音频文件。要响应文件选择变化，附加组件应将其自己作为PropertyChangeListener关联到JFileChooser。当JFileChooser.SELECTED_FILE_CHANGED_PROPERTY属性变化时，附加组件发生变化来反映文件选择。图9-28显示了一个图片预览附加组件的样子。配置选择器的附加性就如同设置其他属性一样。</p>
+<div class="code java highlight-python"><pre>fileChooser.setAccessory(new LabelAccessory(fileChooser));</pre>
+</div>
+<div class="figure">
+<img alt="Swing_9_28.png" src="_images/Swing_9_28.png" />
+<p class="caption">Swing_9_28.png</p>
+</div>
+<p>列表9-16显示了显示一个附加图标的Image组件的源码。被选中的图像文件变为JLabel组件的图标。组件执行两个缩放操作来保证图像的维度适合附加组件的尺寸。</p>
+<div class="code java highlight-python"><pre>package swingstudy.ch09;
+
+import java.awt.Dimension;
+import java.awt.Image;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
+import java.io.File;
+
+import javax.swing.ImageIcon;
+import javax.swing.JFileChooser;
+import javax.swing.JLabel;
+
+public class LabelAccessory extends JLabel implements PropertyChangeListener {
+
+    private static final int PREFERRED_WIDTH = 125;
+    private static final int PREFERRED_HEIGHT = 100;
+
+    public LabelAccessory(JFileChooser chooser) {
+        setVerticalAlignment(JLabel.CENTER);
+        setHorizontalAlignment(JLabel.CENTER);
+        chooser.addPropertyChangeListener(this);
+        setPreferredSize(new Dimension(PREFERRED_WIDTH, PREFERRED_HEIGHT));
+    }
+
+    @Override
+    public void propertyChange(PropertyChangeEvent event) {
+        String changeName = event.getPropertyName();
+        if(changeName.equals(JFileChooser.SELECTED_FILE_CHANGED_PROPERTY)){
+            File file = (File)event.getNewValue();
+            if(file != null) {
+                ImageIcon icon = new ImageIcon(file.getPath());
+                if(icon.getIconWidth() &gt; PREFERRED_WIDTH) {
+                    icon = new ImageIcon(icon.getImage().getScaledInstance(PREFERRED_WIDTH, -1, Image.SCALE_DEFAULT));
+                    if(icon.getIconHeight() &gt; PREFERRED_HEIGHT) {
+                        icon = new ImageIcon(icon.getImage().getScaledInstance(-1, PREFERRED_HEIGHT, Image.SCALE_DEFAULT));
+                    }
+                }
+                setIcon(icon);
+            }
+        }
+    }
+}</pre>
+</div>
+<p><strong>使用FileSystemView类</strong></p>
+<p>FileSystemView类可以访问平台相关的文件系统信息。java.io.File的JDK
+1.1版本在这方面比较弱，FileSystemView的出现使得设计FileChooserUI对象更为容易。Swing的FileSystemView类以FileSystemView的包私有子类的方式提供了三个自定义的视图。他们包括对Unix，Windows以及一个通用处理器的支持。</p>
+<p>尽管并没有必要来定义我们自己的FileSystemView，这个类提供了一些在JFileChooser环境之外十分有用的特性。要获取特定于用户运行时环境的视图，可以调用public
+static FileSystemView getFileSystemView()方法。这个类的定义如下：</p>
+<div class="code java highlight-python"><pre>public abstract class FileSystemView {
+  // Constructors
+  public FileSystemView();  // Properties
+  // Properties
+  public File getDefaultDirectory();
+  public File getHomeDirectory();
+  public File[] getRoots();
+  // Class Methods
+  public static FileSystemView getFileSystemView();
+  // Other Methods
+  public File createFileObject(File directory, String filename);
+  public File createFileObject(String path);
+  protected File createFileSystemRoot(File file);
+  public abstract File createNewFolder(File containingDir) throws IOException;
+  public File getChild(File parent, String filename);
+  public File[] getFiles(File directory, boolean useFileHiding);
+  public File getParentDirectory(File file);
+  public String getSystemDisplayName(File file);
+  public Icon getSystemIcon(File file);
+  public String getSystemTypeDescription(File file);
+  public boolean isComputerNode(File file);
+  public boolean isDrive(File file);
+  public boolean isFileSystem(File file);
+  public boolean isFileSystemRoot(File file);
+  public boolean isFloppyDrive(File file);
+  public boolean isHiddenFile(File file);
+  public boolean isParent(File folder, File file);
+  public boolean isRoot(File file);
+  public Boolean isTraversable(File file);
+}</pre>
+</div>
+<p>注意，isTraversable()方法返回Boolean，而不是boolean。</p>
+<p><strong>FileView类</strong></p>
+<p>我们将要探讨的JFileChooser的最后一部分就是FileView区域，其中列出了所有的文件名。每一个自定义的观感类型都有其自己的FileView区域类。另外，某些预定义的观感类型，例如Motif，是不可改变的。然而，至少在Metal与Windows文件选择器，我们可以为不同的文件类型自定义图标，或是修改文件的显示名字。</p>
+<p>FileView类的五个方法允许我们修改视图中每一个File的名字，图标或是描述（两种形式）。另外，FileView实际上控制一个目录是否是可遍历的，从而使得我们可以以访问控制的弱级别进行编程。不可遍历的目录具有一个不同的默认图标，因为这些目录不能用于文件选择的浏览。</p>
+<p>下面是抽象的FileView类的定义：</p>
+<div class="code java highlight-python"><pre>public abstract class FileView {
+  public FileView();
+  public String getDescription(File file);
+  public Icon getIcon(File file);
+  public String getName(File file);
+  public String getTypeDescription(File file);
+  public Boolean isTraversable(File file);
+}</pre>
+</div>
+<p>注意，类似FileSystemView，isTraversable()方法返回Boolean，而不是boolean。</p>
+<p>自定义FileView需要创建一个子类并重写相应的方法。默认情况下，所有的方法返回null，表明我们并不希望为特定的方法定制自定义行为。</p>
+<p>一旦我们定义了五个视图，简单的修改我们JFileChooser的fileView属性：</p>
+<div class="code java highlight-python"><pre>fileChooser.setFileView(new JavaFileView());</pre>
+</div>
+<p>图9-29显示了一个Metal
+JFileChooser在安装了自定义的FileView之后的外观样式。</p>
+<div class="figure">
+<img alt="Swing_9_29.png" src="_images/Swing_9_29.png" />
+<p class="caption">Swing_9_29.png</p>
+</div>
+<p>列表9-17中的JavaFileView类提供了一个FileView实现，这个实现自定义了与Java开发相关的文件的显示，特别是.java,
+.class,
+.jar以及.html或是.htm文件。对于这些文件类型中的每一种，一个特殊的图标替换了默认图标显示在文件名旁边。另外，对于Java源文件，显示文件长度。不幸的是，我们不可以修改FileView中的字体或颜色。</p>
+<div class="code java highlight-python"><pre>package swingstudy.ch09;
+
+import java.awt.Color;
+import java.io.File;
+
+import javax.swing.Icon;
+import javax.swing.filechooser.FileView;
+
+import swingstudy.ch04.DiamondIcon;
+
+public class JavaFileView extends FileView {
+
+    Icon javaIcon =new DiamondIcon(Color.BLUE);
+    Icon classIcon = new DiamondIcon(Color.GREEN);
+    Icon htmlIcon = new DiamondIcon(Color.RED);
+    Icon jarIcon = new DiamondIcon(Color.PINK);
+
+    public String getName(File file) {
+        String filename = file.getName();
+        if(filename.endsWith(".java")) {
+            String name = filename +" : "+file.length();
+            return name;
+        }
+        return null;
+    }
+
+    public String getTypeDescription(File file) {
+        String typeDescription = null;
+        String filename = file.getName().toLowerCase();
+
+        if(filename.endsWith(".java")) {
+            typeDescription = "Java Source";
+        }
+        else if(filename.endsWith(".class")) {
+            typeDescription = "Java Class File";
+        }
+        else if(filename.endsWith(".jar")) {
+            typeDescription = "Java Archive";
+        }
+        else if(filename.endsWith(".html") || filename.endsWith(".htm")) {
+            typeDescription = "Applet Loader";
+        }
+
+        return typeDescription;
+    }
+
+    public Icon getIcon(File file) {
+        if(file.isDirectory()) {
+            return null;
+        }
+        Icon icon = null;
+        String filename = file.getName().toLowerCase();
+        if(filename.endsWith(".java")) {
+            icon = javaIcon;
+        }
+        else if(filename.endsWith(".class")) {
+            icon = classIcon;
+        }
+        else if(filename.endsWith(".jar")) {
+            icon = jarIcon;
+        }
+        else if(filename.endsWith(".html") || filename.endsWith(".htm")) {
+            icon = htmlIcon;
+        }
+
+        return icon;
+    }
+}</pre>
+</div>
+</div>
+<div class="section" id="id19">
+<h3>自定义JFileChooser观感<a class="headerlink" href="#id19" title="Permalink to this headline">¶</a></h3>
+<p>每一个可安装的Swing观感提供了不同的JFileChooser外观以及默认的UIResource值集合。图9-30显示了预安装的观感集合，Motif，Windows，以及Ocean的JFileChooser外观。</p>
+<p><a href="#id21"><span class="problematic" id="id22">|Swing\_9\_30\_motif.png|</span></a> <a href="#id23"><span class="problematic" id="id24">|Swing\_9\_30\_windows.png|</span></a>
+<a href="#id25"><span class="problematic" id="id26">|Swing\_9\_30\_ocean.png|</span></a></p>
+<p>JFileChooser可用的UIResource相关属性集合显示在表9-11中。对于JFileChooser组件，有83个不同的属性。几乎所有的属性都与按钮标签，热键，图标与工具提示文本相关。</p>
+<p><a href="#id27"><span class="problematic" id="id28">|Swing\_table\_9\_13\_1.png|</span></a> <a href="#id29"><span class="problematic" id="id30">|Swing\_table\_9\_13\_2.png|</span></a>
+<a href="#id31"><span class="problematic" id="id32">|Swing\_table\_9\_13\_3.png|</span></a> <a href="#id33"><span class="problematic" id="id34">|Swing\_table\_9\_13\_4.png|</span></a>
+<a href="#id35"><span class="problematic" id="id36">|Swing\_table\_9\_13\_5.png|</span></a> <a href="#id37"><span class="problematic" id="id38">|Swing\_table\_9\_13\_6.png|</span></a></p>
+<p>除了80多个的JFileChooser资源以外，另外还有FileView的五个，显示在表9-12中。</p>
+<div class="figure">
+<img alt="Swing_table_9_14.png" src="_images/Swing_table_9_14.png" />
+<p class="caption">Swing_table_9_14.png</p>
+</div>
+</div>
+</div>
+<div class="section" id="id20">
+<h2>小结<a class="headerlink" href="#id20" title="Permalink to this headline">¶</a></h2>
+<p>在本章中，我们探讨了Swing弹出窗口以及选择器类的细节。除了后动创建一个JDialog并且为其填充必要的部分外，Swing组件集合包含了对多个不同的弹出窗口与选择器类的支持。由JOptionPane开始，我们了解了如何创建信息，问题，以及输入弹出窗口。另外，我们探讨了如何通过使用ProgressMonitor与ProgressMonitorInputStream类来监视需要长时间完成的任务的进程。</p>
+<p>在了解了通用的弹出类之后，我们探讨了特殊的Swing颜色以及文件选择器类：JColorChooser与JFileChooser。通过这两个类，我们可以提示用户用于请求输入以及以我们可以想像的更多的方式自定义显示。</p>
+<p>现在我们已经对预定义的弹出窗口有一定的了解了，现在是开始第10章LayoutManager类的讨论的时候了。借助于系统布局管理器，我们可以创建更好的用户界面。</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Pop-Ups and Choosers</a><ul>
+<li><a class="reference internal" href="#joptionpane-class">JOptionPane Class</a><ul>
+<li><a class="reference internal" href="#joptionpane">创建JOptionPane</a></li>
+<li><a class="reference internal" href="#id1">显示JOptionPane</a></li>
+<li><a class="reference internal" href="#id2">在弹出窗口中自动创建JOptionPane</a></li>
+<li><a class="reference internal" href="#id3">JOptionPane属性</a></li>
+<li><a class="reference internal" href="#id4">自定义JOptionPane观感</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#progressmonitor">ProgressMonitor类</a><ul>
+<li><a class="reference internal" href="#id5">创建ProgressMonitor</a></li>
+<li><a class="reference internal" href="#propressmonitor">使用PropressMonitor</a></li>
+<li><a class="reference internal" href="#id6">ProgressMonitor属性</a></li>
+<li><a class="reference internal" href="#id7">自定义ProgressMonitor观感</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#progressmonitorinputstream">ProgressMonitorInputStream类</a><ul>
+<li><a class="reference internal" href="#id8">创建ProgressMonitorInputStream</a></li>
+<li><a class="reference internal" href="#id9">使用ProgressMonitorInputStream</a></li>
+<li><a class="reference internal" href="#id10">ProgressMonitorInputStream属性</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#jcolorchooser">JColorChooser类</a><ul>
+<li><a class="reference internal" href="#id11">创建JColorChooser</a></li>
+<li><a class="reference internal" href="#id12">使用JColorChooser</a></li>
+<li><a class="reference internal" href="#id13">JColorChooser属性</a></li>
+<li><a class="reference internal" href="#id14">自定义JColorChooser观感</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#jfilechooser">JFileChooser类</a><ul>
+<li><a class="reference internal" href="#id15">创建JFileChooser</a></li>
+<li><a class="reference internal" href="#id16">使用JFileChooser</a></li>
+<li><a class="reference internal" href="#id17">JFileChooser属性</a></li>
+<li><a class="reference internal" href="#id18">使用文件过滤器</a></li>
+<li><a class="reference internal" href="#id19">自定义JFileChooser观感</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#id20">小结</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="ch08.html"
+                        title="previous chapter">Root Pane Containers</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="ch10.html"
+                        title="next chapter">布局管理器</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/ch09.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="ch10.html" title="布局管理器"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="ch08.html" title="Root Pane Containers"
+             >previous</a> |</li>
+        <li><a href="index.html">The Definitive Guide to Java Swing Third Edtion 0.01 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2014, mylxiaoyi.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2b3.
+    </div>
+  </body>
+</html>

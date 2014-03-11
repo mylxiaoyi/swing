@@ -1,0 +1,1386 @@
+Root Pane Containers
+====================
+
+在第7章中，我们了解使用Swing组件周围的边框。在本章中，我们将会探讨高层Swing容器，并且将会发现与相对应的AWT容器的不同。
+
+使用Swing中的高层容器与使用高层AWT容器不同。对于AWT容器，Frame，Window，Dialog以及Applet，我们可以将组件直接添加到容器，并且我们只有一个位置来放置这些组件。在Swing世界中，高层容器，JFrame，JWindow，JDialog以及JApplet，加上JInternalFrame容器，依赖JRootPane。我们并不能将组件直接添加到容器，而只能将这些组件添加到root
+pane（根面板）的一部分。然后由根面板来管理这些组件。
+
+为什么添加这个间接层呢？无论我们是否相信，这样做是为了事情的简化。根面板在层中管理其组件，从而如工具提示文本这样的元素总是显示在组件上面，而且我们不必担心拖拽某个组件在其他组件周围运动。
+
+JInternalFrame并没有相对应的AWT组件，他也提供了一些额外的功能用于处理被放置在桌面（在JDesktopPane中）中的情况。JInternalFrame可以用作在Swing程序创建多文档界面（MDI）程序的基础。在我们的程序中我们可以管理一系列的内部框架，并且他们绝不会超出我们的主程序容器。
+
+下面我们开始探讨新的JRootPane类，他管理所有的高层容器。
+
+JRootPane类
+-----------
+
+JRootPane担当高层Swing容器的容器代理。因为容器只存放一个JRootPane，当我们由高层容器中添加或是移除组件时，我们并没有直接修改容器中的组件，而是间接的由JRootPane实例添加或是移除组件。事实上，高层容器担当代理的角色，由JRootPane完成所有的工作。
+
+JRootPane容器依赖其内联类RootLayout进行布局管理，并且管理存储JRootPane的高层容器的所有空间。在JRootPane中只有两个组件：一个JLayeredPane以及一个玻璃嵌板（Component）。前面的玻璃嵌板可以是任意组件，而且是不可见的。玻璃嵌板保证类似工具提示文本这样的元素显示在其他的Swing之前。后面是JLayeredPane，在其上部包含一个可的选的JMenuBar，在其下面的另一层中包含一个内容面析（Container）。通常我们将组件放在JRootPane中就是放置在内容面板中。图8-1有助于我们理解RootLayout是如何布局组件的。
+
+.. figure:: images/Swing_8_1.png
+   :alt: Swing_8_1.png
+
+   Swing\_8\_1.png
+注意：JLayerPane也仅是一个Swing容器。他可以包含任意的组件并且具有一些特定的布局特性。JRootPane面板中所用的JlayeredPane只包含一个JMenuBar以及一个Container作为其内容面板。内容面板有其自己的布局管理器，默认情况下为BorderLayout。
+
+创建JRootPane
+~~~~~~~~~~~~~
+
+尽管JRootPane具有一个公开的无参数的构造函数，但是通常我们并不会亲自创建JRootPane。相反，实现了RootPaneContainer接口的类创建JRootPane。然后，我们由该组件通过RootPaneContainer接口来获取根面板，我们会在稍后进行描述。
+
+JRootPane属性
+~~~~~~~~~~~~~
+
+如表8-1所示，JRootPane有11个属性。大多数情况下，当我们为高层容器获取或是设置一个这样的属性时，例如JFrame，容器只是简单的将请求传递给其JRootPane。
+
+JRootPane的玻璃嵌板必须是透明的。因为玻璃嵌板会占据JLayeredPane前面的整个区域，一个不透明的玻璃嵌板会将其菜单栏与内容面板渲染为不可见。而且，因为玻璃嵌板与内容面板共享相同的边界，当设置optimizedDrawingEnabled属性时会返回玻璃嵌板的可见性。
+
++---------------------------+---------------------+---------------+
+| 属性名                    | 数据类型            | 访问性        |
++---------------------------+---------------------+---------------+
+| accessibleContext         | AccessibleContext   | 只读          |
++---------------------------+---------------------+---------------+
+| contentPane               | Container           | 读写          |
++---------------------------+---------------------+---------------+
+| defaultButton             | JButton             | \| 读写绑定   |
++---------------------------+---------------------+---------------+
+| glassPane                 | Component           | 读写          |
++---------------------------+---------------------+---------------+
+| jMenuBar                  | JMenuBar            | 读写          |
++---------------------------+---------------------+---------------+
+| layeredPane               | JLayeredPane        | 读写          |
++---------------------------+---------------------+---------------+
+| optimizedDrawingEnabled   | boolean             | 只读          |
++---------------------------+---------------------+---------------+
+| UI                        | RootPaneUI          | 读写          |
++---------------------------+---------------------+---------------+
+| UIClassID                 | String              | 只读          |
++---------------------------+---------------------+---------------+
+| validateRoot              | boolean             | 只读          |
++---------------------------+---------------------+---------------+
+| windowDecorationStyle     | int                 | 读写绑定      |
++---------------------------+---------------------+---------------+
+
+Table: Table 8-1. JRootPane属性
+
+windowDecorationStyle属性用来描述包含JRootPane窗口的窗口装饰（边框，标题，关闭窗口的按钮）。他可以设置为下列的JRootPane类常量：
+
+-  COLOR\_CHOOSER\_DIALOG
+-  ERROR\_DIALOG
+-  FILE\_CHOOSER\_DIALOG
+-  FRAME
+-  INFORMATION\_DIALOG
+-  NONE
+-  PLAIN\_DIALOG
+-  QUESTION\_DIALOG
+-  WARNING\_DIALOG
+
+使用windowDecorationStyle设置后的实际效果要依据于当前的观感。这只是一个小提示。默认情况，这个设置为NONE。如果这个设置不为NONE，使用true值来调用JDialog或JFrame的setUndecorated()方法，并且当前观感的getSupportsWindowDecorations()方法报告true，那么则由观感，而不是窗口管理器，来提供窗口装饰。这可以使得使用高层窗口的程序看起来并不是来自于用户所用的工作平台，而是来自于我们自己的一半，但是仍然可以提供通知，最大化，最小化以及关闭按钮。
+
+对于Metal观感（以及Ocean主题），getSupportsWindowDecorations()报告true。其他系统提供的观感类型报告false。图8-2演示了由Metal观感所提供的带有窗口装饰的框架样子。
+
+.. figure:: images/Swing_8_2.png
+   :alt: Swing_8_2.png
+
+   Swing\_8\_2.png
+生成图8-2的程序源码显示在列表8-1中。
+
+.. code:: java
+
+
+    package swingstudy.ch08;
+
+    import java.awt.EventQueue;
+
+    import javax.swing.JFrame;
+    import javax.swing.JRootPane;
+
+    public class AdornSample {
+
+        /**
+         * @param args
+         */
+        public static void main(String[] args) {
+            // TODO Auto-generated method stub
+
+            Runnable runner = new Runnable() {
+                public void run() {
+                    JFrame frame = new JFrame("Adornment Example");
+                    frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+                    frame.setUndecorated(true);
+                    frame.getRootPane().setWindowDecorationStyle(JRootPane.FRAME);
+                    frame.setSize(300, 100);
+                    frame.setVisible(true);
+                }
+            };
+            
+            EventQueue.invokeLater(runner);
+        }
+
+    }
+
+自定义JRootPane观感
+~~~~~~~~~~~~~~~~~~~
+
+表8-2显示了JRootPane的12UIResource相关的属性。这些中的大多数属性与配置窗体装饰风格时所用的默认边框有关。
+
++-------------------------------------------+-------------+
+| 属性字符串                                | 对象类型    |
++-------------------------------------------+-------------+
+| RootPane.actionMap                        | ActionMap   |
++-------------------------------------------+-------------+
+| RootPane.ancestroInputMap                 | InputMap    |
++-------------------------------------------+-------------+
+| RootPane.colorChooserDialogBorder         | Border      |
++-------------------------------------------+-------------+
+| RootPane.defaultButtonWindowKeyBindings   | Object[]    |
++-------------------------------------------+-------------+
+| RootPane.errorDialogBorder                | Border      |
++-------------------------------------------+-------------+
+| RootPane.fileChooserDialogBorder          | Border      |
++-------------------------------------------+-------------+
+| RootPane.frameBorder                      | Border      |
++-------------------------------------------+-------------+
+| RootPane.informationDialogBorder          | Border      |
++-------------------------------------------+-------------+
+| RootPane.plainDialogBorder                | Border      |
++-------------------------------------------+-------------+
+| RootPane.questionDialogBorder             | Border      |
++-------------------------------------------+-------------+
+| RootPane.warningDialogBorder              | Border      |
++-------------------------------------------+-------------+
+| RootPnaeUI                                | String      |
++-------------------------------------------+-------------+
+
+Table: JRootPane UIResource元素
+
+RootPaneContainer接口
+~~~~~~~~~~~~~~~~~~~~~
+
+RootPaneContainer接口定义了用于访问JRootPane中的各种面板以及访问JRootPane本身的setter/getter方法。
+
+.. code:: java
+
+    public interface RootPaneContainer {
+      // Properties
+      public Container getContentPane();
+      public void setContentPane(Container contentPane);
+      public Component getGlassPane();
+      public void setGlassPane(Component glassPane);
+      public JLayeredPane getLayeredPane();
+      public void setLayeredPane(JLayeredPane layeredPane);
+      public JRootPane getRootPane();
+    }
+
+在预定义的Swing组件之中，JFrame, JWindow，
+JDialog，JApplet以及JInternalFrame类实现了RootPaneContainer接口。对于大部分来说，这些实现简单的将请求传递给高层容器的JRootPane实现。下面的代码是RootPaneContainer的玻璃嵌板实现：
+
+.. code:: java
+
+    public Component getGlassPane() { 
+      return getRootPane().getGlassPane(); 
+    }
+    public void setGlassPane(Component glassPane) {
+      getRootPane().setGlassPane(glassPane);
+    }
+
+JLayeredPane类
+~~~~~~~~~~~~~~
+
+JLayeredPane是JRootPane的主要组件容器。JLayeredPane管理其内部的组件的Z顺序或层。这可以保证在某些任务的情况下，例如创建工具提示文本，弹出菜单与拖拽，正确的组件可以创建在其他的组件之上。我们可以使用系统定义的层次，或者是我们可以创建自己的层次。
+
+尽管JLayeredPane容器并没有布局管理器，但是并没有什么可以阻止我们设置容器的layout属性。
+
+**创建JLayeredPane**
+
+与JRootPane类似，我们从不亲自创建JLayeredPane类的实例。当为实现了RootPaneContainer的预定义类创建一个默认的JRootPane时，JRootPane为其主要的组件区域创建一个JLayeredPane，并添加一个初始化的内容面板。
+
+**在层中添加组件**
+
+每一个所添加的组件的层设置管理JLayeredPane中组件的Z顺序。层设置越高，则组件绘制离顶层组件就越近。当我们向JLayeredPane中添加组件时我们可以使用布局管理的限制来设置层。
+
+.. code:: java
+
+    Integer layer = new Integer(20);
+    aLayeredPane.add(aComponent, layer);
+
+我们也可以在向JLayeredPane添加组件之前调用public void setLayer(Component
+comp, int layer)或public void setLayer(Component comp, int layer, int
+position)方法。
+
+.. code:: java
+
+    aLayeredPane.setLayer(aComponent, 10);
+    aLayeredPane.add(aComponent);
+
+JLayeredPane类预定义了六个特殊值常量。另外，我们还可以使用public int
+currentLayer()方法来获得最顶部的当前层，使用public int
+lowestLayer()方法获得最底层。表8-3列出六个预定义的层常量。
+
++-------------------------+---------------------------------------------------------------------+
+| 常量                    | 描述                                                                |
++-------------------------+---------------------------------------------------------------------+
+| FRAME\_CONTEND\_LAYER   | 层-30000用于存储菜单栏以及内容面板；通常并不为开发者所用。          |
++-------------------------+---------------------------------------------------------------------+
+| DEFAULT\_LAYER          | 零层用于通常的组件层。                                              |
++-------------------------+---------------------------------------------------------------------+
+| PALETTE\_LAYER          | 层100用于存储浮动工具栏以及类似的组件                               |
++-------------------------+---------------------------------------------------------------------+
+| MODAL\_LAYER            | 层200用于存储显示在默认层，调色板之上以及弹出菜单之下的弹出对话框   |
++-------------------------+---------------------------------------------------------------------+
+| POPUP\_LAYER            | 层300用于存储弹出菜单以及工具提示文本                               |
++-------------------------+---------------------------------------------------------------------+
+| DRAG\_LAYER             | 层400用于存储保持在顶部的拖动对象                                   |
++-------------------------+---------------------------------------------------------------------+
+
+Table: JLayeredPane层常量
+
+尽管我们可以为层次使用自己的常量，但是使用时要小心，因为系统会在需要时使用预定义的常量。如果我们的常量不正确，组件就不会如我们希望的那样工作。
+
+图8-3可视化的显示了不同层是如何放置的。
+
+.. figure:: images/Swing_8_3.png
+   :alt: Swing_8_3.png
+
+   Swing\_8\_3.png
+**使用内容层与位置**
+
+JLayeredPane中的组件同时具有层与位置。当某一层只有一个组件时，其位于位置零。当在相同的层有多个组件时，后添加的组件具有更高的位置数字。位置设置越低，显示距离顶部组件越近。（这与层的行为相反。）图8-4显示在相同层上四个组件的位置。
+
+要重新安排一层上的组件，我们可以使用public void moveToBack(Component
+component)或是public void moveToFront(Component
+component)方法。当我们将一个组件移到前面时，他到达该层的位置0。当我们一个组件移动到后时，他到达该层的最大位置处。我们也可以使用public
+void setPosition(Component component, int
+position)方法来手动设置位置。位置-1自动为具有最高位置的底层（如图8-4）。
+
+.. figure:: images/Swing_8_4.png
+   :alt: Swing_8_4.png
+
+   Swing\_8\_4.png
+**JLayeredPane属性**
+
+表8-4显示了JLayeredPane的两个属性。optimizedDrawingEnabled属性决定了JlayeredPane中的组件是否可以重叠。默认情况下，这个设置为true，在JRootPane的标准用法中，JMenuBar与内容面板不可以重叠。然而，JLayeredPane自动验证属性设置来反映面板内容的当前状态。
+
++---------------------------+---------------------+----------+
+| 属性名                    | 数据类型            | 访问性   |
++---------------------------+---------------------+----------+
+| accessibleContext         | AccessibleContext   | 只读     |
++---------------------------+---------------------+----------+
+| optimizedDrawingEnabled   | boolean             | 只读     |
++---------------------------+---------------------+----------+
+
+Table: JLayeredPane属性
+
+JFrame类
+--------
+
+JFrame类是使用JRootPane并且实现了RootPaneContainer接口的Swing高层容器。另外，他使用WindowConstants接口来帮助管理相关操作。
+
+创建JFrame
+~~~~~~~~~~
+
+JFrame类提供了两个基本构造函数：一个用于不带标题的框架，而另一个用来创建带标题的框架。还有另外两个构造函数使用特定的GraphicsConfiguration来创建框架。
+
+.. code:: java
+
+    public JFrame()
+    JFrame frame = new JFrame();
+
+    public JFrame(String title)
+    JFrame frame = new JFrame("Title Bar");
+
+    public JFrame(GraphicsConfiguration config)
+    GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
+    GraphicsDevice gsd[] = ge.getScreenDevices();
+    GraphicsConfiguration gc[] = gsd[0].getConfigurations();
+    JFrame frame = new JFrame(gc[0]);
+
+    public JFrame(String title, GraphicsConfiguration config)
+    GraphicsConfiguration gc = ...;
+    JFrame frame = new JFrame("Title Bar", gc);
+
+JFrame属性
+~~~~~~~~~~
+
+表8-5显示了JFrame的九个属性。
+
++-------------------------+---------------------+----------+
+| 属性名                  | 数据类型            | 访问性   |
++-------------------------+---------------------+----------+
+| accessibleContext       | AccessibleContext   | 只读     |
++-------------------------+---------------------+----------+
+| contentPane             | Container           | 读写     |
++-------------------------+---------------------+----------+
+| defaultCloseOperation   | int                 | 读写     |
++-------------------------+---------------------+----------+
+| glassPane               | Component           | 读写     |
++-------------------------+---------------------+----------+
+| iconImage               | Image               | 只写     |
++-------------------------+---------------------+----------+
+| jMenuBar                | JMenuBar            | 读写     |
++-------------------------+---------------------+----------+
+| layeredPane             | JLayeredPane        | 读写     |
++-------------------------+---------------------+----------+
+| layout                  | LayoutManager       | 只写     |
++-------------------------+---------------------+----------+
+| rootPane                | JRootPane           | 只读     |
++-------------------------+---------------------+----------+
+
+Table: JFrame属性
+
+尽管大多数的属性都是实现RootPaneContainer接口的结果，但是有两个特殊的属性：defaultCloseOperation以及layout。（我们首先在第2章看到了defaultCloseOperation。）默认情况下，当用户关闭容器时，JFrame会隐藏自己。要修改这种设置，当设置默认关闭行为时我们可以表8-6中所列表出的常量来作为参数。第一个直接来自于JFrame；其他的则是WindowConstants接口的一部分。
+
+.. code:: java
+
+    aFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+
++--------------------------+-----------------------------------------------+
+| 常量                     | 描述                                          |
++--------------------------+-----------------------------------------------+
+| EXIT\_ON\_CLOSE          | 调用System.exit(0)                            |
++--------------------------+-----------------------------------------------+
+| DISPOSE\_ON\_CLOSE       | 在窗体上调用dispose()                         |
++--------------------------+-----------------------------------------------+
+| ON\_NOTHING\_ON\_CLOSE   | 忽略请求                                      |
++--------------------------+-----------------------------------------------+
+| HIDE\_ON\_CLOSE          | 在窗体上调用setVisible(false)；这是默认行为   |
++--------------------------+-----------------------------------------------+
+
+Table: 关闭操作常量
+
+layout属性是比较奇特的。默认情况下，设置JFrame的布局管理器会将调用传递给内容面板。我们不可以修改JFrame的默认布局管理器。
+
+JFrame还有另外一个静态属性：defaultLookAndFeelDecorated。这个属性与JRootPane的windowDecorationStyle属性结合使用。当设置为true时，新创建的窗体会使用观感中的装饰而不是窗口管理中的装饰进行装饰。当然，只有当前的观感支持窗口装饰时才会发生这种情况。列表8-2显示了另一种创建与图8-2相同的屏幕的方法（通过使用Metal观感所提供的窗口装饰）。
+
+.. code:: java
+
+    package swingstudy.ch08;
+
+    import java.awt.EventQueue;
+
+    import javax.swing.JFrame;
+
+    public class AdornSample2 {
+
+        /**
+         * @param args
+         */
+        public static void main(String[] args) {
+            // TODO Auto-generated method stub
+
+            Runnable runner = new Runnable() {
+                public void run() {
+                    JFrame.setDefaultLookAndFeelDecorated(true);
+                    JFrame frame = new JFrame("Adornment Sample");
+                    frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+                    frame.setSize(300,200);
+                    frame.setVisible(true);
+                }
+            };
+            
+            EventQueue.invokeLater(runner);
+        }
+
+    }
+
+向JFrame添加组件
+~~~~~~~~~~~~~~~~
+
+因为JFrame实现了RootPaneContainer接口并且使用JRootPane，我们不能直接向JFrame添加组件。相反，我们将组件添加到JFrame所包含的JRootPane。在J2SE
+5.0之前，我们需要使用下面的方法来添加组件：
+
+.. code:: java
+
+    JRootPane rootPane = aJFrame.getRootPane();
+    Container contentPane = rootPane.getContentPane();
+    contentPane.add(...);
+
+这可以用下面的语句进行简化：
+
+.. code:: java
+
+    aJFrame.getContentPane().add(...);
+    </syntaxhighlihgt>
+
+    如果我们尝试直接向JFrame添加组件，则会抛出运行时错误。
+
+    由于许多建议（或是抱怨？），Sun最终决定将add()方法修改为代理：
+
+    <syntaxhighlight lang="java">
+    // J2SE 5.0
+    aJFrame.add(...);
+
+使用J2SE
+5.0时，当我们向JFrame添加组件时，他们实际上被添加到了RootPaneContainer的内容面板。
+
+处理JFrame事件
+~~~~~~~~~~~~~~
+
+JFrame类支持11种不同的监听器的注册：
+
+-  ComponentListener：确定窗体何时移动或修改尺寸
+-  ContainerListener：通常并不添加到JFrame，因为我们将组件添加到其JRootPane的内容面板。
+-  FocusListener：确定窗体何时获得或是失去输入焦点。
+-  HierarchyBoundsListener：确定窗体何时移动或是修改尺寸。其作用与ComponentListener类似，因为窗体是组件的顶层容器。
+-  HierarchyListener：确定窗体何时显示或隐藏。
+-  InputMethodListener：用于国际化时与输入法结合使用。
+-  KeyListener：通常并不添加到JFrame。相反，我们为其内容面板注册一个键盘动作，如下所示：
+
+.. code:: java
+
+    JPanel content = (JPanel)frame.getContentPane();
+    KeyStroke stroke = KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0);
+    content.registerKeyboardAction(actionListener, stroke, 
+      JComponent.WHEN_IN_FOCUSED_WINDOW);
+
+-  MouseListener与MouseMotionListener：用于监听鼠标以及鼠标动作事件。
+-  PropertyChangeListener：用来监听绑定属性的改变。
+-  WindowListener：来确定窗口何时被图标化或是取消图标化或是用户正在尝试打开或关闭窗口。
+
+通过defaultCloseOperation属性，我们通常并不需要添加WindowListener来帮助处理关闭窗体或是停止程序。
+
+扩展JFrame
+~~~~~~~~~~
+
+如果我们需要扩展JFrame，这个类有两个重要的protected方法：
+
+.. code:: java
+
+    protected void frameInit()
+    protected JRootPane createRootPane()
+    </syntaxhighlihgt>
+
+    通过在子类中重写这些方法，我们可以自定义初始外观以及窗体或是其JRootPane的行为。例如，在列表8-3中所示的ExitableJFrame类的例子中，默认的关闭操作被初始化EXIT_ON_CLOSE状态。无需要为每一个创建的窗体调用setDefaultCloseOperation()方法，我们可以使用这个类进行替换。因为JFrame被继承，我们并不需要在其构造函数中添加frameInit()方法的调用。其父类自动调用这个方法。
+
+    <syntaxhighlight lang="java">
+
+    package swingstudy.ch08;
+
+    import javax.swing.JFrame;
+
+    public class ExitableFrame extends JFrame {
+
+        public ExitableFrame() {
+            
+        }
+        
+        public ExitableFrame(String title) {
+            super(title);
+        }
+        
+        protected void frameInit() {
+            super.frameInit();
+            setDefaultCloseOperation(EXIT_ON_CLOSE);
+        }
+    }
+
+注意：如果我们重写JFrame的frameInit()方法，记住首先调用super.frameInit()来初始化其默认行为。如果我们忘记了并没有自己重新实现所有的默认行为，我们的新窗体的外观与行为就会不同。
+
+JWindow类
+---------
+
+JWindow类与JFrame类类似。他使用JRootPane用于组件管理并且实现了RootPaneContainer接口。他是一个无装饰的顶层窗口。
+
+创建JWindow
+~~~~~~~~~~~
+
+JWindow类有五个构造函数：
+
+.. code:: java
+
+    public JWindow()
+    JWindow window = new JWindow();
+    public JWindow(Frame owner)
+    JWindow window = new JWindow(aFrame);
+    public JWindow(GraphicsConfiguration config)
+    GraphicsConfiguration gc = ...;
+    JWindow window = new JWindow(gc);
+    public JWindow(Window owner)
+    JWindow window = new JWindow(anotherWindow);
+    public JWindow(Window owner, GraphicsConfiguration config)
+    GraphicsConfiguration gc = ...;
+    JWindow window = new JWindow(anotherWindow, gc);
+
+我们可以不指定父类或是将父类指定为Frame或Window。如果没有指定父类，则会一个不可见的。
+
+JWindow属性
+~~~~~~~~~~~
+
+表8-7列出了JWindow的六个属性。这些属性与JFrame属性类似，所不同的是JWindow没有用于默认关闭操作或是菜单栏的属性。
+
++---------------------+---------------------+----------+
+| 属性名              | 数据类型            | 访问性   |
++---------------------+---------------------+----------+
+| accessibleContext   | AccessibleContext   | 只读     |
++---------------------+---------------------+----------+
+| contentPane         | Container           | 读写     |
++---------------------+---------------------+----------+
+| glassPane           | Component           | 读写     |
++---------------------+---------------------+----------+
+| layeredPane         | JLayeredPane        | 读写     |
++---------------------+---------------------+----------+
+| layout              | LayoutManager       | 只写     |
++---------------------+---------------------+----------+
+| rootPane            | JRootPane           | 只读     |
++---------------------+---------------------+----------+
+
+Table: JWindow属性
+
+处理JWindow事件
+~~~~~~~~~~~~~~~
+
+JWindow类在JFrame以及Window类之外并没有添加额外的事件处理功能。查看本章前面的“处理JFrame事件”一节可以了解我们可以关联到JWidnow的监听器列表。
+
+扩展JWindow
+~~~~~~~~~~~
+
+如果我们需要扩展JWindow，这个类具有两个重要的protected方法：
+
+.. code:: java
+
+    protected void windowInit()
+    protected JRootPane createRootPane()
+
+JDialog类
+---------
+
+JDialog类表示用于显示与Frame相关信息的标准弹出窗口。其作用类似于JFrame，其JRootPane包含一个内容面板以及一个可选的JMenuBar，而且他实现了RootPaneContainer与WidnowConstants接口。
+
+创建JDialog
+~~~~~~~~~~~
+
+有11个构造函数可以用来创建JDialog窗口：
+
+.. code:: java
+
+    public JDialog()
+    JDialog dialog = new JDialog();
+
+    public JDialog(Dialog owner)
+    JDialog dialog = new JDialog(anotherDialog);
+
+    public JDialog(Dialog owner, boolean modal)
+    JDialog dialog = new JDialog(anotherDialog, true);
+
+    public JDialog(Dialog owner, String title)
+    JDialog dialog = new JDialog(anotherDialog, "Hello");
+
+    public JDialog(Dialog owner, String title, boolean modal)
+    JDialog dialog = new JDialog(anotherDialog, "Hello", true);
+
+    public JDialog(Dialog owner, String title, boolean modal, GraphicsConfiguration gc)
+    GraphicsConfiguration gc = ...;
+    JDialog dialog = new JDialog(anotherDialog, "Hello", true, gc);
+
+    public JDialog(Frame owner)
+    JDialog dialog = new JDialog(aFrame);
+
+    public JDialog(Frame owner, String windowTitle)
+    JDialog dialog = new JDialog(aFrame, "Hello");
+
+    public JDialog(Frame owner, boolean modal)
+    JDialog dialog = new JDialog(aFrame, false);
+
+    public JDialog(Frame owner, String title, boolean modal)
+    JDialog dialog = new JDialog(aFrame, "Hello", true);
+
+    public JDialog(Frame owner, String title, boolean modal, GraphicsConfiguration gc)
+    GraphicsConfiguration gc = ...;
+    JDialog dialog = new JDialog(aFrame, "Hello", true, gc);
+
+注意，我们并不需要手动创建JDialog并进行装配，我们将会发现JOptionPane可以为我们自动创建并填充JDialog。我们将会在第9间探讨JOptionPane组件。
+
+每一个构造函数都允许我们自定义对象拥有者，窗口标题以及弹出模式。当JDialog为模态时，他会阻止到其拥有者及程序其余部分的输入。当JDialog为非模态时，他会允许用户与JDialog以及程序的其余部分进行交互。
+
+小心，为了使得对话框模式在不同的Java版本之间正常工作，我们要避免在JDialog中混合使用重量级的AWT组件以及轻量级的Swing组件。
+
+JDialog属性
+~~~~~~~~~~~
+
+除了可以设置的图标，JDialog类具有与JFrame类相同的属性。表8-8中列出了这些八个属性。
+
++-------------------------+---------------------+----------+
+| 属性名                  | 数据类型            | 访问性   |
++-------------------------+---------------------+----------+
+| accessibleContext       | AccessibleContext   | 只读     |
++-------------------------+---------------------+----------+
+| contentPane             | Container           | 读写     |
++-------------------------+---------------------+----------+
+| defaultCloseOperation   | int                 | 读写     |
++-------------------------+---------------------+----------+
+| glassPane               | Component           | 读写     |
++-------------------------+---------------------+----------+
+| jMenuBar                | JMenuBar            | 读写     |
++-------------------------+---------------------+----------+
+| layeredPane             | JLayeredPane        | 读写     |
++-------------------------+---------------------+----------+
+| layout                  | LayoutManager       | 只写     |
++-------------------------+---------------------+----------+
+| rootPane                | JRootPane           | 只读     |
++-------------------------+---------------------+----------+
+
+Table: JDialog属性
+
+用于指定所使用的默认关闭操作的常量是在前面的表8-6中所显示的WidnowConstants（除了EXIT\_ON\_CLOSE基本相同）。默认情况下，defaultCloseOperation属性设置为HIDE\_ON\_CLOSE，这是弹出对话框所要求的默认行为。
+
+与JFrame类似，JDialog也有一个静态的defaultLookAndFeelDecorated属性。这可以控制默认情况下对话框是否由观感进行装饰。
+
+处理JDialog事件
+~~~~~~~~~~~~~~~
+
+并没有需要我们特殊处理的JDialog事件；其事件处理与JFrame类相同。也许我们需要处理的一件与JDialog相关的事情就是指定当按下Escape按键时关闭对话框。处理这一事件的最简单的方法就是向对话框内的JRootPane里的键盘动作注册一个Escape按键，从而可以使得当按下Escape时JDialog变得不可见。列表8-4演示了这一行为。源码中的大部分重复了JDialog的构造函数。createRootPane()方法将Escape按键映射到自定义的Action。
+
+.. code:: java
+
+
+    package swingstudy.ch08;
+
+    import java.awt.Dialog;
+    import java.awt.Frame;
+    import java.awt.GraphicsConfiguration;
+    import java.awt.event.ActionEvent;
+
+    import javax.swing.AbstractAction;
+    import javax.swing.Action;
+    import javax.swing.InputMap;
+    import javax.swing.JComponent;
+    import javax.swing.JDialog;
+    import javax.swing.JRootPane;
+    import javax.swing.KeyStroke;
+
+    public class EscapeDialog extends JDialog {
+
+        public EscapeDialog() {
+            this((Frame)null, false);
+        }
+        
+        public EscapeDialog(Frame owner) {
+            this(owner, false);
+        }
+        
+        public EscapeDialog(Frame owner, boolean modal) {
+            this(owner, null, modal);
+        }
+        
+        public EscapeDialog(Frame owner, String title) {
+            this(owner, title, false);
+        }
+        
+        public EscapeDialog(Frame owner, String title, boolean modal) {
+            super(owner, title, modal);
+        }
+        
+        public EscapeDialog(Frame owner, String title, boolean modal, GraphicsConfiguration gc) {
+            super(owner, title, modal, gc);
+        }
+        
+        public EscapeDialog(Dialog owner) {
+            this(owner, false);
+        }
+        
+        public EscapeDialog(Dialog owner, boolean modal) {
+            this(owner, null, modal);
+        }
+        
+        public EscapeDialog(Dialog owner, String title) {
+            this(owner, title, false);
+        }
+        
+        public EscapeDialog(Dialog owner, String title, boolean modal) {
+            super(owner, title, modal);
+        }
+        
+        public EscapeDialog(Dialog owner, String title, boolean modal, GraphicsConfiguration gc) {
+            super(owner, title, modal, gc);
+        }
+        
+        protected JRootPane createRootPane() {
+            JRootPane rootPane = new JRootPane();
+            KeyStroke stroke = KeyStroke.getKeyStroke("ESCAPE");
+            Action actionListener = new AbstractAction() {
+                public void actionPerformed(ActionEvent event) {
+                    setVisible(false);
+                }
+            };
+            InputMap inputMap = rootPane.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW);
+            inputMap.put(stroke, "ESCAPE");
+            rootPane.getActionMap().put("ESCAPE", actionListener);
+            
+            return rootPane;
+        }
+        
+    }
+
+注意，如果我们使用JOptionPane的静态创建方法，则其所创建的JDialog窗口会自动将Escape按键注册为关闭对话框。
+
+扩展JDialog
+~~~~~~~~~~~
+
+如果我们需要扩展JDialog，该类具有两个重要的protected方法：
+
+.. code:: java
+
+    protected void dialogInit()
+    protected JRootPane createRootPane()
+
+后面的方法在前面的列表8-4中进行了演示。
+
+JApplet类
+---------
+
+JApplet类是AWT
+Applet类的扩展。为了在使用Swing组件的applet中能正确的进行事件处理，我们applet必须继承JApplet，而不是Applet。
+
+JApplet的作用与其他的实现了RootPaneContainer接口的高层窗口相同。JApplet与Applet之间一个重要的区别就是默认的布局管理器。因为我们向JApplet的内容面析添加组件，其默认的布局管理器为BorderLayout。这与Applet的默认布局管理器FlowLayout不同。另外，Swing
+applet还可以具有一个工具栏，或者更为特定的JMenuBar，这是applet的JRootPane的另一个属性。
+
+如果我们计划部署一个使用Swing组件的applet，最好是使用Sun
+Microsystems所提供的Java插件，因为这会随运行时安装Swing库。
+
+如查我们要扩展JApplet类，他只有一个重要的protected方法：
+
+.. code:: java
+
+    protected JRootPane createRootPane()
+
+配合桌面使用
+------------
+
+Spring提供了对一个通常窗口或是桌面内的窗体集合进行管理。正如我们在第1章所讨论的，这种管理通常被称之为MDI。窗体可以位于其他的窗体之上，或者是可以被拖动，而其外观适当当前的观感。这些窗体是JInternalFrame类的实例，而桌面是一个称之为JDesktopPane的特殊JLayeredPane。桌面内窗体的管理是DesktopManager的责任，其中所提供的默认实现是DefaultDesktopManager。桌面上的JInternalFrame的图标形式是通过JDesktopIcon的内联类JInternalFrame来表示的。同时有InternalFrmaeListener，InternalFrameAdapter以及InternalFrameEvent用于事件处理。
+
+首先，我们来看一下构成桌面的部分，然后我们会看到使用这些部分的一个完整示例。
+
+JInternalFrame类
+~~~~~~~~~~~~~~~~
+
+JInternalFrame类与JFrame类类似。他是一个高层窗口，使用RootPaneContainer接口，但是并不是一个顶层窗口。我们必须将内部窗体放在另一个顶层窗口中。当我们拖动时，内部窗体会停留在其窗口的边界之内，这通常是一个JDesktopPane。另外，内部窗体是轻量级的，并且提供了一个UI委托从而使得内部窗体看起来类似当前配置的观感。
+
+**创建JInternalFrame**
+
+JInternalFrame有六个构造函数：
+
+.. code:: java
+
+    public JInternalFrame()
+    JInternalFrame frame = new JInternalFrame();
+
+    public JInternalFrame(String title)
+    JInternalFrame frame = new JInternalFrame("The Title");
+
+    public JInternalFrame(String title, boolean resizable)
+    JInternalFrame frame = new JInternalFrame("The Title", true);
+
+    public JInternalFrame(String title, boolean resizable, boolean closable)
+    JInternalFrame frame = new JInternalFrame("The Title", false, true);
+
+    public JInternalFrame(String title, boolean resizable, boolean
+      closable, boolean maximizable)
+    JInternalFrame frame = new JInternalFrame("The Title", true, false, true);
+
+    public JInternalFrame(String title, boolean resizable, boolean
+      closable, boolean maximizable, boolean iconifiable)
+    JInternalFrame frame = new JInternalFrame("The Title", false, true, false, true);
+
+这些构造函数以一个向另一个添加参数的方式进行级联。无参数时，所创建的JInternalFrame没有标题，并且不能调整大小，关闭，最大化或是图标化。然而，内部窗体总是可以拖动的。
+
+**JInternalFrame属性**
+
+表8-9列出了JInternalFrame类的30个不同属性。layer属性列出了两次，因为他具有两个设置方法，其中一个用于int，而另一个用于Integer。
+
++--------------------------+-------------------------------+------------+
+| 属性名                   | 数据类型                      | 访问性     |
++--------------------------+-------------------------------+------------+
+| accessibleContext        | AccessibleContext             | 只读       |
++--------------------------+-------------------------------+------------+
+| closable                 | boolean                       | 读写绑定   |
++--------------------------+-------------------------------+------------+
+| closed                   | boolean                       | 读写绑定   |
++--------------------------+-------------------------------+------------+
+| contentPane              | Container                     | 读写绑定   |
++--------------------------+-------------------------------+------------+
+| defaultCloseOperation    | int                           | 读写       |
++--------------------------+-------------------------------+------------+
+| desktopIcon              | JInternalFrame.JDesktopIcon   | 读写绑定   |
++--------------------------+-------------------------------+------------+
+| desktopPane              | JDesktopPane                  | 只读       |
++--------------------------+-------------------------------+------------+
+| focusCycleRoot           | boolean                       | 读写       |
++--------------------------+-------------------------------+------------+
+| focusCycleRootAncester   | Container                     | 只读       |
++--------------------------+-------------------------------+------------+
+| focusOwner               | Component                     | 只读       |
++--------------------------+-------------------------------+------------+
+| frameIcon                | Icon                          | 读写绑定   |
++--------------------------+-------------------------------+------------+
+| glassPane                | Component                     | 读写绑定   |
++--------------------------+-------------------------------+------------+
+| icon                     | boolean                       | 读写绑定   |
++--------------------------+-------------------------------+------------+
+| iconifiable              | boolean                       | 读写       |
++--------------------------+-------------------------------+------------+
+| internalFrameListeners   | InternalFrameListener[]       | 只读       |
++--------------------------+-------------------------------+------------+
+| jMenuBar                 | JMenuBar                      | 读写绑定   |
++--------------------------+-------------------------------+------------+
+| layer                    | int                           | 读写       |
++--------------------------+-------------------------------+------------+
+| layer                    | Integer                       | 只写       |
++--------------------------+-------------------------------+------------+
+| layeredPane              | JLayeredPane                  | 读写绑定   |
++--------------------------+-------------------------------+------------+
+| layout                   | LayoutManager                 | 只写       |
++--------------------------+-------------------------------+------------+
+| maximizable              | boolean                       | 读写绑定   |
++--------------------------+-------------------------------+------------+
+| maximum                  | boolean                       | 读写       |
++--------------------------+-------------------------------+------------+
+| mostRecentFocusOwner     | Component                     | 只读       |
++--------------------------+-------------------------------+------------+
+| normalBounds             | Rectangle                     | 读写       |
++--------------------------+-------------------------------+------------+
+| resizable                | boolean                       | 读写绑定   |
++--------------------------+-------------------------------+------------+
+| rootPane                 | JRootPane                     | 读写绑定   |
++--------------------------+-------------------------------+------------+
+| selected                 | boolean                       | 读写绑定   |
++--------------------------+-------------------------------+------------+
+| title                    | String                        | 读写绑定   |
++--------------------------+-------------------------------+------------+
+| UI                       | InternalFrameUI               | 读写       |
++--------------------------+-------------------------------+------------+
+| UIClassID                | String                        | 只读       |
++--------------------------+-------------------------------+------------+
+| warningString            | String                        | 只读       |
++--------------------------+-------------------------------+------------+
+
+Table: JInternalFrame属性
+
+对于Java
+1.3及以后的版本，JInternalFrame的初始defaultCloseOperation属性设置为DISPOSE\_ON\_CLOSE。以前版本的默认设置为HIDE\_ON\_CLOSE。我们可以将这个属性设置为前面的表8-6中列出的WindowConstants的值。
+
+normalBounds属性描述了当一个图标化的内部窗体取消息图标化时应该在哪里显示。focusOwner属性在特定的JInternalFrame被激活时提供了一个实际带有输入焦点的Component。
+
+在Swing类中，JInternalFrame只包含四个限制属性：closed, icon,
+maximum以及selected。他们与四个boolean构造函数参数直接相关。每一个都可以允许我们在改变其设置时检测当前的属性状态。然而，因为属性是受限制的，当我们要设置一个属性时，我们所做的尝试必须位于一个try-catch块中，捕捉PropertyVetoException：
+
+.. code:: java
+
+    try {
+      // Try to iconify internal frame
+      internalFrame.setIcon(false);
+    }  catch (PropertyVetoException propertyVetoException) {
+      System.out.println("Rejected");
+    }
+
+为了有助于我们使用这些绑定属性，JInternalFrame类定义了一个11个常量，如表8-10所示。他们表示在PropertyChangeListener中通过PropertyChangeEvent的getPropertyName()方法返回的字符串。
+
++---------------------------+---------------+
+| 属性名常量                | 关联属性      |
++---------------------------+---------------+
+| CONTENT\_PANE\_PROPERTY   | contentPane   |
++---------------------------+---------------+
+| FRAME\_ICON\_PROPERTY     | frameIcon     |
++---------------------------+---------------+
+| GLASS\_PANE\_PROPERTY     | glassPane     |
++---------------------------+---------------+
+| IS\_CLOSED\_PROPERTY      | closed        |
++---------------------------+---------------+
+| IS\_ICON\_PROPERTY        | icon          |
++---------------------------+---------------+
+| IS\_MAXIMUM\_PROPERTY     | maximum       |
++---------------------------+---------------+
+| IS\_SELECTED\_PROPERTY    | selected      |
++---------------------------+---------------+
+| LAYERED\_PANE\_PROPERTY   | layeredPane   |
++---------------------------+---------------+
+| MENU\_BAR\_PROPERTY       | jMenuBar      |
++---------------------------+---------------+
+| ROOT\_PANE\_PROPERTY      | rootPane      |
++---------------------------+---------------+
+| TITLE\_PROPERTY           | title         |
++---------------------------+---------------+
+
+Table: JInternal属性常量
+
+下面的类示例演示了在PropertyChangeListener中常量的使用。
+
+.. code:: java
+
+
+    package swingstudy.ch08;
+
+    import java.beans.PropertyChangeEvent;
+    import java.beans.PropertyChangeListener;
+
+    import javax.swing.JInternalFrame;
+
+    public class InternalFramePropertyChangeHandler implements
+            PropertyChangeListener {
+
+        @Override
+        public void propertyChange(PropertyChangeEvent event) {
+            // TODO Auto-generated method stub
+
+            String propertyName = event.getPropertyName();
+            if(propertyName.equals(JInternalFrame.IS_ICON_PROPERTY)) {
+                System.out.println("Icon property changed. React.");
+            }
+        }
+
+    }
+
+**处理JInternalFrame事件**
+
+为了帮助我们像使用JFrame一样来使用JInternalFrame，有一个额外的事件监听器来负责内部窗体的打开与关闭的相关事件。这个接口名为InternalFrameListener，其定义如下。其作用类似于AWT的WindowListener接口，但是所用的JInternalFrame类，而不是AWT的Window类。
+
+.. code:: java
+
+      public interface InternalFrameListener extends EventListener {
+      public void internalFrameActivated(InternalFrameEvent internalFrameEvent);
+      public void internalFrameClosed(InternalFrameEvent internalFrameEvent);
+      public void internalFrameClosing(InternalFrameEvent internalFrameEvent);
+      public void internalFrameDeactivated(InternalFrameEvent internalFrameEvent);
+      public void internalFrameDeiconified(InternalFrameEvent internalFrameEvent);
+      public void internalFrameIconified(InternalFrameEvent internalFrameEvent);
+      public void internalFrameOpened(InternalFrameEvent internalFrameEvent);
+    }
+
+另外，与具有所有WindowListener方法桩的WindowApapter类类似，也有一个具有所有InternalFrameListener方法桩的InternalFrameAdapter类。如果我们并不是对JInternalFrame发生的所有事件感兴趣，我们可以继承InternalFrameAdapter类，并且只重写我们所感兴趣的方法。例如，列表8-5中所示的监听器只对图标化方法感兴趣。无需提供InternalFrameListener的其他五个方法的桩实现，我们只需要继承InternalFrameAdapter，并重写两个相关的方法。
+
+.. code:: java
+
+
+    package swingstudy.ch08;
+
+    import javax.swing.JInternalFrame;
+    import javax.swing.event.InternalFrameAdapter;
+    import javax.swing.event.InternalFrameEvent;
+
+    public class InternalFrameIconifyListener extends InternalFrameAdapter {
+
+        public void internalFrameIconified(InternalFrameEvent event) {
+            JInternalFrame source = (JInternalFrame)event.getSource();
+            System.out.println("Iconified: "+source.getTitle());
+        }
+        
+        public void internalFrameDeiconified(InternalFrameEvent event) {
+            JInternalFrame source = (JInternalFrame)event.getSource();
+            System.out.println("Deiconified: "+source.getTitle());
+        }
+    }
+
+InternalFrameEvent是AWTEvent的子类。为了定义由AWTEvent的public int
+getID()方法返回的值，InternalFrameEvent每一个可用的特定事件子类定义了一个常量。表8-11列出了九个常量。我们也可以通过事件的getInternalFrame()方法来获得实际的JInternalFrame。
+
++--------------------------------+----------------------------+
+| 事件子类型ID                   | 关联的接口方法             |
++--------------------------------+----------------------------+
+| INTERNAL\_FRAME\_ACTIVATED     | internalFrameActivated     |
++--------------------------------+----------------------------+
+| INTERNAL\_FRAME\_CLOSED        | internalFrameClosed        |
++--------------------------------+----------------------------+
+| INTERNAL\_FRAME\_CLOSING       | internalFrameClosing       |
++--------------------------------+----------------------------+
+| INTERNAL\_FRAME\_DEACTIVATED   | internalFrameDeactivated   |
++--------------------------------+----------------------------+
+| INTERNAL\_FRAME\_DEICONIFIED   | internalFrameDeiconified   |
++--------------------------------+----------------------------+
+| INTERNAL\_FRAME\_FIRST         | N/A                        |
++--------------------------------+----------------------------+
+| INTERNAL\_FRAME\_ICONIFIED     | internalFrameIconified     |
++--------------------------------+----------------------------+
+| INTERNAL\_FRAME\_LAST          | N/A                        |
++--------------------------------+----------------------------+
+| INTERNAL\_FRAME\_OPENED        | internalFrameOpened        |
++--------------------------------+----------------------------+
+
+Table: InternalFrameEvent事件子类型
+
+**自定义JInternalFrame观感**
+
+因为JInternalFrame是一个轻量级组件，他具有可安装的观感。每一个可安装的Swing观感提供了一个不同的JInternalFrame外观以及默认的UIResource值集合。图8-5预安装的观感类型集合的JWindow窗口外观。
+
+.. figure:: images/Swing_8_5_motif.png
+   :alt: Swing_8_5_motif.png
+
+   Swing\_8\_5\_motif.png
+.. figure:: images/Swing_8_5_windows.png
+   :alt: Swing_8_5_windows.png
+
+   Swing\_8\_5\_windows.png
+.. figure:: images/Swing_8_5_ocean.png
+   :alt: Swing_8_5_ocean.png
+
+   Swing\_8\_5\_ocean.png
+表8-12中列出了JInternalFrame的可用UIResource相关属性的集合。对于JInternalFrame常量，有60个不同的属性，包括内部窗体的标题面板的属性。
+
++------------------------------------------------------+-----------------+
+| 属性字符串                                           | 对象类型        |
++------------------------------------------------------+-----------------+
+| InternalFrame.actionMap                              | ActionMap       |
++------------------------------------------------------+-----------------+
+| InternalFrame.activeBroderColor                      | Color           |
++------------------------------------------------------+-----------------+
+| InternalFrame.activeTitleBackground                  | Color           |
++------------------------------------------------------+-----------------+
+| InternaleFrame.activeTitleForeground                 | Color           |
++------------------------------------------------------+-----------------+
+| InternalFrame.activeTitleGradient                    | List            |
++------------------------------------------------------+-----------------+
+| InternalFrame.border                                 | Border          |
++------------------------------------------------------+-----------------+
+| InternalFrame.borderColor                            | Color           |
++------------------------------------------------------+-----------------+
+| InternalFrame.borderDarkShadow                       | Color           |
++------------------------------------------------------+-----------------+
+| InternalFrame.borderHighlight                        | Color           |
++------------------------------------------------------+-----------------+
+| InterenalFrame.borderLight                           | Color           |
++------------------------------------------------------+-----------------+
+| InternaleFrame.borderShadow                          | Color           |
++------------------------------------------------------+-----------------+
+| InternaleFrame.borderWidth                           | Integer         |
++------------------------------------------------------+-----------------+
+| InternalFrame.closeButtonToolTip                     | String          |
++------------------------------------------------------+-----------------+
+| InternalFrame.closeIcon                              | Icon            |
++------------------------------------------------------+-----------------+
+| InternalFrmae.closeSound                             | String          |
++------------------------------------------------------+-----------------+
+| InternalFrame.icon                                   | Icon            |
++------------------------------------------------------+-----------------+
+| InternalFrame.iconButtonToolTip                      | String          |
++------------------------------------------------------+-----------------+
+| InternalFrame.iconifyIcon                            | Icon            |
++------------------------------------------------------+-----------------+
+| InternalFrame.inactiveBorderColor                    | Color           |
++------------------------------------------------------+-----------------+
+| InternalFrame.inactiveTitleBackground                | Color           |
++------------------------------------------------------+-----------------+
+| InternalFrame.inactiveTitleForeground                | Color           |
++------------------------------------------------------+-----------------+
+| InternalFrame.inactiveTitleGradient                  | List            |
++------------------------------------------------------+-----------------+
+| InternalFrame.layoutTitlePaneAtOrigin                | Boolean         |
++------------------------------------------------------+-----------------+
+| InternalFrame.maxButtonToolTip                       | String          |
++------------------------------------------------------+-----------------+
+| InternalFrame.maximizeIcon                           | Icon            |
++------------------------------------------------------+-----------------+
+| InternalFrame.maximizeSound                          | String          |
++------------------------------------------------------+-----------------+
+| InternalFrame.minimizeIcon                           | Icon            |
++------------------------------------------------------+-----------------+
+| InternalFrame.minimizeIconBackground                 | Color           |
++------------------------------------------------------+-----------------+
+| InternalFrame.minimizeSound                          | String          |
++------------------------------------------------------+-----------------+
+| InternalFrame.optionDialogBorder                     | Border          |
++------------------------------------------------------+-----------------+
+| InternalFrame.paletteBorder                          | Border          |
++------------------------------------------------------+-----------------+
+| InternalFrame.paletteCloseIcon                       | Icon            |
++------------------------------------------------------+-----------------+
+| InternalFrame.paletteTitleHeight                     | Integer         |
++------------------------------------------------------+-----------------+
+| InternaleFrame.resizeIconHighlight                   | Color           |
++------------------------------------------------------+-----------------+
+| InternalFrame.resizeIconShadow                       | Color           |
++------------------------------------------------------+-----------------+
+| InternalFrame.restoreButtonToolTip                   | String          |
++------------------------------------------------------+-----------------+
+| InternalFrame.restoreDownSound                       | String          |
++------------------------------------------------------+-----------------+
+| InternalFrame.restoreUpSound                         | String          |
++------------------------------------------------------+-----------------+
+| InternalFrame.titlebuttonHeight                      | Integer         |
++------------------------------------------------------+-----------------+
+| InternalFrame.titleButtonWidth                       | Integer         |
++------------------------------------------------------+-----------------+
+| InternalFrame.titleFont                              | Font            |
++------------------------------------------------------+-----------------+
+| InternalFrame.titlePaneHeight                        | Integer         |
++------------------------------------------------------+-----------------+
+| InternalFrame.useTaskBar                             | Boolean         |
++------------------------------------------------------+-----------------+
+| InternalFrame.windowBindings                         | Object[]        |
++------------------------------------------------------+-----------------+
+| InternalFrameTitlePane.closebuttonAccessibleName     | String          |
++------------------------------------------------------+-----------------+
+| InternalFrameTitlePane.closebuttonText               | String          |
++------------------------------------------------------+-----------------+
+| InternalFrameTitlePane.closeIcon                     | Icon            |
++------------------------------------------------------+-----------------+
+| InternalFrameTitlePane.iconifyButtonAccessibleName   | String          |
++------------------------------------------------------+-----------------+
+| InternalFrameTitlePane.iconifyIcon                   | Icon            |
++------------------------------------------------------+-----------------+
+| InternalFrameTitlePane.maximizeButtonAccessiblName   | String          |
++------------------------------------------------------+-----------------+
+| InternalFrameTitlePane.maximizeButtonText            | String          |
++------------------------------------------------------+-----------------+
+| InternalFrameTitlePane.minimizeIcon                  | Icon            |
++------------------------------------------------------+-----------------+
+| InternalFrameTitlePane.moveButtonText                | String          |
++------------------------------------------------------+-----------------+
+| InternalFrameTitlePane.restoreButtonText             | String          |
++------------------------------------------------------+-----------------+
+| InternalFrameTitlePane.sizeButtonText                | String          |
++------------------------------------------------------+-----------------+
+| InternalFrameTitlePane.titlePaneLayout               | LayoutManager   |
++------------------------------------------------------+-----------------+
+| InternalFrameTitlePaneUI                             | String          |
++------------------------------------------------------+-----------------+
+| InternalFrameUI                                      | String          |
++------------------------------------------------------+-----------------+
+
+Table: JInternalFrame UIResource元素
+
+除了表8-12中许多可配置属性以外，对于Metal观感，我们还可以通过特殊的客户端属性JInternalFrame.isPalette来将内部窗体设计为一个palette。当设置为Boolean.TRUE时，内部窗体的外观会与其他窗体略微不同，并且具有较短的标题栏，如图8-6所示。
+
+.. figure:: images/Swing_8_6.png
+   :alt: Swing_8_6.png
+
+   Swing\_8\_6.png
+如果我们同时在桌面的PALETTE\_LAYER上添加了一个内部窗体，则这个窗体会位于其他所有窗体之上（如图8-6所示）：
+
+.. code:: java
+
+    JInternalFrame palette = new JInternalFrame("Palette", true, false, true, false);
+    palette.setBounds(150, 0, 100, 100);
+    palette.putClientProperty("JInternalFrame.isPalette", Boolean.TRUE);
+    desktop.add(palette, JDesktopPane.PALETTE_LAYER);
+
+创建图8-6所示的程序的完整代码显示在本章稍后的列表8-6中。
+
+**修改JDesktopIcon**
+
+JInternalFrame依赖一个内联类JDesktopIcon来为JInternalFrame的图标化显示提供UI委托。这个类只是用来这种功能的一个特殊的JComponent，而不是如其名字暗示的一个特殊的Icon实现。事实上，JDesktopIcon类的注释表明这个类是临时的，所以我们不应直接对其进行自定义。（当然，这个类会存在一段时间。）
+
+如果我们需要自定义JDesktopIcon，我们可以修改一些UIResource相关的属性。表8-13列出了JDesktopIcon组件的八个UIResource相关属性。
+
++------------------------------+------------+
+| 属性字符串                   | 对象类型   |
++------------------------------+------------+
+| DesktopIcon.background       | Color      |
++------------------------------+------------+
+| DesktopIcon.border           | Border     |
++------------------------------+------------+
+| DesktopIcon.font             | Font       |
++------------------------------+------------+
+| DesktopIcon.foreground       | Color      |
++------------------------------+------------+
+| DesktopIcon.icon             | Icon       |
++------------------------------+------------+
+| DesktopIcon.width            | Integer    |
++------------------------------+------------+
+| DesktopIcon.windowBindings   | Object[]   |
++------------------------------+------------+
+| DesktopIconUI                | String     |
++------------------------------+------------+
+
+Table: JInternalFrame.JDesktopIcon UIResource元素
+
+JDesktopPane类
+~~~~~~~~~~~~~~
+
+与内部窗体组合配合使用的另一个类就是JDesktopPane类。桌面面板的目的就是包含内部窗体集合。当内部窗体被包含在一个桌面面板中时，他们将其行为的大部分委托给桌面面板的桌面管理器。我们将会在本章稍后详细了解DesktopManager接口。
+
+**创建JDesktopPane**
+
+JDesktopPane只有一个无参数的构造函数。一旦创建，我们通常将其放在由BorderLayout管理的容器的中部。这可以保证桌面占据容器的所有空间。
+
+**将内部窗体添加到JDesktopPane**
+
+JDesktopPane并没有实现RootPaneContainer。我们并不能直接将组件添加到JRootPane内的不同面板中，而是直接将其添加到JDesktopPane：
+
+.. code:: java
+
+    desktop.add(anInternalFrame);
+
+**JDesktopPane属性**
+
+如表8-14所示，JDesktopPane有八个属性。位于allFrames属性数组索引0外的JInternalFrame是位于桌面前面的内部窗体（JInternalFrame
+f =
+desktop.getAllFrames()[0]）。除了获取JDesktopPane中的所有窗体以外，我们还可以仅获取特定层的窗体：public
+JInternalFrame[] getAllFramesInLayer(int layer)。
+
+可用的dragMode属性设置可以为类的LIVE\_DRAG\_MODE与OUTLINE\_DRAG\_MODE常量。
+
++---------------------+---------------------+------------+
+| 属性名              | 数据类型            | 访问性     |
++---------------------+---------------------+------------+
+| accessibleContext   | AccessibleContext   | 只读       |
++---------------------+---------------------+------------+
+| allFrames           | JInternalFrame[]    | 只读       |
++---------------------+---------------------+------------+
+| desktopManager      | DesktopManager      | 读写       |
++---------------------+---------------------+------------+
+| dragMode            | int                 | 读写绑定   |
++---------------------+---------------------+------------+
+| opaque              | boolean             | 只读       |
++---------------------+---------------------+------------+
+| selectedFrame       | JInternalFrame      | 读写       |
++---------------------+---------------------+------------+
+| UI                  | DesktopPaneUI       | 读写       |
++---------------------+---------------------+------------+
+| UIClassID           | String              | 只读       |
++---------------------+---------------------+------------+
+
+Table: JDesktopPane属性
+
+**自定义JDesktopPane观感**
+
+回到图8-5，我们可以看到JDesktopPane中的JInternalFrame对象。JDesktopPane的基本观感与每一个观感相同。如表8-15所示，对JDesktopPane并没有太多可以配置的UIResource相关属性。
+
++----------------------------+-------------+
+| 属性字符串                 | 对象类型    |
++----------------------------+-------------+
+| desktop                    | Color       |
++----------------------------+-------------+
+| Desktop.ancestorInputMap   | InputMap    |
++----------------------------+-------------+
+| Desktop.background         | Color       |
++----------------------------+-------------+
+| Desktop.windowBindings     | Object[]    |
++----------------------------+-------------+
+| DesktopPane.actionMap      | ActionMap   |
++----------------------------+-------------+
+| DesktopPaneUI              | String      |
++----------------------------+-------------+
+
+Table: JDesktopPane UIResource元素
+
+**完整的桌面示例**
+
+现在我们已经了解了主要的桌面相关类，现在我们来看一下完整的示例。基本的过程包括创建一组JInternalFrame对象，然后将放在一个JDesktopPane中。如果需要，可以对每一个内部窗体的单个组件进行事件处理，也可以对单个窗体进行事件处理。在这个示例中简单的使用了前面的列表8-5中所给出的InternalFrameIconifyListener类来监听正在图标化和取消图标化的内容窗体。
+
+图8-6显示了程序启动时的样子。一个特定的内部窗体被设计为palette，并且允许了拖放模式。
+
+列表8-6显示了这个示例的完整代码。
+
+.. code:: java
+
+
+    package swingstudy.ch08;
+
+    import java.awt.BorderLayout;
+    import java.awt.EventQueue;
+
+    import javax.swing.JDesktopPane;
+    import javax.swing.JFrame;
+    import javax.swing.JInternalFrame;
+    import javax.swing.JLabel;
+    import javax.swing.event.InternalFrameListener;
+
+    public class DesktopSample {
+
+        /**
+         * @param args
+         */
+        public static void main(final String[] args) {
+            // TODO Auto-generated method stub
+
+            Runnable runner = new Runnable() {
+                public void run() {
+                    String title = (args.length==0 ? "Desktop Sample" : args[0]);
+                    JFrame frame = new JFrame(title);
+                    frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+                    
+                    JDesktopPane desktop = new JDesktopPane();
+                    JInternalFrame internalFrames[] = {
+                            new JInternalFrame("Can Do All", true, true, true, true),
+                            new JInternalFrame("Not Resizable", false, true, true, true),
+                            new JInternalFrame("Not Closable", true, false, true, true),
+                            new JInternalFrame("Not Maximizable", true, true, false, true),
+                            new JInternalFrame("Not Iconifiable", true, true, true, false)
+                    };
+                    
+                    InternalFrameListener internalFrameListener = new InternalFrameIconifyListener();
+                    
+                    int pos = 0;
+                    for(JInternalFrame internalFrame: internalFrames) {
+                        // Add to desktop
+                        desktop.add(internalFrame);
+                        
+                        // Position and size
+                        internalFrame.setBounds(pos*25, pos*25, 200, 100);
+                        pos++;
+                        
+                        // Add listener for iconification events
+                        internalFrame.addInternalFrameListener(internalFrameListener);
+                        
+                        JLabel label = new JLabel(internalFrame.getTitle(), JLabel.CENTER);
+                        internalFrame.add(label, BorderLayout.CENTER);
+                        
+                        // Make visible
+                        internalFrame.setVisible(true);
+                        
+                    }
+                    
+                    JInternalFrame palette = new JInternalFrame("Palette", true, false, true, false);
+                    palette.setBounds(350, 150, 100, 100);
+                    palette.putClientProperty("JInternalFrame.isPalette", Boolean.TRUE);
+                    desktop.add(palette, JDesktopPane.PALETTE_LAYER);
+                    palette.setVisible(true);
+                    
+                    desktop.setDragMode(JDesktopPane.OUTLINE_DRAG_MODE);
+                    
+                    frame.add(desktop, BorderLayout.CENTER);
+                    frame.setSize(500, 300);
+                    frame.setVisible(true);
+                }
+            };
+            
+            EventQueue.invokeLater(runner);
+        }
+
+    }
+
+**DesktopManager接口**
+
+使用桌面的最后一部分就是桌面管理器了，他是DesktopManager接口的实现，其定义如下：
+
+.. code:: java
+
+    public interface DesktopManager {
+      public void activateFrame(JInternalFrame frame);
+      public void beginDraggingFrame(JComponent frame);
+      public void beginResizingFrame(JComponent frame, int direction);
+      public void closeFrame(JInternalFrame frame);
+      public void deactivateFrame(JInternalFrame frame);
+      public void deiconifyFrame(JInternalFrame frame);
+      public void dragFrame(JComponent frame, int newX, int newY);
+      public void endDraggingFrame(JComponent frame);
+      public void endResizingFrame(JComponent frame);
+      public void iconifyFrame(JInternalFrame frame);
+      public void maximizeFrame(JInternalFrame frame);
+      public void minimizeFrame(JInternalFrame frame);
+      public void openFrame(JInternalFrame frame);
+      public void resizeFrame(JComponent frame, int newX, int newY, int newWidth,
+        int newHeight);
+      public void setBoundsForFrame(JComponent frame, int newX, int newY, int newWidth,
+        int newHeight);
+    }
+
+当JInternalFrame位于JDesktopPane中时，他们不应尝试例如图标化或是最大化的操作。相反，他们应该请求他们所安装在的桌面面板的桌面管理器来执行这些操作：
+
+.. code:: java
+
+    getDesktopPane().getDesktopManager().iconifyFrame(anInternalFrame);
+
+DefaultDesktopManager类提供了DesktopManager的一个实现。如果默认实现还足够，观感会提供他们自己的DesktopManager实现类，例如Windows观感的WindowsDesktopManager。我们也可以定义自己的管理器，但是通常并不需要这样。
+
+小结
+----
+
+在本章中，我们探讨了JRootPane类，以及如何实现依据JRootPane对内部组件进行管理的RootPaneContainer接口。我们同时了解了在Swing中我们如何使用JFrame,
+JDialog, JWindow,
+JApplet或是JInternalFrame类的JRootPane。根面板可以借助JLayeredPane来布局组件，其方式是工具提示文本以及弹出菜单总是显示在相关联组件的上面。
+
+JInternalFrame同时也可以存在于桌面环境中，在这种情况下，JDesktopPane以及DesktopManager管理如何以及在哪里放置并显示内部窗体。我们还可以通过将InternalFrameListener实现也JInternalFrame关联来响应内部窗体事件。
+
+在第9章中，我们将会探讨Swing库中的特定弹出组件：JColorChooser,
+JFileChooser， JOptionPane以及ProgressMonitor。

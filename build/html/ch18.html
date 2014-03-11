@@ -1,0 +1,2016 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Tables &mdash; The Definitive Guide to Java Swing Third Edtion 0.01 documentation</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.01',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="The Definitive Guide to Java Swing Third Edtion 0.01 documentation" href="index.html" />
+    <link rel="next" title="拖放支持" href="ch19.html" />
+    <link rel="prev" title="树" href="ch17.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="ch19.html" title="拖放支持"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="ch17.html" title="树"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">The Definitive Guide to Java Swing Third Edtion 0.01 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="tables">
+<h1>Tables<a class="headerlink" href="#tables" title="Permalink to this headline">¶</a></h1>
+<p>在第17章中，我们深入了解了Swing的JTree组件。在本章中，我们将会探讨JTable组件的细节。该组件是用于以网络的形式显示二维数据的标准Swing组件。</p>
+<div class="section" id="intoducing-tables">
+<h2>Intoducing Tables<a class="headerlink" href="#intoducing-tables" title="Permalink to this headline">¶</a></h2>
+<p>图18-1显示了JTable的一个简单示例。我们可以看到这个示例包含日本字体。为了能够看到本章示例程序中的Kanji表意文字，我们需要安装必须的日本字体。然而，在没有配置我们的环境来显示日本字体的情况下这些示例也可以正常工作，但是我们并不能看到表意文字，相反我们会看到问号或是方框，这依据于我们的平台而定。</p>
+<div class="figure">
+<img alt="Swing_18_1.png" src="_images/Swing_18_1.png" />
+<p class="caption">Swing_18_1.png</p>
+</div>
+<p>类似于JTree组件，JTable组件依赖于各种用于其内部工作的支持类。对于JTable，支持类位于javax.swing.table包中。JTable中的单元可以通过行，列，行与列，或是单个单元来选定。当前
+的ListSelectionModel设置负责控制表格的选定。</p>
+<p>表格中不同单元格的显示是TableCellRenderer的职责；DefaultCellRenderer以JLabel子类的形式提供了一个TableCellRenderer接口的实现。</p>
+<p>管理存储在单元格中的数据是通过TableModel接口实现来实现的。AbstractTableModel提供了提供了一个不具有数据存储功能的接口实现的基础。通过对比，DefaultTableModel封装了TableModel接口并且使用Vector对象用于数据存储。如果我们需要一个不同的存储类型而不是DefaultTableModel提供的类型，则我们需要扩展AbstractTableModel；例如，如果我们已经在我们自己的数据结构中存储了数据。</p>
+<p>TableColumnModel接口与此接口的DefaultTableColumnModel实现将表格的数据作为一系列的列来管理。他们配合TableColumn类使用从而为单个列的管理提供更多的灵活性。例如，我们可以以不同于在JTable中的显示顺序来在TableModel中存储数据列。TableColumnModel管得另一个ListSelectionModel来控制表格列的选定。</p>
+<p>在每一列的顶部是一个列头。默认情况下，TableColumn类依据JTableHeader类来渲染一个文本列头。然而，我们必须将JTable嵌入到一个滚动面板中来查看默认列头。</p>
+<p>JTable中的单元格是可编辑的。如果一个单元格是可编辑的，编辑如何作用依赖于TableCellEditor实现，例如DefaultCellEditor实现，其扩展了AbstractCellEditor。另外，并不存在用于处理单个行的类。行必须通过单元格来处理。在幕后，JTable使用SizeSequence实用类来处理高度变化的行；我们并不需要自己来处理。</p>
+<p>JTable组件所用的元素之间还存在一些其他的关系。这些关系会在本章稍后的特定接口与类中进行探讨。</p>
+<p>要展示JTable元素如何组合在一起，请参看图18-2。</p>
+<div class="figure">
+<img alt="Swing_18_2.png" src="_images/Swing_18_2.png" />
+<p class="caption">Swing_18_2.png</p>
+</div>
+</div>
+<div class="section" id="jtable">
+<h2>JTable类<a class="headerlink" href="#jtable" title="Permalink to this headline">¶</a></h2>
+<p>首先我们来了解JTable类，他为我们提供了以表格的形式显示数据的方法。（参看图18-1与18-2）。</p>
+<div class="section" id="id1">
+<h3>创建JTable<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h3>
+<p>我们可以有七种不同的方法来创建JTable。这些构造函数可以使得我们使用多种数据源来创建表格。</p>
+<div class="code java highlight-python"><pre>public JTable()
+JTable table = new JTable();
+public JTable(int rows, int columns)
+JTable table = new JTable(2, 3);
+public JTable(Object rowData[][], Object columnNames[])
+Object rowData[][] = { { "Row1-Column1", "Row1-Column2", "Row1-Column3"},
+  { "Row2-Column1", "Row2-Column2", "Row2-Column3"} };
+Object columnNames[] = { "Column One", "Column Two", "Column Three"};
+JTable table = new JTable(rowData, columnNames);
+public JTable(Vector rowData, Vector columnNames)
+Vector rowOne = new Vector();
+rowOne.addElement("Row1-Column1");
+rowOne.addElement("Row1-Column2");
+rowOne.addElement("Row1-Column3");
+Vector rowTwo = new Vector();
+rowTwo.addElement("Row2-Column1");
+rowTwo.addElement("Row2-Column2");
+rowTwo.addElement("Row2-Column3");
+Vector rowData = new Vector();
+rowData.addElement(rowOne);
+rowData.addElement(rowTwo);
+Vector columnNames = new Vector();
+columnNames.addElement("Column One");
+columnNames.addElement("Column Two");
+columnNames.addElement("Column Three");
+JTable table = new JTable(rowData, columnNames);
+public JTable(TableModel model)
+TableModel model = new DefaultTableModel(rowData, columnNames);
+JTable table = new JTable(model);
+public JTable(TableModel model, TableColumnModel columnModel)
+// Swaps column order
+TableColumnModel columnModel = new DefaultTableColumnModel();
+TableColumn firstColumn = new TableColumn(1);
+firstColumn.setHeaderValue(headers[1]);
+columnModel.addColumn(firstColumn);
+TableColumn secondColumn = new TableColumn(0);
+secondColumn.setHeaderValue(headers[0]);
+columnModel.addColumn(secondColumn);
+JTable table = new JTable(model, columnModel);
+public JTable(TableModel model, TableColumnModel columnModel,
+  ListSelectionModel selectionModel)
+// Set single selection mode
+ListSelectionModel selectionModel = new DefaultListSelectionModel();
+selectionModel.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+JTable table = new JTable(model, columnModel, selectionModel);</pre>
+</div>
+<p>无参数的构造函数会创建一个没有行与列的表格。第二个构造函数带有两个参数来创建一个具有行与列的空表。</p>
+<p>注意，由JTable构造函数所创建的单元格是可编辑的，而不是只读的。要在代码中修改其内容，只需要调用JTable的public
+void setValueAt(Object value, int row, int column)方法。</p>
+<p>当我们的数据已经位于一个特定的结构形式中时，接下来的两个方法就会十分有用。例如，如果我们的数据位于数组或是Vector对象中时，我们可以创建一个JTable而不需要创建我们自己的TableModel。一个两行三列的表格可以使用数组
+{ { &#8220;Row1-Column1&#8221;, &#8220;Row1-Column2&#8221;, &#8220;Row1-Column3&#8221;}, { &#8220;Row2-Column1&#8221;,
+&#8220;Row2-Column2&#8221;, &#8220;Row2-Column3&#8221;}
+}来创建，并使用另一个数组来存储表头名字。类似的数据结构对于基于向量的构建函数也是必须的。</p>
+<p>其余的三个构造函数使用JTable特定的数据结构。如果忽略三个参数中的任意一个，则会使用默认的设置。例如，如果我们没有指定TableColumnModel，则会使用默认实现DefaultTableColumnModel，并且会使用TableModel的列顺序来自动填充显示顺序。如果忽略选择模型，则ListSelectionModel会全使用多行选择模型，这就意味着非连续行而不是列可以被选中。</p>
+</div>
+<div class="section" id="id2">
+<h3>滚动JTable组件<a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h3>
+<p>类似于其他的需要更多可用空间的组件，JTable组件实现了Scrollable接口并且应放置在一个JScrollPane中。当JTable对于可用的屏幕状态过大时，滚动条会出现在JScrollPane中，并且列头的名字会出一在每一列的上方。图18-3显示了图18-1中的表没有位于JScrollPane中的显示结果。注意，列头与滚动条都没有出现。这意味着我们不能确定数据的意义，也不能滚动到未显示的行。</p>
+<div class="figure">
+<img alt="Swing_18_3.png" src="_images/Swing_18_3.png" />
+<p class="caption">Swing_18_3.png</p>
+</div>
+<p>所以，我们所创建的每一个表格需要通过类似于下面的代码来将其放置在JScrollPane中：</p>
+<div class="code java highlight-python"><pre>JTable table = new JTable(...);
+JScrollPane scrollPane = new JScrollPane(table);</pre>
+</div>
+</div>
+<div class="section" id="id3">
+<h3>手动放置JTable视图<a class="headerlink" href="#id3" title="Permalink to this headline">¶</a></h3>
+<p>当位于JScrollPane中的JTable被添加到窗口时，表格会自动显示在表格位置，所以第一行与第一列出现在左上角。如果我们需要将位置调整为原点，我们可以将视窗位置设置回点（0，0）。</p>
+<p>为了滚动的目的，依据滚动条的方向，块增长量是视窗的可见宽度与高度。对于水平滚动是100像素，而对于垂直滚动则是单个行的高度。图18-4显示了这些增量的可视化表示。</p>
+<div class="figure">
+<img alt="Swing_18_4.png" src="_images/Swing_18_4.png" />
+<p class="caption">Swing_18_4.png</p>
+</div>
+</div>
+<div class="section" id="id4">
+<h3>移除列头<a class="headerlink" href="#id4" title="Permalink to this headline">¶</a></h3>
+<p>如前所述，将JTable放在JScrollPane中会自动为不同的列名生成列头标签。如果我们不需要列头，我们可以使用多种方法来移除。图18-5显示了一个没有列头的表格的示例。</p>
+<div class="figure">
+<img alt="Swing_18_5.png" src="_images/Swing_18_5.png" />
+<p class="caption">Swing_18_5.png</p>
+</div>
+<p>移除列头最简单的方法就是提供一个空字符串作为列头名。使用前面七个构造函数列表中的第三个JTable构造函数，就会将三个列名替换为&#8221;&#8220;空字符串。</p>
+<div class="code java highlight-python"><pre>Object rowData[][] = {{"Row1-Column1", "Row1-Column2", "Row1-Column3"},
+  {"Row2-Column1", "Row2-Column2", "Row2-Column3"}};
+Object columnNames[] = { "", "", ""};
+JTable table = new JTable(rowData, columnNames);
+JScrollPane scrollPane = new JScrollPane(table);</pre>
+</div>
+<p>因为这种移除列头的方法同时也移除了不同列的描述，也许我们会希望另一种隐藏列头的方法。最简单的方法就是我们告诉JTable我们并不需要表格头：</p>
+<div class="code java highlight-python"><div class="highlight"><pre><span class="n">table</span><span class="o">.</span><span class="n">setTableHeader</span><span class="p">(</span><span class="n">null</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>我们也可以通过继承JTable类并且覆盖受保护的configureEnclosingScrollPane()方法来移除列头，或者是告诉每一个TableColumn其列头值为空。这些是实现相同任务更为复杂的方法。</p>
+<p>注意，调用scrollPane.setColumnHeaderView(null)方法并不清除列头。相反，他会使得JScrollPane使用默认的列头。</p>
+</div>
+<div class="section" id="id5">
+<h3>JTable属性<a class="headerlink" href="#id5" title="Permalink to this headline">¶</a></h3>
+<p>如表18-1所示，JTable有许多属性，共计40个。这40个属性是对由JComponent，Container与Component类继承所得属性的补充。</p>
+<div class="figure">
+<img alt="Swing_table_18_1_1.png" src="_images/Swing_table_18_1_1.png" />
+<p class="caption">Swing_table_18_1_1.png</p>
+</div>
+<div class="figure">
+<img alt="Swing_table_18_1_2.png" src="_images/Swing_table_18_1_2.png" />
+<p class="caption">Swing_table_18_1_2.png</p>
+</div>
+<div class="figure">
+<img alt="Swing_table_18_1_3.png" src="_images/Swing_table_18_1_3.png" />
+<p class="caption">Swing_table_18_1_3.png</p>
+</div>
+<p>注意，行的高度并不是固定的。我们可以使用public void setRowHeight(int
+row, int rowHeight)方法来修改单个行的高度。</p>
+<p>大多数的JTable属性以下三类中的一种：显示设置，选择设置以及自动尺寸调整设置。</p>
+<p><strong>显示设置</strong></p>
+<p>表18-1中第一个属性子集合允许我们设置各种JTable显示选项。除了由Component继承的foreground与background属性以外，我们可以修改选择前景（selectionForeground）与背景（selectionBackground）颜色。我们可以控制显示哪一个网格线（showGrid）及其颜色（gridColor）。intercellSpacing属性设置处理表格单元之间的额外空间。</p>
+<p><strong>选择模式</strong></p>
+<p>我们可以使用JTable三种不同的选择模式类型中的一种。我们可以一次选择一行表格元素，一次选择一列表格元素，或是一次选择一个单元格。这三种设置是通过rowSelectionAllowed，columnSelectionAllowed以及cellSelectionEnabled属性来控制的。初始时，仅允许行选择模式。因为默认的ListSelectionModel位于多选模式，我们可以一次选中多行。如果我们不喜欢多选模式，我们可以修改JTable的selectionMode属性，从而使得JTable的行与列选择模式相应的发生变化。当同时允许行选择与列选择时，就会允许单元格选择。</p>
+<p>如果我们对JTable的行或是列是否被选中感兴趣，我们可以查询JTable的下列六个属性：selectedColumnCount,
+selectedColumn, selectedColumns, selectedRowCounts,
+selectedRow以及selectedRows。ListSelectionModel类为不同的选择模式提供相应的常量。ListSelectionModel接口与DefaultListSelectionModel类已经在第13章中的JList组件信息中进行探讨。他们被用来描述JTable组件中的行与列。他们具有三个设置：</p>
+<ul class="simple">
+<li>MULTIPLE_INTERVAL_SELECTION (the default)</li>
+</ul>
+<p>•SINGLE_INTERVAL_SELECTION •SINGLE_SELECTION</p>
+<p>JTable对于行与列具有独立的选择模式。行选择模式被存储在JTable中的selectionModel属性中。列选择模式被存储在TableColumnModel属性。设置JTable的selectionMode属性会为两个独立的JTable选择模式设置选择模式。</p>
+<p>一旦设置了选择模式并且用户与组件进行交互，我们可以向选择模型询问发生了什么，或是更确切的，用户选择了什么。表18-2列出了使用DefaultListSelectionModel的可用属性。</p>
+<div class="figure">
+<img alt="Swing_table_18_2.png" src="_images/Swing_table_18_2.png" />
+<p class="caption">Swing_table_18_2.png</p>
+</div>
+<p>如果我们对于了解何时发生选择事件感兴趣，则我们可以向ListSelectionModel注册一个ListSelectionListener。ListSelectionListener在第13中JList组件中进行演示了。</p>
+<p>注意，所有的表格索引都是由0开始的。所以第一个可见的列是第0列。</p>
+<p><strong>尺寸自动调整模式</strong></p>
+<p>JTable属性的最后一个子集处理JTable的列尺寸调整行为。当JTable位于一个尺寸变化的列或是窗口中时，则其如何响应呢？表18-3显示了JTable所支持的五个设置。</p>
+<div class="figure">
+<img alt="Swing_table_18_3.png" src="_images/Swing_table_18_3.png" />
+<p class="caption">Swing_table_18_3.png</p>
+</div>
+<p>列表18-1演示了当调整表格列时每一种设置如何响应。</p>
+<div class="code java highlight-python"><pre>package swingstudy.ch18;
+
+import java.awt.BorderLayout;
+import java.awt.EventQueue;
+import java.awt.event.ItemEvent;
+import java.awt.event.ItemListener;
+
+import javax.swing.JComboBox;
+import javax.swing.JFrame;
+import javax.swing.JScrollPane;
+import javax.swing.JTable;
+
+public class ResizeTable {
+
+    /**
+     * @param args
+     */
+    public static void main(String[] args) {
+        // TODO Auto-generated method stub
+
+        final Object rowData[][] = {
+                {"1", "one", "ichi - \u4E00", "un", "I"},
+                {"2", "two", "ni -\u4E8C", "deux", "II"},
+                {"3", "three", "san - \u4E09", "trois", "III"},
+                {"4", "four", "shi - \u56DB", "quatre", "IV"},
+                {"5", "five", "go - \u4E94", "cinq", "V"},
+                {"6", "six", "roku - \u516D", "treiza", "VI"},
+                {"7", "seven", "shichi - \u4E03", "sept", "VII"},
+                {"8", "eight", "hachi - \u516B", "huit", "VIII"},
+                {"9", "nine", "kyu - \u4E5D", "neur", "IX"},
+                {"10", "ten", "ju - \u5341", "dix", "X"}
+        };
+
+        final String columnNames[] = {"#", "English", "Japanese", "French", "Roman"};
+
+        Runnable runner = new Runnable() {
+            public void run() {
+                final JTable table= new JTable(rowData, columnNames);
+                JScrollPane scrollPane = new JScrollPane(table);
+
+                String modes[] = {"Resize All Columns", "Resize Last Column", "Resize Next Column", "Resize Off", "Resize Susequent Columns"};
+
+                final int modeKey[] = {
+                    JTable.AUTO_RESIZE_ALL_COLUMNS,
+                    JTable.AUTO_RESIZE_LAST_COLUMN,
+                    JTable.AUTO_RESIZE_NEXT_COLUMN,
+                    JTable.AUTO_RESIZE_OFF,
+                    JTable.AUTO_RESIZE_SUBSEQUENT_COLUMNS
+                };
+
+                JComboBox resizeModeComboBox = new JComboBox(modes);
+                int defaultMode = 4;
+                table.setAutoResizeMode(modeKey[defaultMode]);
+                resizeModeComboBox.setSelectedIndex(defaultMode);
+                ItemListener itemListener = new ItemListener() {
+                    public void itemStateChanged(ItemEvent e) {
+                        JComboBox source = (JComboBox)e.getSource();
+                        int index = source.getSelectedIndex();
+                        table.setAutoResizeMode(modeKey[index]);
+                    }
+                };
+                resizeModeComboBox.addItemListener(itemListener);
+
+                JFrame frame = new JFrame("Resizing Table");
+                frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+
+                frame.add(resizeModeComboBox, BorderLayout.NORTH);
+                frame.add(scrollPane, BorderLayout.CENTER);
+
+                frame.setSize(300, 150);
+                frame.setVisible(true);
+            }
+        };
+
+        EventQueue.invokeLater(runner);
+    }
+
+}</pre>
+</div>
+<p>图18-6显示了程序初始时的显示。变化JComboBox，从而我们就可以修改列的尺寸调整行为。</p>
+<div class="figure">
+<img alt="Swing_18_6.png" src="_images/Swing_18_6.png" />
+<p class="caption">Swing_18_6.png</p>
+</div>
+</div>
+<div class="section" id="id6">
+<h3>渲染表格单元<a class="headerlink" href="#id6" title="Permalink to this headline">¶</a></h3>
+<p>默认情况下，表格数据的渲染是通过JLabel完成的。存储在表格中的值被作为文本字符串进行渲染。同时也为Date与Number子类等类安装了的额外的默认渲染器，但是他们并没有被激活。我们将会在本章稍后的章节中了解如何激活这些渲染器。</p>
+<p><strong>使用TableCellRenderer接口与DefaultTableCellRenderer类</strong></p>
+<p>TableCellRenderer接口定义了一个唯一的方法。</p>
+<div class="code java highlight-python"><pre>public interface TableCellRenderer {
+  public Component getTableCellRendererComponent(JTable table, Object value,
+    boolean isSelected, boolean hasFocus, int row, int column);
+}</pre>
+</div>
+<p>通过使用指定给getTableCellRendererComponent()方法的信息，则会创建合适的渲染器组件并且使用其特定的方法来显示JTable的相应内容。“合适”意味着反映我们决定显示的表格单元状态的渲染器，例如当我们需要区别显示选中的表格单元与未选中的表格单元，或者是当表格单元获得输入焦点时，我们希望选中的单元如何显示等。</p>
+<p>要查看一个简单的演示，如图18-7所示，其中依据渲染器所在的行显示了不同的颜色。</p>
+<div class="figure">
+<img alt="Swing_18_7.png" src="_images/Swing_18_7.png" />
+<p class="caption">Swing_18_7.png</p>
+</div>
+<p>用于生成图18-7示例的自定义渲染器的代码显示在列表18-2中。</p>
+<div class="code java highlight-python"><pre>package swingstudy.ch18;
+
+import java.awt.Color;
+import java.awt.Component;
+
+import javax.swing.JTable;
+import javax.swing.table.DefaultTableCellRenderer;
+import javax.swing.table.TableCellRenderer;
+
+public class EvenOddRenderer implements TableCellRenderer {
+
+    public static final DefaultTableCellRenderer DEFAULT_RENDERER = new DefaultTableCellRenderer();
+
+    @Override
+    public Component getTableCellRendererComponent(JTable table, Object value,
+            boolean isSelected, boolean hasFocus, int row, int column) {
+        // TODO Auto-generated method stub
+        Component renderer = DEFAULT_RENDERER.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+        Color foreground, background;
+        if(isSelected) {
+            foreground = Color.YELLOW;
+            background = Color.GREEN;
+        }
+        else {
+            if(row%2==0) {
+                foreground = Color.BLUE;
+                background = Color.WHITE;
+            }
+            else {
+                foreground = Color.WHITE;
+                background = Color.BLUE;
+            }
+        }
+        renderer.setForeground(foreground);
+        renderer.setBackground(background);
+        return renderer;
+    }
+
+}</pre>
+</div>
+<p>表格的渲染器可以为单个类或是特定的列而安装。要将渲染器安装为JTable的默认渲染器，换句话说，对于Object.class，使用类似下面的代码：</p>
+<div class="code java highlight-python"><pre>TableCellRenderer renderer = new EvenOddRenderer();
+table.setDefaultRenderer(Object.class, renderer);</pre>
+</div>
+<p>一旦安装，EvenOddRenderer将会用于其类不具有特定渲染器的任意列。TableModel的public
+Class
+getColumnClass()方法负责返回用作特定列中所有表格单元渲染器的类。DefaultTableModel为所有表格单元返回Object.class；所以，EvenOddRenderer将会用于所有的表格单元。</p>
+<p>使用EvenOddRenderer来生成图18-7示例的示例程序显示在列表18-3中。</p>
+<div class="code java highlight-python"><pre>package swingstudy.ch18;
+
+import java.awt.BorderLayout;
+import java.awt.EventQueue;
+
+import javax.swing.JFrame;
+import javax.swing.JScrollPane;
+import javax.swing.JTable;
+import javax.swing.table.TableCellRenderer;
+
+public class RendererSample {
+
+    /**
+     * @param args
+     */
+    public static void main(String[] args) {
+        // TODO Auto-generated method stub
+
+        final Object rows[][] = {
+                {"one", "ichi - \u4E00"},
+                {"two", "ni - \u4E8C"},
+                {"three", "san - \u4E09"},
+                {"four", "shi - \u56DB"},
+                {"fiv", "go - \u4E94"},
+                {"six", "roku - \u516D"},
+                {"seven", "shichi - \u4E03"},
+                {"eight", "hachi - \u516B"},
+                {"nine", "kyu - \u4E5D"},
+                {"ten", "ju - \u5341"}
+        };
+
+        final Object headers[] = {"English", "Japanese"};
+
+        Runnable runner = new Runnable() {
+            public void run() {
+                JFrame frame = new JFrame("Renderer Sample");
+                frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+                JTable table = new JTable(rows, headers);
+                TableCellRenderer renderer = new EvenOddRenderer();
+                table.setDefaultRenderer(Object.class, renderer);
+                JScrollPane scrollPane = new JScrollPane(table);
+                frame.add(scrollPane, BorderLayout.CENTER);
+                frame.setSize(300, 150);
+                frame.setVisible(true);
+            }
+        };
+        EventQueue.invokeLater(runner);
+    }
+
+}</pre>
+</div>
+<p><strong>使用工具提示</strong></p>
+<p>默认情况下，我们的表格单元将会显示我们配置其显示的工具提示文本。与JTree组件不同，我们并不需要手动向表格注册ToolTipManager。然而，如果我们的表格不显示工具提示文本，如果我们使用类似下面的代码来取消ToolTipManager的注册，表格的响应就会更为迅速：</p>
+<div class="code java highlight-python"><pre>// Explicitly
+ToolTipManager.sharedInstance().unregisterComponent(aTable);
+// Implicitly
+yourTable.setToolTipText(null);</pre>
+</div>
+</div>
+<div class="section" id="id7">
+<h3>处理JTable事件<a class="headerlink" href="#id7" title="Permalink to this headline">¶</a></h3>
+<p>并没有我们可以直接注册到JTable的JTable事件。要确定某件事情何时发生，我们必须注册到JTable的模型类：TableModel，TableColumnModel或是ListSelectionModel。</p>
+</div>
+<div class="section" id="id8">
+<h3>自定义JTable观感<a class="headerlink" href="#id8" title="Permalink to this headline">¶</a></h3>
+<p>每一个可安装的Swing观感都提供了不同的JTable外观与默认的UIResource值设置集合。图18-8显示了预安装的观感类型Motif，Windows与Ocean的JTable组件外观。在图所示的三个观感中，第三行是高亮显示的，而第一列的颜色显示正在编辑状态。</p>
+<div class="figure">
+<img alt="Swing_18_8.png" src="_images/Swing_18_8.png" />
+<p class="caption">Swing_18_8.png</p>
+</div>
+<p>JTable可用的UIResource相关的属性集合显示在表18-4中。JTable组件有21个不同的属性。</p>
+<div class="figure">
+<img alt="Swing_table_18_4_1.png" src="_images/Swing_table_18_4_1.png" />
+<p class="caption">Swing_table_18_4_1.png</p>
+</div>
+<div class="figure">
+<img alt="Swing_table_18_4_2.png" src="_images/Swing_table_18_4_2.png" />
+<p class="caption">Swing_table_18_4_2.png</p>
+</div>
+</div>
+</div>
+<div class="section" id="tablemode">
+<h2>TableMode接口<a class="headerlink" href="#tablemode" title="Permalink to this headline">¶</a></h2>
+<p>现在我们已经了解了JTable组件的基础，现在我们可以了解其内部是如何管理数据元素的了。他是借助于实现了TableModel接口的类来完成的。</p>
+<p>TableModel接口定义了JTable查询列头与表格单元值，并且当表格可编辑时修改单元值所需要的框架。其定义如下：</p>
+<div class="code java highlight-python"><pre>public interface TableModel {
+  // Listeners
+  public void addTableModelListener(TableModelListener l);
+  public void removeTableModelListener(TableModelListener l);
+  // Properties
+  public int getColumnCount();
+  public int getRowCount();
+  // Other methods
+  public Class getColumnClass(int columnIndex);
+  public String getColumnName(int columnIndex);
+  public Object getValueAt(int rowIndex, int columnIndex);
+  public boolean isCellEditable(int rowIndex, int columnIndex);
+  public void setValueAt(Object vValue, int rowIndex, int columnIndex);
+}</pre>
+</div>
+<div class="section" id="abstracttablemodel">
+<h3>AbstractTableModel类<a class="headerlink" href="#abstracttablemodel" title="Permalink to this headline">¶</a></h3>
+<p>AbstractTableModel类提供了TableModel接口的基本实现。他管理TableModelListener列表以及一些TableModel方法的默认实现。当我们派生这个类时，我们所需要提供的就是实际列与行的计数以及表格模型中的特定值（getValueAt()）。列名默认为为如A，B，C，...，Z，AA，BB之类的标签，并且数据模型是只读的，除非isCellEditable()被重写。</p>
+<p>如果我们派生AbstractTableModel并且使得数据模型是可编辑的，那么我们就要负责调用AbstractTableModel中的fireXXX()方法来保证当数据模型发生变化时TableModelListener对象都会得到通知：</p>
+<div class="code java highlight-python"><pre>public void fireTableCellUpdated(int row, int column);
+public void fireTableChanged(TableModelEvent e);
+public void fireTableDataChanged();
+public void fireTableRowsDeleted(int firstRow, int lastRow);
+public void fireTableRowsInserted(int firstRow, int lastRow);
+public void fireTableRowsUpdated(int firstRow, int lastRow);
+public void fireTableStructureChanged();</pre>
+</div>
+<p>当我们需要创建一个JTable时，为了重用已有的数据结构而派生AbstractTableModel并不常见。这个数据结构通常是来自JDBC查询的结果，但是并没有限制必须是这种情况。为了进行演示，下面的匿名类定义显示了我们如何将一个数据看作一个AbstractTableModel：</p>
+<div class="code java highlight-python"><pre>TableModel model = new AbstractTableModel() {
+  Object rowData[][] = {
+    {"one",   "ichi"},
+    {"two",   "ni"},
+    {"three", "san"},
+    {"four",  "shi"},
+    {"five",  "go"},
+    {"six",   "roku"},
+    {"seven", "shichi"},
+    {"eight", "hachi"},
+    {"nine",  "kyu"},
+    {"ten",   "ju"}
+  };
+  Object columnNames[] = {"English", "Japanese"};
+  public String getColumnName(int column) {
+    return columnNames[column].toString();
+  }
+  public int getRowCount() {
+    return rowData.length;
+  }
+  public int getColumnCount() {
+    return columnNames.length;
+  }
+  public Object getValueAt(int row, int col) {
+    return rowData[row][col];
+  }
+};
+JTable table = new JTable(model);
+JScrollPane scrollPane = new JScrollPane(table);</pre>
+</div>
+<p><strong>指定固定的JTable列</strong></p>
+<p>现在我们已经了解了TableModel与AbstractTableModel是如何描述数据的基础了，现在我们可以创建一个JTable了，其中一些列是固定的，而另一些不是。要创建不滚动的列，我们需要将第二个表格放在JScrollPane的行头视图中。然后，当用户垂直滚动表格时，两个表格就会保持同步。两个表格需要共享他们的ListSelectionModel。
+这样，当一个表格中的一行被选中时，另一个表格中的行也会自动被选中。图18-9显示了具有一个固定列与四个滚动列的表格。</p>
+<div class="figure">
+<img alt="Swing_18_9.png" src="_images/Swing_18_9.png" />
+<p class="caption">Swing_18_9.png</p>
+</div>
+<p>生成图18-9示例的源代码显示在列表18-4中。</p>
+<div class="code java highlight-python"><pre>package swingstudy.ch18;
+
+import java.awt.BorderLayout;
+import java.awt.Dimension;
+import java.awt.EventQueue;
+
+import javax.swing.JFrame;
+import javax.swing.JScrollPane;
+import javax.swing.JTable;
+import javax.swing.JViewport;
+import javax.swing.ListSelectionModel;
+import javax.swing.table.AbstractTableModel;
+import javax.swing.table.TableModel;
+
+public class FixedTable {
+
+    /**
+     * @param args
+     */
+    public static void main(String[] args) {
+        // TODO Auto-generated method stub
+        final Object rowData[][] = {
+                {"1", "one", "ichi", "un", "I", "\u4E00"},
+                {"2", "two", "ni", "deux", "II", "\u4E8C"},
+                {"3", "three", "san", "trois", "III", "\u4E09"},
+                {"4", "four", "shi", "quatre", "IV", "\u56DB"},
+                {"5", "five", "go", "cinq", "V", "\u4E94"},
+                {"6", "six", "roku", "treiza", "VI", "\u516D"},
+                {"7", "seven", "shichi", "sept", "VII", "\u4E03"},
+                {"8", "eight", "hachi", "huit", "VIII", "\u516B"},
+                {"9", "nine", "kyu", "neur", "IX", "\u4E5D"},
+                {"10", "ten", "ju", "dix", "X", "\u5341"}
+        };
+
+        final String columnNames[] = {
+                "#", "English", "Japanese", "French", "Roman", "Kanji"
+        };
+
+        final TableModel fixedColumnModel = new AbstractTableModel() {
+            public int getColumnCount() {
+                return 1;
+            }
+
+            public String getColumnName(int column) {
+                return columnNames[column];
+            }
+
+            public int getRowCount() {
+                return rowData.length;
+            }
+
+            public Object getValueAt(int row, int column) {
+                return rowData[row][column];
+            }
+        };
+
+        final TableModel mainModel = new AbstractTableModel() {
+            public int getColumnCount() {
+                return columnNames.length-1;
+            }
+
+            public String getColumnName(int column) {
+                return columnNames[column+1];
+            }
+
+            public int getRowCount() {
+                return rowData.length;
+            }
+
+            public Object getValueAt(int row, int column) {
+                return rowData[row][column+1];
+            }
+        };
+
+        Runnable runner = new Runnable() {
+            public void run() {
+                JTable fixedTable = new JTable(fixedColumnModel);
+                fixedTable.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
+
+                JTable mainTable = new JTable(mainModel);
+                mainTable.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
+
+                ListSelectionModel model = fixedTable.getSelectionModel();
+                mainTable.setSelectionModel(model);
+
+                JScrollPane scrollPane = new JScrollPane(mainTable);
+                Dimension fixedSize = fixedTable.getPreferredSize();
+                JViewport viewport = new JViewport();
+                viewport.setView(fixedTable);
+                viewport.setPreferredSize(fixedSize);
+                viewport.setMaximumSize(fixedSize);
+                scrollPane.setCorner(JScrollPane.UPPER_LEFT_CORNER, fixedTable.getTableHeader());
+                scrollPane.setRowHeaderView(viewport);
+
+                JFrame frame = new JFrame("Fixed Column Table");
+                frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+                frame.add(scrollPane, BorderLayout.CENTER);
+                frame.setSize(300, 150);
+                frame.setVisible(true);
+            }
+        };
+
+        EventQueue.invokeLater(runner);
+    }
+
+}</pre>
+</div>
+<p><strong>激活默认的表格单元渲染器</strong></p>
+<p>在前面的章节中，我们提到，JTable为Date与Number类提供了默认渲染器。现在我们了解一下AbstractTableModel类并且了解如何激活这些渲染器。</p>
+<p>TableModel的public Class getColumnClass(int
+column)方法为数据模型中的列返回类类型。如果JTable类为这个特定类安装了特殊的渲染器，则会使用这个渲染器来显示这个类。默认情况下，TableModel的AbstractTableModel（以及DefaultTableModel）实现会为所有的事情返回Object.class。AbstractTableModel类并不会尝试聪明的猜测什么在列中。然而，如果我们知道数据模型中的特定列总是数字，日期或是其他的类，我们可以使得数据模型返回类类型。这就会允许JTable尝试更为聪明并且使用更好的渲染器。</p>
+<p>表18-5显示了JTable的预安装的渲染器。例如，如果我们有一个满是数字的表格或是有一个数字列，我们可以重写getColumnClass()来相应的列返回Number.class；我们的数字将会右对齐而不是左对齐。对于日期，为Date类使用默认渲染器会产生更好的观感以及本地化输出。</p>
+<div class="figure">
+<img alt="Swing_table_18_5.png" src="_images/Swing_table_18_5.png" />
+<p class="caption">Swing_table_18_5.png</p>
+</div>
+<p>图18-10显示了激活渲染器之前与之后的样子。</p>
+<div class="figure">
+<img alt="Swing_18_10.png" src="_images/Swing_18_10.png" />
+<p class="caption">Swing_18_10.png</p>
+</div>
+<p>我们可以选择为列硬编码类名或是使得getColumnClass()方法通用并且在列元素上调用getClass()方法。将下面的代码添加到AbstractTableModel实现中将会使得JTable使用其默认渲染器。这个实现假定特定列的所有实体是同一个类类型。</p>
+<div class="code java highlight-python"><pre>public Class getColumnClass(int column) {
+  return (getValueAt(0, column).getClass());
+}</pre>
+</div>
+</div>
+<div class="section" id="defaulttablemodel">
+<h3>DefaultTableModel类<a class="headerlink" href="#defaulttablemodel" title="Permalink to this headline">¶</a></h3>
+<p>DefaultTableModel类是AbstractTableModel的子类，他为存储提供了自己的Vector数据。数据模型中的所有内容在内部都是存储在向量中的即使当数据初始时是数组的一部分也是如此。换句话说，如果我们已经将我们的数据放在一个适当的数据结构中，则不要使用DefaultTableModel。创建一个使用该数据结构的AbstractTableModel，而不要使用DefaultTableModel为我们转换数据结构。</p>
+<p><strong>创建DefaultTableModel</strong></p>
+<p>有六个构造函数可以用来创建DefaultTableModel：</p>
+<div class="code java highlight-python"><pre>public DefaultTableModel()
+TableModel model = new DefaultTableModel()
+public DefaultTableModel(int rows, int columns)
+TableModel model = new DefaultTableModel(2, 3)
+public DefaultTableModel(Object rowData[][], Object columnNames[])
+Object rowData[][] = {{"Row1-Column1", "Row1-Column2", "Row1-Column3"},
+  {"Row2-Column1", "Row2-Column2", "Row2-Column3"}};
+Object columnNames[] = {"Column One", "Column Two", "Column Three"};
+TableModel model = new DefaultTableModel(rowData, columnNames);
+
+public DefaultTableModel(Vector rowData, Vector columnNames)
+Vector rowOne = new Vector();
+rowOne.addElement("Row1-Column1");
+rowOne.addElement("Row1-Column2");
+rowOne.addElement("Row1-Column3");
+Vector rowTwo = new Vector();
+rowTwo.addElement("Row2-Column1");
+rowTwo.addElement("Row2-Column2");
+rowTwo.addElement("Row2-Column3");
+Vector rowData = new Vector();
+rowData.addElement(rowOne);
+rowData.addElement(rowTwo);
+Vector columnNames = new Vector();
+columnNames.addElement("Column One");
+columnNames.addElement("Column Two");
+columnNames.addElement("Column Three");
+TableModel model = new DefaultTableModel(rowData, columnNames);
+
+public DefaultTableModel(Object columnNames[], int rows)
+TableModel model = new DefaultTableModel(columnNames, 2);
+public DefaultTableModel(Vector columnNames, int rows)
+TableModel model = new DefaultTableModel(columnNames, 2);</pre>
+</div>
+<p>其中四个构造函数直接映射到JTable构造函数，而其余的两个则允许我们由一个列头集合创建一个具有固定行数的空表格。一旦我们创建了DefaultTableModel，我们就可以将传递给JTable构造函数来创建实际的表格，然后将这个表格放在JScrollPane中。</p>
+<p><strong>填充DefaultTableModel</strong></p>
+<p>如果我们选择使用DefaultTableModel，我们必须使用JTable要显示的数据来进行填充。除了填充数据结构的基本例程以外，还有一些移除数据或是替换整个内容的额外方法：</p>
+<p>下面的方法允许我们添加列：</p>
+<div class="code java highlight-python"><pre>public void addColumn(Object columnName);
+public void addColumn(Object columnName, Vector columnData);
+public void addColumn(Object columnName, Object columnData[ ]);</pre>
+</div>
+<p>使用下面的方法来添加行：</p>
+<div class="code java highlight-python"><pre>public void addRow(Object rowData[ ]);
+public void addRow(Vector rowData);</pre>
+</div>
+<p>下面的方法可以插入行：</p>
+<div class="code java highlight-python"><pre>public void insertRow(int row, Object rowData[ ]);
+public void insertRow(int row, Vector rowData);</pre>
+</div>
+<p>这个方法可以移除行：</p>
+<div class="code java highlight-python"><pre>public void removeRow( int row);</pre>
+</div>
+<p>最后，我们可以使用下面的方法来替换内容：</p>
+<div class="code java highlight-python"><pre>public void setDataVector(Object newData[ ][ ], Object columnNames[ ]);
+public void setDataVector(Vector newData, Vector columnNames);</pre>
+</div>
+<p><strong>DefaultTableModel属性</strong></p>
+<p>除了由AbstractTableModel继承的rowCount与columnCount属性以外，DefaultTableModel还有两个其他的属性，如表18-6所示。设置rowCount属性可以使得我们按照我们的意愿扩大或是缩小表格尺寸。如果我们正在扩展模型，其他的行会保持为空。</p>
+<div class="figure">
+<img alt="Swing_table_18_6.png" src="_images/Swing_table_18_6.png" />
+<p class="caption">Swing_table_18_6.png</p>
+</div>
+<p><strong>创建一个稀疏的表格模型</strong></p>
+<p>默认的表格模型实现用于填满数据的表格，而不是用于由大多数空表格单元的组成的数据表。当表格中的单元大部分为空时，DefaultTableModel的默认数据结构就会学浪费大量的空间。以为每一个位置创建一个Point为代价，我们可以创建一个使用HashMap的稀疏表格模型。列表18-5演示了这种实现。</p>
+<div class="code java highlight-python"><pre>package swingstudy.ch18;
+
+import java.awt.Point;
+import java.util.HashMap;
+import java.util.Map;
+
+import javax.swing.table.AbstractTableModel;
+
+public class SparseTableModel extends AbstractTableModel {
+
+    private Map&lt;Point, Object&gt; lookup;
+    private final int rows;
+    private final int columns;
+    private final String headers[];
+
+    public SparseTableModel(int rows, String columnHeaders[]) {
+        if((rows&lt;0) || (columnHeaders == null)) {
+            throw new IllegalArgumentException("Invalida row count/columnHeaders");
+        }
+        this.rows = rows;
+        this.columns = columnHeaders.length;
+        headers = columnHeaders;
+        lookup = new HashMap&lt;Point, Object&gt;();
+    }
+    @Override
+    public int getRowCount() {
+        // TODO Auto-generated method stub
+        return rows;
+    }
+
+    @Override
+    public int getColumnCount() {
+        // TODO Auto-generated method stub
+        return columns;
+    }
+
+    public String getColumnName(int column) {
+        return headers[column];
+    }
+
+    @Override
+    public Object getValueAt(int row, int column) {
+        // TODO Auto-generated method stub
+        return lookup.get(new Point(row, column));
+    }
+
+    public void setValueAt(Object value, int row, int column) {
+        if((rows&lt;0) || (columns&lt;0)) {
+            throw new IllegalArgumentException("Invalid row/column setting");
+        }
+        if((row&lt;rows) &amp;&amp; (column&lt;columns)) {
+            lookup.put(new Point(row, column), value);
+        }
+    }
+}</pre>
+</div>
+<p>测试这个示例涉及到创建并填充模型，如下面的代码所示：</p>
+<div class="code java highlight-python"><pre>String headers[] = { "English", "Japanese"};
+TableModel model = new SparseTableModel(10, headers);
+JTable table = new JTable(model);
+model.setValueAt("one", 0, 0);
+model.setValueAt("ten", 9, 0);
+model.setValueAt("roku - \ u516D", 5, 1);
+model.setValueAt("hachi - \ u516B", 8, 1);</pre>
+</div>
+<p><strong>使用TableModelListener监听JTable事件</strong></p>
+<p>如果我们需要动态更新我们的表格数据，我们可以使用TableModelListener来确定数据何时发生变化。这个接口由一个可以告诉我们表格数据何时发生变化的方法构成。</p>
+<div class="code java highlight-python"><pre>public interface TableModelListener extends EventListener {
+  public void tableChanged(TableModelEvent e);
+}</pre>
+</div>
+<p>在TableModelListener得到通知以后，我们可以向TableModelEvent查询所发生的事件的类型以及受到影响的行与列的范围。表18-7显示了我们可以查询的TableModelEvent的属性。</p>
+<div class="figure">
+<img alt="Swing_table_18_7.png" src="_images/Swing_table_18_7.png" />
+<p class="caption">Swing_table_18_7.png</p>
+</div>
+<p>事件类型可以是TableModeleEvent三个类型常量中的一个：INSERT,
+UPDATE或是DELETE。</p>
+<p>如果TableModelEvent的column属性设置为ALL_COLUMNS，那么数据模型中所有的列都会受到影响。如果firstRow属性为HEADER_ROW，则意味着表格头发生了变化。</p>
+</div>
+<div class="section" id="id9">
+<h3>排序JTable元素<a class="headerlink" href="#id9" title="Permalink to this headline">¶</a></h3>
+<p>JTable组件并没有内建的排序支持。然而，却经常需要这一特性。排序并不需要改变数据模型，但是他却需要改变JTable所具有的数据模型视图。这种改变类型是通过装饰者模式来描述的，在这种模式中我们维护到数据的相同的API，但是向视图添加排序功能。装饰者设计模式的设计如下：</p>
+<ol class="arabic simple">
+<li>Component：组件定义了将要装饰的服务接口。</li>
+<li>ConcreteComponent：具体组件是将要装饰的对象。</li>
+<li>Decorator：装饰者是到具体组件的一个抽象封装；他维护服务接口。</li>
+<li>ConcreteDecorator(s)[A,B,C,...]：具体装饰者对象通过添加装饰功能扩展装饰者，然而维护相同的编程接口。他们将服务请求重定向到由抽象超类所指向的具体组件。</li>
+</ol>
+<p>注意，java.io包的流是装饰者模式的示例。各种过滤器流向基本的流类添加功能并且维护相同的访问API。</p>
+<p>在表格排序这个特定例子中，只需要Component，ConcreteComponent与Decorator，因为只有一个具体装饰者。Component是TableModel接口，ConcreteComponent是实际的模型，而Decorator是排序模型。</p>
+<p>为了排序，我们需要维护一个真实数据到排序数据的一个映射。由用户接口，我们必须允许用户选择一个列头标签来激活特定列的排序。</p>
+<p>要使用排序功能，我们告诉自定义TableSorter类关于我们数据模型的情况，装饰这个模型，并且由装饰模型而不是原始模型创建一个JTable。要通过点击列头标签来激活排序，我们需要调用TableHeaderSorter类的install()方法，如下面的TableSorter类的源码所示：</p>
+<div class="code java highlight-python"><pre>TableSorter sorter = new TableSorter(model);
+JTable table = new JTable(sorter);
+TableHeaderSorter.install(sorter, table);</pre>
+</div>
+<p>TableSorter类的主要源码显示在列表18-6中。他扩展了TableMap类，该类显示在列表18-7中。TableSorter类是所有动作所在的位置。该类执行排序并且通知其他类数据已经发生变化。</p>
+<div class="code java highlight-python"><pre>package swingstudy.ch18;
+
+import java.sql.Date;
+import java.util.Vector;
+
+import javax.swing.event.TableModelEvent;
+import javax.swing.event.TableModelListener;
+import javax.swing.table.TableModel;
+
+public class TableSorter extends TableMap implements TableModelListener {
+
+    int indexes[] = new int[0];
+    Vector sortingColumns = new Vector();
+    boolean ascending = true;
+
+    public TableSorter() {
+
+    }
+
+    public TableSorter(TableModel model) {
+        setModel(model);
+    }
+
+    public void setModel(TableModel model) {
+        super.setModel(model);
+        reallocateIndexes();
+        sortByColumn(0);
+        fireTableDataChanged();
+    }
+
+    public int compareRowsByColumn(int row1, int row2, int column) {
+        Class type = model.getColumnClass(column);
+        TableModel data = model;
+
+        // check for nulls
+        Object o1 = data.getValueAt(row1, column);
+        Object o2 = data.getValueAt(row2, column);
+
+        // if both values are null return 0
+        if(o1 == null &amp;&amp; o2 == null) {
+            return 0;
+        }
+        else if(o1 == null) { // define null less than everything
+            return -1;
+        }
+        else if(o2 == null) {
+            return 1;
+        }
+
+        if(type.getSuperclass() == Number.class) {
+            Number n1 = (Number)data.getValueAt(row1, column);
+            double d1 = n1.doubleValue();
+            Number n2 = (Number)data.getValueAt(row1, column);
+            double d2 = n2.doubleValue();
+
+            if(d1&lt;d2) {
+                return -1;
+            }
+            else if(d1&gt;d2) {
+                return 1;
+            }
+            else {
+                return 0;
+            }
+        }
+        else if(type == String.class) {
+            String s1 = (String)data.getValueAt(row1, column);
+            String s2 = (String)data.getValueAt(row2, column);
+            int result = s1.compareTo(s2);
+
+            if(result &lt; 0)
+                return -1;
+            else if(result &gt; 0)
+                return 1;
+            else return 0;
+        }
+        else if(type == java.util.Date.class) {
+            Date d1 = (Date)data.getValueAt(row1, column);
+            long n1 = d1.getTime();
+            Date d2 = (Date)data.getValueAt(row2, column);
+            long n2 = d2.getTime();
+
+            if(n1 &lt; n2)
+                return -1;
+            else if(n1 &gt; n2)
+                return 1;
+            else
+                return 0;
+        }
+        else if(type == Boolean.class) {
+            Boolean bool1 = (Boolean)data.getValueAt(row1, column);
+            boolean b1 = bool1.booleanValue();
+            Boolean bool2 = (Boolean)data.getValueAt(row2, column);
+            boolean b2 = bool2.booleanValue();
+
+            if(b1 == b2) {
+                return 0;
+            }
+            else if(b1) // define false &lt; true
+                return 1;
+            else
+                return -1;
+        }
+        else {
+            Object v1 = data.getValueAt(row1, column);
+            String s1 = v1.toString();
+            Object v2 = data.getValueAt(row2, column);
+            String s2 = v2.toString();
+            int result = s1.compareTo(s2);
+
+            if(result &lt; 0)
+                return -1;
+            else if(result &gt; 0)
+                return 1;
+            else
+                return 0;
+        }
+    }
+
+    public int compare(int row1, int row2) {
+        for(int level=0, n=sortingColumns.size(); level&lt;n;level++) {
+            Integer column = (Integer)sortingColumns.elementAt(level);
+            int result = compareRowsByColumn(row1, row2, column.intValue());
+            if(result != 0) {
+                return (ascending ? result : -result);
+            }
+        }
+        return 0;
+    }
+
+    public void reallocateIndexes() {
+        int rowCount = model.getRowCount();
+        indexes = new int[rowCount];
+        for(int row=0; row&lt;rowCount; row++) {
+            indexes[row] = row;
+        }
+    }
+
+    @Override
+    public void tableChanged(TableModelEvent e) {
+        // TODO Auto-generated method stub
+        super.tableChanged(e);
+        reallocateIndexes();
+        sortByColumn(0);
+        fireTableStructureChanged();
+    }
+
+    public void checkModel() {
+        if(indexes.length != model.getRowCount()) {
+            System.err.println("Sorter not informed of a change in model.");
+        }
+    }
+
+    public void sort() {
+        checkModel();
+        shuttlesort((int[])indexes.clone(), indexes, 0, indexes.length);
+        fireTableDataChanged();
+    }
+
+    public void shuttlesort(int from[], int to[], int low, int high) {
+        if(high-low&lt;2) {
+            return ;
+        }
+        int middle = (low+high)/2;
+        shuttlesort(to, from, low, middle);
+        shuttlesort(to, from, middle, high);
+
+        int p = low;
+        int q = middle;
+
+        for(int i=low; i&lt;high; i++) {
+            if(q&gt;=high || (p&lt;middle &amp;&amp; compare(from[p], from[q]) &lt;= 0)) {
+                to[i] = from[p++];
+            }
+            else {
+                to[i] = from[q++];
+            }
+        }
+    }
+
+    private void swap(int first, int second) {
+        int temp = indexes[first];
+        indexes[first] = indexes[second];
+        indexes[second] = temp;
+    }
+
+    public Object getValueAt(int row, int column) {
+        checkModel();
+        return model.getValueAt(indexes[row], column);
+    }
+
+    public void setValueAt(Object aValue, int row, int column) {
+        checkModel();
+        model.setValueAt(aValue, row, column);
+    }
+
+    public void sortByColumn(int column) {
+        sortByColumn(column, true);
+    }
+
+    public void sortByColumn(int column, boolean ascending) {
+        this.ascending = ascending;
+        sortingColumns.removeAllElements();
+        sortingColumns.addElement(new Integer(column));
+        sort();
+        super.tableChanged(new TableModelEvent(this));
+    }
+}</pre>
+</div>
+<p>显示在列表18-7中的TableMap类作为一个代理，将调用传递给相应的TableModel类。他是列表18-6中的TableSorter类的超类。</p>
+<div class="code java highlight-python"><pre>package swingstudy.ch18;
+
+import javax.swing.event.TableModelEvent;
+import javax.swing.event.TableModelListener;
+import javax.swing.table.AbstractTableModel;
+import javax.swing.table.TableModel;
+
+public class TableMap extends AbstractTableModel implements TableModelListener {
+
+    TableModel model;
+
+    public TableModel getModel() {
+        return model;
+    }
+
+    public void setModel(TableModel model) {
+        if(this.model != null) {
+            this.model.removeTableModelListener(this);
+        }
+        this.model = model;
+        if(this.model != null) {
+            this.model.addTableModelListener(this);
+        }
+    }
+
+    public Class getcolumnClass(int column) {
+        return model.getColumnClass(column);
+    }
+
+    @Override
+    public int getRowCount() {
+        // TODO Auto-generated method stub
+        return ((model == null)? 0 : model.getRowCount());
+    }
+
+    @Override
+    public int getColumnCount() {
+        // TODO Auto-generated method stub
+        return ((model == null)? 0 :model.getColumnCount());
+    }
+
+    public String getColumnName(int column) {
+        return model.getColumnName(column);
+    }
+
+    @Override
+    public Object getValueAt(int rowIndex, int columnIndex) {
+        // TODO Auto-generated method stub
+        return model.getValueAt(rowIndex, columnIndex);
+    }
+
+    public void setValueAt(Object value, int row, int column) {
+        model.setValueAt(value, row, column);
+    }
+
+    public boolean isCellEditable(int row, int column) {
+        return model.isCellEditable(row, column);
+    }
+
+    @Override
+    public void tableChanged(TableModelEvent e) {
+        // TODO Auto-generated method stub
+        fireTableChanged(e);
+    }
+
+}</pre>
+</div>
+<p>排序例程的安装需要MouseListener的注册，如列表18-8所示，从而表格头中的选择会触发排序处理。通常的鼠标点击是升序排列；Shift点击为降序排列。</p>
+<div class="code java highlight-python"><pre>package swingstudy.ch18;
+
+import java.awt.event.InputEvent;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+
+import javax.swing.JTable;
+import javax.swing.table.JTableHeader;
+import javax.swing.table.TableColumnModel;
+
+public class TableHeaderSorter extends MouseAdapter {
+
+    private TableSorter sorter;
+    private JTable table;
+
+    private TableHeaderSorter() {
+
+    }
+
+    public static void install(TableSorter sorter, JTable table) {
+        TableHeaderSorter tableHeaderSorter = new TableHeaderSorter();
+        tableHeaderSorter.sorter = sorter;
+        tableHeaderSorter.table = table;
+        JTableHeader tableHeader = table.getTableHeader();
+        tableHeader.addMouseListener(tableHeaderSorter);
+    }
+
+    public void mouseClicked(MouseEvent event) {
+        TableColumnModel columnModel = table.getColumnModel();
+        int viewColumn = columnModel.getColumnIndexAtX(event.getX());
+        int column = table.convertColumnIndexToModel(viewColumn);
+        if(event.getClickCount() == 1 &amp;&amp; column != -1) {
+            System.out.println("Sorting ...");
+            int shiftPressed = (event.getModifiers() &amp; InputEvent.SHIFT_MASK);
+            boolean ascending = (shiftPressed == 0);
+            sorter.sortByColumn(column, ascending);
+        }
+    }
+}</pre>
+</div>
+</div>
+</div>
+<div class="section" id="tablecolumnmodel">
+<h2>TableColumnModel接口<a class="headerlink" href="#tablecolumnmodel" title="Permalink to this headline">¶</a></h2>
+<p>TableColumnModel是那些位于背后并且不需要太多注意的接口之一。其基本作用就是管理当前通过JTable显示的列集合。除非触发去做其他一些事情，当JTable被创建时，组件就会由数据模型创建一个默认的列模型，指明显示列顺序与数据模型中的顺序相同。</p>
+<p>当在设置JTable的数据模型之前将JTable的autoCreateColumnsFromModele属性设置为true，则TableColumnModel会自动被创建。另外，如果当前的设置需要重置，我们可以手动告诉JTable来创建默认的TableColumnModel。public
+void
+createDefaultColumnsFromModel()方法会为我们完成创建工作，并将新创建的对象赋给JTable的TableColumnModel。</p>
+<p>既然所有都是为我们自动完成的，我们为什么需要了解TableColumnModel呢？通常，只有当我们不喜欢默认生成的TableModel或是我们需要手动移动一些内容时，我们需要使用这个接口。除了维护一个TableColumn对象集合，TableColumnModel管理第二个ListSelectionModel，从而允许用户由表格中选择列与行。</p>
+<p>在我们深入默认实现之前我们先来了解一下该接口的定义：</p>
+<div class="code java highlight-python"><pre>public interface TableColumnModel {
+  // Listeners
+  public void addColumnModelListener(TableColumnModelListener l);
+  public void removeColumnModelListener(TableColumnModelListener l);
+  // Properties
+  public int getColumnCount();
+  public int getColumnMargin();
+  public void setColumnMargin(int newMargin);
+  public Enumeration getColumns();
+  public boolean getColumnSelectionAllowed();
+  public void setColumnSelectionAllowed(boolean flag);
+  public int getSelectedColumnCount();
+  public int[ ] getSelectedColumns();
+  public ListSelectionModel getSelectionModel();
+  public void setSelectionModel(ListSelectionModel newModel);
+  public int getTotalColumnWidth();
+  // Other methods
+  public void addColumn(TableColumn aColumn);
+  public TableColumn getColumn(int columnIndex);
+  public int getColumnIndex(Object columnIdentifier);
+  public int getColumnIndexAtX(int xPosition);
+  public void moveColumn(int columnIndex, int newIndex);
+  public void removeColumn(TableColumn column);
+}</pre>
+</div>
+<div class="section" id="defaulttablecolumnmodel">
+<h3>DefaultTableColumnModel类<a class="headerlink" href="#defaulttablecolumnmodel" title="Permalink to this headline">¶</a></h3>
+<p>DefaultTableColumnModel类定义了系统所用的TableColumnModel接口的实现。他在JTable内通过跟踪空白，宽度，选择与数量来描述TableColumn对象的一般外观。表18-8显示了用于访问DefaultTableColumnModel设置的9个属性。</p>
+<div class="figure">
+<img alt="Swing_table_18_8.png" src="_images/Swing_table_18_8.png" />
+<p class="caption">Swing_table_18_8.png</p>
+</div>
+<p>除了类属性，我们可以使用下面的方法通过TableColumn类来添加，移除与移动列，我们会在稍后进行讨论。</p>
+<div class="code java highlight-python"><pre>public void addColumn(TableColumn newColumn);
+public void removeColumn(TableColumn oldColumn);
+public void moveColumn(int currentIndex, int newIndex);</pre>
+</div>
+</div>
+<div class="section" id="tablecolumnmodellistenerjtable">
+<h3>使用TableColumnModelListener监听JTable事件<a class="headerlink" href="#tablecolumnmodellistenerjtable" title="Permalink to this headline">¶</a></h3>
+<p>也许我们通过TableColumnModel要做的事情之一就是使用TableColumnModelListener来监听TableColumnModelEvent对象。监听器会得到列的添加，移除，移动或是选择，或是列空白变化的通知，如前面的接口定义所示。注意，当事件发生时不同的方法并不同有全部接收TableColumnModelEvent对象。</p>
+<div class="code java highlight-python"><pre>public interface TableColumnModelListener extends EventListener {
+  public void columnAdded(TableColumnModelEvent e);
+  public void columnMarginChanged(ChangeEvent e);
+  public void columnMoved(TableColumnModelEvent e);
+  public void columnRemoved(TableColumnModelEvent e);
+  public void columnSelectionChanged(ListSelectionEvent e);
+}</pre>
+</div>
+<p>因为监听器定义标明了事件类型，TableColumnModelEvent定义只定义了变化所影响的列的范围，如表18-9所示。</p>
+<div class="figure">
+<img alt="Swing_table_18_9.png" src="_images/Swing_table_18_9.png" />
+<p class="caption">Swing_table_18_9.png</p>
+</div>
+<p>要查看TableColumnModelListener的演示，我们可以向我们的TableColumnModel对象关联一个监听器：</p>
+<div class="code java highlight-python"><pre>TableColumnModel columnModel = table.getColumnModel();
+columnModel.addColumnModelListener(...);</pre>
+</div>
+<p>在列表18-9中我们可以看到这样的监听器。他除了输出信息以外并没有做其他的事情。然而我们可以用其来确定不同事情的发生。</p>
+<div class="code java highlight-python"><pre>TableColumnModelListener tableColumnModelListener =
+    new TableColumnModelListener() {
+  public void columnAdded(TableColumnModelEvent e) {
+    System.out.println("Added");
+  }
+  public void columnMarginChanged(ChangeEvent e) {
+    System.out.println("Margin");
+  }
+  public void columnMoved(TableColumnModelEvent e) {
+    System.out.println("Moved");
+  }
+  public void columnRemoved(TableColumnModelEvent e) {
+    System.out.println("Removed");
+  }
+  public void columnSelectionChanged(ListSelectionEvent e) {
+    System.out.println("Selected");
+  }
+};</pre>
+</div>
+<p>当然我们需要编写一些代码来引出特定的事件。</p>
+<div class="code java highlight-python"><pre>package swingstudy.ch18;
+
+import java.awt.BorderLayout;
+import java.awt.EventQueue;
+
+import javax.swing.JFrame;
+import javax.swing.JScrollPane;
+import javax.swing.JTable;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ListSelectionEvent;
+import javax.swing.event.TableColumnModelEvent;
+import javax.swing.event.TableColumnModelListener;
+import javax.swing.table.TableColumn;
+import javax.swing.table.TableColumnModel;
+
+public class ColumnModelSample {
+
+    /**
+     * @param args
+     */
+    public static void main(String[] args) {
+        // TODO Auto-generated method stub
+        final Object rows[][] = {
+                {"one", "ichi - \u4E00"},
+                {"two", "ni - \u4E8C"},
+                {"three", "san - \u4E09"},
+                {"four", "shi - \u56DB"},
+                {"five", "go - \u4E94"},
+                {"six", "roku - \u516D"},
+                {"seven", "shichi - \u4E03"},
+                {"eight", "kachi - \u516B"},
+                {"nine", "kyu - \u4E5D"},
+                {"ten", "ju - \u5341"}
+        };
+
+        final Object headers[] = {"English", "Japanese"};
+
+        Runnable runner = new Runnable() {
+            public void run() {
+                JFrame frame = new JFrame("Scrollless Table");
+                frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+                JTable table = new JTable(rows, headers);
+
+                TableColumnModelListener tableColumnModelListener = new TableColumnModelListener() {
+                    public void columnAdded(TableColumnModelEvent e) {
+                        System.out.println("Added");
+                    }
+
+                    public void columnMarginChanged(ChangeEvent e) {
+                        System.out.println("Margin");
+                    }
+
+                    public void columnMoved(TableColumnModelEvent e) {
+                        System.out.println("Moved");
+                    }
+
+                    public void columnRemoved(TableColumnModelEvent e) {
+                        System.out.println("Removed");
+                    }
+
+                    public void columnSelectionChanged(ListSelectionEvent e) {
+                        System.out.println("Selection Changed");
+                    }
+                };
+
+                TableColumnModel columnModel = table.getColumnModel();
+                columnModel.addColumnModelListener(tableColumnModelListener);
+
+                columnModel.setColumnMargin(12);
+
+                TableColumn column = new TableColumn(1);
+                columnModel.addColumn(column);
+
+                JScrollPane pane = new JScrollPane(table);
+                frame.add(pane, BorderLayout.CENTER);
+                frame.setSize(300, 150);
+                frame.setVisible(true);
+            }
+        };
+
+        EventQueue.invokeLater(runner);
+    }
+
+}</pre>
+</div>
+</div>
+<div class="section" id="tablecolumn">
+<h3>TableColumn类<a class="headerlink" href="#tablecolumn" title="Permalink to this headline">¶</a></h3>
+<p>TableColumn是另一个很重要的幕后类。Swing表格由一个列集合构成，而列由表格单元构成。这个列中的每一个是通过TableColumn实例来描述的。TableColumn类的每一个实例存储相应的编辑器，渲染器，名字与尺寸信息。然后TableColumn对象被组合进TableColumnModel来构成当前要由JTable显示的列集合。在这里有一个有用的技巧，如果我们不希望某一列被显示，我们就将其TableColumn由TableColumnModel中移除，但是将保留在TableModel中。</p>
+<p><strong>创建TableColumn</strong></p>
+<p>如果我们选择自己来创建我们的TableColumn，我们可以使用以下四个构造函数中的一个。他们是通过添加构造函数参数来级联的。</p>
+<div class="code java highlight-python"><pre>public TableColumn()
+TableColumn column = new TableColumn()
+public TableColumn(int modelIndex)
+TableColumn column = new TableColumn(2)
+public TableColumn(int modelIndex, int width)
+TableColumn column = new TableColumn(2, 25)
+public TableColumn(int modelIndex, int width, TableCellRenderer
+  renderer, TableCellEditor editor)
+TableColumn column = new TableColumn(2, 25, aRenderer, aEditor)</pre>
+</div>
+<p>如果没有参数，例如列表中的第一个构造函数，我们就会获得一个空列，其具有默认宽度（75像素），默认编辑器，以及默认渲染器。modelIndex参数允许我们指定我们希望TableColumn在JTable中显示TableModel中的哪一列。如果我们不喜欢默认的设置，我们也可以指定宽度，渲染器，或是编辑器。如是我们喜欢其中的一个而不喜欢其他的，我们也可以为渲染器或是编辑器指定null。</p>
+<p><strong>TableColumn属性</strong></p>
+<p>列表18-10列出了TableColumn的12个属性。这些属性可以使得我们在初始的构造参数集合以外自定义列。大多数时候，我们可以基于TableModel配置所有的事情。然而，我们仍然可以通过TableColumn类来自定义单个列。除了监听器列表，所有的属性都是绑定的。</p>
+<div class="figure">
+<img alt="Swing_table_18_10.png" src="_images/Swing_table_18_10.png" />
+<p class="caption">Swing_table_18_10.png</p>
+</div>
+<p>注意，如果列所有的默认头渲染器headerRenderer为null：TableCellRenderer
+headerRenderer =
+table.getTableHeader().getDefaultRenderer();则默认渲染器不会由getHeaderRenderer()方法返回。</p>
+<p><strong>在列头中使用图标</strong></p>
+<p>默认情况下，表格的头渲染器显示文本或是HTML。尽管我们可以使用HTML获得多行文本或是图片，但是有时我们希望在头中显示通常的Icon对象，如图18-11中的示例所示。要实现这一目的，我们必须修改头的渲染器。头渲染器只是另一个TableCellRenderer。</p>
+<p>要创建一个可以显示图片的灵活渲染器，要使得渲染器将value数据看作为JLabel，而不是使用value来填充JLabel。列表18-11显示一个这样的渲染器，用于创建图18-11中的程序。</p>
+<div class="code java highlight-python"><pre>package swingstudy.ch18;
+
+import java.awt.Component;
+
+import javax.swing.JComponent;
+import javax.swing.JTable;
+import javax.swing.table.TableCellRenderer;
+
+public class JComponentTableCellRenderer implements TableCellRenderer {
+
+    @Override
+    public Component getTableCellRendererComponent(JTable table, Object value,
+            boolean isSelected, boolean hasFocus, int row, int column) {
+        // TODO Auto-generated method stub
+        return (JComponent)value;
+    }
+
+}</pre>
+</div>
+<p>图18-11显示了这个渲染器如何使用DiamondIcon显示Icon。示例程序的源码显示在列表18-12中。</p>
+<div class="code java highlight-python"><pre>package swingstudy.ch18;
+
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.EventQueue;
+
+import javax.swing.Icon;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JScrollPane;
+import javax.swing.JTable;
+import javax.swing.UIManager;
+import javax.swing.border.Border;
+import javax.swing.table.TableCellRenderer;
+import javax.swing.table.TableColumn;
+import javax.swing.table.TableColumnModel;
+
+import swingstudy.ch04.DiamondIcon;
+
+public class LabelHeaderSample {
+
+    /**
+     * @param args
+     */
+    public static void main(String[] args) {
+        // TODO Auto-generated method stub
+        final Object rows[][] = {
+                {"one", "ichi - \u4E00"},
+                {"two", "ni - \u4E8C"},
+                {"three", "san - \u4E09"},
+                {"four", "shi - \u56DB"},
+                {"five", "go - \u4E94"},
+                {"six", "roku - \u516D"},
+                {"seven", "shichi - \u4E03"},
+                {"eight", "kachi - \u516B"},
+                {"nine", "kyu - \u4E5D"},
+                {"ten", "ju - \u5341"}
+        };
+
+        Runnable runner = new Runnable() {
+            public void run() {
+                JFrame frame = new JFrame("Label Header");
+                frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+                String headers[] = {"English", "Japanese"};
+                JTable table = new JTable(rows, headers);
+                JScrollPane scrollPane = new JScrollPane(table);
+
+                Icon redIcon = new DiamondIcon(Color.RED);
+                Icon blueIcon = new DiamondIcon(Color.BLUE);
+
+                Border headerBorder = UIManager.getBorder("TableHeader.cellBorder");
+
+                JLabel blueLabel = new JLabel(headers[0], blueIcon, JLabel.CENTER);
+                blueLabel.setBorder(headerBorder);
+                JLabel redLabel = new JLabel(headers[1], redIcon, JLabel.CENTER);
+                redLabel.setBorder(headerBorder);
+
+                TableCellRenderer renderer =  new JComponentTableCellRenderer();
+
+                TableColumnModel columnModel = table.getColumnModel();
+
+                TableColumn column0 = columnModel.getColumn(0);
+                TableColumn column1 = columnModel.getColumn(1);
+
+                column0.setHeaderRenderer(renderer);
+                column0.setHeaderValue(blueLabel);
+
+                column1.setHeaderRenderer(renderer);
+                column1.setHeaderValue(redLabel);
+
+                frame.add(scrollPane, BorderLayout.CENTER);
+                frame.setSize(300, 150);
+                frame.setVisible(true);
+            }
+        };
+        EventQueue.invokeLater(runner);
+    }
+
+}</pre>
+</div>
+</div>
+</div>
+<div class="section" id="jtableheader">
+<h2>JTableHeader类<a class="headerlink" href="#jtableheader" title="Permalink to this headline">¶</a></h2>
+<p>每一个JTableHeader实例表示所有不同列的头集合中的一个。JTableHeader对象集合放置在JScrollPane中列头视图中。</p>
+<p>我们很少需要直接使用JTableHeader。然而我们可以配置列头的某些特征。</p>
+<div class="section" id="id10">
+<h3>创建JTableHeader<a class="headerlink" href="#id10" title="Permalink to this headline">¶</a></h3>
+<p>JTableHeader有两个属性。一个使用默认的TableColumnModel，而另一个需要显式指定模型。</p>
+<div class="code java highlight-python"><pre>public JTableHeader()
+JComponent headerComponent = new JTableHeader()
+public JTableHeader(TableColumnModel columnModel)
+JComponent headerComponent = new JTableHeader(aColumnModel)</pre>
+</div>
+</div>
+<div class="section" id="id11">
+<h3>JTableHeader属性<a class="headerlink" href="#id11" title="Permalink to this headline">¶</a></h3>
+<p>如表18-11所示，JTableHeader有十个不同的属性。这些属性可以使得我们配置用户可以通过特定的列头做什么或是列头如何显示。</p>
+<div class="figure">
+<img alt="Swing_table_18_11.png" src="_images/Swing_table_18_11.png" />
+<p class="caption">Swing_table_18_11.png</p>
+</div>
+</div>
+<div class="section" id="id12">
+<h3>在表格头中使用工具提示<a class="headerlink" href="#id12" title="Permalink to this headline">¶</a></h3>
+<p>默认情况下，如果我们为表格头设置工具提示，所有的列头都会共享相同的工具提示文本。要为特定的列指定工具提示文本，我们需要创建或是获取渲染器，然后为渲染器设置工具提示。对于单个的单元也是如些。图18-12显示了这种定制结果显示的样子。</p>
+<div class="figure">
+<img alt="Swing_18_12.png" src="_images/Swing_18_12.png" />
+<p class="caption">Swing_18_12.png</p>
+</div>
+<p>图18-12中定制的源码显示在列表18-13中。除非我们在前面设置了列头，并没有必要首先检测特定列的头是null。</p>
+<div class="code java highlight-python"><pre>JLabel headerRenderer = new DefaultTableCellRenderer();
+String columnName = table.getModel().getColumnName(0);
+headerRenderer.setText(columnName);
+headerRenderer.setToolTipText("Wave");
+TableColumnModel columnModel = table.getColumnModel();
+TableColumn englishColumn = columnModel.getColumn(0);
+englishColumn.setHeaderRenderer((TableCellRenderer)headerRenderer);</pre>
+</div>
+</div>
+<div class="section" id="id13">
+<h3>自定义JTableHeader观感<a class="headerlink" href="#id13" title="Permalink to this headline">¶</a></h3>
+<p>JTableHeaderUIResource相关属性的可用集合显示在表18-12中。五个属性用于控制头渲染器的颜色，字体与边框。</p>
+<div class="figure">
+<img alt="Swing_table_18_12.png" src="_images/Swing_table_18_12.png" />
+<p class="caption">Swing_table_18_12.png</p>
+</div>
+</div>
+</div>
+<div class="section" id="id14">
+<h2>编辑表格单元<a class="headerlink" href="#id14" title="Permalink to this headline">¶</a></h2>
+<p>编辑JTable单元与编辑JTree单元基本上是相同的。事实上，默认的表格单元编辑器，DefaultCellEditor，同时实现了TableCellEditor与TreeCellEditor接口，从而使得我们可以为表格与树使用相同的编辑器。</p>
+<p>点击可编辑器的单元将会使得单元处理框架模式。（所需要的点击次数依赖于编辑器的类型。）所有单元的默认编辑器是JTextField。尽管这对于许多数据类型可以工作得很好，但是对于其他的许多数据类型却并不合适。所以，我们或者不支持非文本信息的编辑或者是为我们的JTable设置特殊的编辑器。对于JTable，我们可以为一个特定的类类型或是列注册一个编辑器。然后，当表格在多个相应类型的单元上运行时，则会使用所需要的编辑器。</p>
+<p>注意，当没有安装特殊的编辑器时，则会使用JTextField，尽管他对于内容并不合适。</p>
+<div class="section" id="tablecelleditordefaultcelleditor">
+<h3>TableCellEditor接口与DefaultCellEditor类<a class="headerlink" href="#tablecelleditordefaultcelleditor" title="Permalink to this headline">¶</a></h3>
+<p>TableCellEditor接口定义了JTable获取编辑器所必须的方法。TableCellEditor的参数列表与TableCellRenderer相同，所不同的是hasFocused参数。因为单元正在被编辑，已知他已经具有输入焦点。</p>
+<div class="code java highlight-python"><pre>public interface TableCellEditor extends CellEditor {
+  public Component getTableCellEditorComponent(JTable table, Object value,
+    boolean isSelected, int row, int column);
+}</pre>
+</div>
+<p>正如第17章所描述的，DefaultCellEditor提供了接口的实现。他提供了JTextField作为一个编辑器，JCheckBox作为另一个编辑器，而JComboBox作为第三个编辑器。</p>
+<p>如表格18-13所示，在大多数情况下，默认编辑器为JTextField。如果单元数据可以由一个字符串转换而成或是转换成一个字符串，类提供了一个具有String参数的构造函数，编辑器提供了数据的文本表示作为初始编辑值。然后我们可以编辑内容。</p>
+<div class="figure">
+<img alt="Swing_table_18_13.png" src="_images/Swing_table_18_13.png" />
+<p class="caption">Swing_table_18_13.png</p>
+</div>
+</div>
+<div class="section" id="id15">
+<h3>创建一个简单的单元编辑器<a class="headerlink" href="#id15" title="Permalink to this headline">¶</a></h3>
+<p>作为修改JTable中非String单元的简单示例，我们可以为用户提供一个固定的颜色选择集合。然后当用户选择颜色时，我们可以向表格模型返回相应的Color值。DefaultCellEditor为这种情况提供了一个JComboBox。在配置JComboBox的ListCellRenderer正确的显示颜色之后，我们就会有一个TableCellEditor用于选择颜色。图18-13显示了可能显示结果。</p>
+<div class="figure">
+<img alt="Swing_18_13.png" src="_images/Swing_18_13.png" />
+<p class="caption">Swing_18_13.png</p>
+</div>
+<p>提示，任何时候我们都可以重新定义所有的选项，我们可以通过DefaultCellEditor将JComboBox作为我们的编辑器。</p>
+<p>列表18-14显示了表示了图18-13中所示的用于Color列事件的TableCellRenderer类以及JComboBox
+TableCellEditor的ListCellRenderer。由于这两个渲染器组件的相似性，他们的定义被组合在一个类中。</p>
+<div class="code java highlight-python"><pre>package swingstudy.ch18;
+
+import java.awt.Color;
+import java.awt.Component;
+
+import javax.swing.DefaultListCellRenderer;
+import javax.swing.JLabel;
+import javax.swing.JList;
+import javax.swing.JTable;
+import javax.swing.ListCellRenderer;
+import javax.swing.table.DefaultTableCellRenderer;
+import javax.swing.table.TableCellRenderer;
+
+import swingstudy.ch04.DiamondIcon;
+
+public class ComboTableCellRenderer implements ListCellRenderer,
+        TableCellRenderer {
+
+    DefaultListCellRenderer listRenderer = new DefaultListCellRenderer();
+    DefaultTableCellRenderer tableRenderer = new DefaultTableCellRenderer();
+
+    public void configureRenderer(JLabel renderer, Object value) {
+        if((value != null) &amp;&amp; (value instanceof Color)) {
+            renderer.setIcon(new DiamondIcon((Color)value));
+            renderer.setText("");
+        }
+        else {
+            renderer.setIcon(null);
+            renderer.setText((String)value);
+        }
+    }
+    @Override
+    public Component getTableCellRendererComponent(JTable table, Object value,
+            boolean isSelected, boolean hasFocus, int row, int column) {
+        // TODO Auto-generated method stub
+        tableRenderer = (DefaultTableCellRenderer)tableRenderer.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+        configureRenderer(tableRenderer, value);
+        return tableRenderer;
+    }
+
+    @Override
+    public Component getListCellRendererComponent(JList list, Object value,
+            int index, boolean isSelected, boolean cellHasFocus) {
+        // TODO Auto-generated method stub
+        listRenderer = (DefaultListCellRenderer)listRenderer.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+        configureRenderer(listRenderer, value);
+        return listRenderer;
+    }
+
+}</pre>
+</div>
+<p>为了演示新的组合渲染器的使用以及显示一个简单的表格单元编辑器，显示在列表18-15中的程序创建了一个数据模型，其中一个列为Color。在两次安装渲染器并且设置表格单元编辑器以后，就可以显示表格并且Color可以被编辑。</p>
+<div class="code java highlight-python"><pre>package swingstudy.ch18;
+
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.EventQueue;
+
+import javax.swing.DefaultCellEditor;
+import javax.swing.JComboBox;
+import javax.swing.JFrame;
+import javax.swing.JScrollPane;
+import javax.swing.JTable;
+import javax.swing.table.TableCellEditor;
+import javax.swing.table.TableColumn;
+import javax.swing.table.TableModel;
+
+public class EditableColorColumn {
+
+    /**
+     * @param args
+     */
+    public static void main(String[] args) {
+        // TODO Auto-generated method stub
+
+        Runnable runner = new Runnable() {
+            public void run() {
+                Color choices[] = {Color.RED, Color.ORANGE, Color.YELLOW, Color.GREEN, Color.BLUE, Color.MAGENTA};
+                ComboTableCellRenderer renderer = new ComboTableCellRenderer();
+                JComboBox comboBox = new JComboBox(choices);
+                comboBox.setRenderer(renderer);
+                TableCellEditor editor = new DefaultCellEditor(comboBox);
+
+                JFrame frame = new JFrame("Editable Color Table");
+                frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+                TableModel model = new ColorTableModel();
+                JTable table = new JTable(model);
+
+                TableColumn column = table.getColumnModel().getColumn(3);
+                column.setCellRenderer(renderer);
+                column.setCellEditor(editor);
+
+                JScrollPane scrollPane = new JScrollPane(table);
+                frame.add(scrollPane, BorderLayout.CENTER);
+                frame.setSize(400, 150);
+                frame.setVisible(true);
+            }
+        };
+        EventQueue.invokeLater(runner);
+    }
+
+}</pre>
+</div>
+<p>列表18-16显示在这个示例以及下个示例中所用的表格模型。</p>
+<div class="code java highlight-python"><pre>package swingstudy.ch18;
+
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.EventQueue;
+
+import javax.swing.DefaultCellEditor;
+import javax.swing.JComboBox;
+import javax.swing.JFrame;
+import javax.swing.JScrollPane;
+import javax.swing.JTable;
+import javax.swing.table.TableCellEditor;
+import javax.swing.table.TableColumn;
+import javax.swing.table.TableModel;
+
+public class EditableColorColumn {
+
+    /**
+     * @param args
+     */
+    public static void main(String[] args) {
+        // TODO Auto-generated method stub
+
+        Runnable runner = new Runnable() {
+            public void run() {
+                Color choices[] = {Color.RED, Color.ORANGE, Color.YELLOW, Color.GREEN, Color.BLUE, Color.MAGENTA};
+                ComboTableCellRenderer renderer = new ComboTableCellRenderer();
+                JComboBox comboBox = new JComboBox(choices);
+                comboBox.setRenderer(renderer);
+                TableCellEditor editor = new DefaultCellEditor(comboBox);
+
+                JFrame frame = new JFrame("Editable Color Table");
+                frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+                TableModel model = new ColorTableModel();
+                JTable table = new JTable(model);
+
+                TableColumn column = table.getColumnModel().getColumn(3);
+                column.setCellRenderer(renderer);
+                column.setCellEditor(editor);
+
+                JScrollPane scrollPane = new JScrollPane(table);
+                frame.add(scrollPane, BorderLayout.CENTER);
+                frame.setSize(400, 150);
+                frame.setVisible(true);
+            }
+        };
+        EventQueue.invokeLater(runner);
+    }
+
+}</pre>
+</div>
+</div>
+<div class="section" id="id16">
+<h3>创建复杂的单元编辑器<a class="headerlink" href="#id16" title="Permalink to this headline">¶</a></h3>
+<p>尽管前面的例子演示了如何以列表框TableCellEditor的方向用户提供一个确定的选项集合，但是提供一个JColorChooser作为选项似乎是更好的选择（至少，在颜色选择中是如此）。当定义我们自己的TableCellEditor时，我们必须实现单一的TableCellEditor方法来获得相应的组件。我们必须同时实现CellEditor的七个方法，因为他们管理并通知一个CellEditorListener对象列表，同时控制一个单元何时可以编辑。以一个AbstractCellEditor子类作为起点会使得定义我们自己的TableCellEditor更为简单。</p>
+<p>通过扩展AbstractCellEditor类，只有CellEditor方法中的getCellEditorValue()方法需要为编辑器进行自定义。实现上述步骤并且提供了一个JButton，当点击整个编辑器组件时弹出JColorChooser。列表18-17显示了自定义编辑器的源码。</p>
+<div class="code java highlight-python"><pre>package swingstudy.ch18;
+
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+
+import javax.swing.AbstractCellEditor;
+import javax.swing.JButton;
+import javax.swing.JColorChooser;
+import javax.swing.JTable;
+import javax.swing.table.TableCellEditor;
+
+import swingstudy.ch04.DiamondIcon;
+
+public class ColorChooserEditor extends AbstractCellEditor implements
+        TableCellEditor {
+
+    private JButton delegate = new JButton();
+
+    Color savedColor;
+
+    public ColorChooserEditor() {
+        ActionListener actionListener = new ActionListener() {
+            public void actionPerformed(ActionEvent event) {
+                Color color = JColorChooser.showDialog(delegate, "Color Chooser", savedColor);
+                ColorChooserEditor.this.changeColor(color);
+            }
+        };
+        delegate.addActionListener(actionListener);
+    }
+    @Override
+    public Object getCellEditorValue() {
+        // TODO Auto-generated method stub
+        return savedColor;
+    }
+
+    public void changeColor(Color color) {
+        if(color != null) {
+            savedColor = color;
+            delegate.setIcon(new DiamondIcon(color));
+        }
+    }
+    @Override
+    public Component getTableCellEditorComponent(JTable table, Object value,
+            boolean isSelected, int row, int column) {
+        // TODO Auto-generated method stub
+        changeColor((Color)value);
+        return delegate;
+    }
+
+}</pre>
+</div>
+<p>图18-14显示了ColorChooserEditor的运行结果。</p>
+<div class="figure">
+<img alt="Swing_18_14.png" src="_images/Swing_18_14.png" />
+<p class="caption">Swing_18_14.png</p>
+</div>
+<p>使用新的ColorChooserEditor的示例程序显示在列表18-18中。示例程序重用了前面显示在列表18-16中的ColorTableModel数据模型。设置ColorChooserEditor简单的涉及为相应的列设置TableCellEditor。</p>
+<div class="code java highlight-python"><pre>package swingstudy.ch18;
+
+import java.awt.BorderLayout;
+import java.awt.EventQueue;
+
+import javax.swing.JFrame;
+import javax.swing.JScrollPane;
+import javax.swing.JTable;
+import javax.swing.table.TableCellEditor;
+import javax.swing.table.TableColumn;
+import javax.swing.table.TableModel;
+
+
+public class ChooserTableSample {
+
+    /**
+     * @param args
+     */
+    public static void main(String[] args) {
+        // TODO Auto-generated method stub
+
+        Runnable runner = new Runnable() {
+            public void run() {
+                JFrame frame = new JFrame("Editable Color Table");
+                frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+                TableModel model =  new ColorTableModel();
+                JTable table = new JTable(model);
+
+                TableColumn column = table.getColumnModel().getColumn(3);
+
+                ComboTableCellRenderer renderer = new ComboTableCellRenderer();
+                column.setCellRenderer(renderer);
+
+                TableCellEditor editor = new ColorChooserEditor();
+                column.setCellEditor(editor);
+
+                JScrollPane scrollPane = new JScrollPane(table);
+                frame.add(scrollPane, BorderLayout.CENTER);
+                frame.setSize(400, 150);
+                frame.setVisible(true);
+            }
+        };
+        EventQueue.invokeLater(runner);
+    }
+
+}</pre>
+</div>
+</div>
+</div>
+<div class="section" id="id17">
+<h2>打印表格<a class="headerlink" href="#id17" title="Permalink to this headline">¶</a></h2>
+<p>JDK5.0的一个新特性也是最容易使用一个特性：打印表格功能。通过简单的JTable的public
+boolean print() throws
+PrinterException方法，我们就可以在打印机在多面上打印一个大表格。甚至是如果我们不喜欢将表格适应整页纸的宽度的默认行为，我们可以在多个页面上扩展列。</p>
+<p>为了演示这种行为，列表18-19使用基本的JTable示例代码来生成图18-1，向表格添加更多的行，并且添加一个打印按钮。</p>
+<div class="code java highlight-python"><pre>package swingstudy.ch18;
+
+import java.awt.BorderLayout;
+import java.awt.EventQueue;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.print.PrinterException;
+
+import javax.swing.JButton;
+import javax.swing.JFrame;
+import javax.swing.JScrollPane;
+import javax.swing.JTable;
+
+public class TablePrint {
+
+    /**
+     * @param args
+     */
+    public static void main(String[] args) {
+        // TODO Auto-generated method stub
+
+        final Object rows[][] = {
+                {"1", "ichi - \u4E00"},
+                {"2", "ni -\u4E8C"},
+                {"3", "san - \u4E09"},
+                {"4", "shi - \u56DB"},
+                {"5", "go - \u4E94"},
+                {"6", "roku - \u516D"},
+                {"7", "shichi - \u4E03"},
+                {"8", "hachi - \u516B"},
+                {"9", "kyu - \u4E5D"},
+                {"10","ju - \u5341"},
+                {"1", "ichi - \u4E00"},
+                {"2", "ni -\u4E8C"},
+                {"3", "san - \u4E09"},
+                {"4", "shi - \u56DB"},
+                {"5", "go - \u4E94"},
+                {"6", "roku - \u516D"},
+                {"7", "shichi - \u4E03"},
+                {"8", "hachi - \u516B"},
+                {"9", "kyu - \u4E5D"},
+                {"10","ju - \u5341"},
+                {"1", "ichi - \u4E00"},
+                {"2", "ni -\u4E8C"},
+                {"3", "san - \u4E09"},
+                {"4", "shi - \u56DB"},
+                {"5", "go - \u4E94"},
+                {"6", "roku - \u516D"},
+                {"7", "shichi - \u4E03"},
+                {"8", "hachi - \u516B"},
+                {"9", "kyu - \u4E5D"},
+                {"10","ju - \u5341"}
+        };
+        final Object headers[] = {"English", "Japanese"};
+
+        Runnable runner = new Runnable() {
+            public void run() {
+                JFrame frame = new JFrame("Table Printing");
+                frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+                final JTable table = new JTable(rows, headers);
+                JScrollPane scrollPane = new JScrollPane(table);
+                frame.add(scrollPane, BorderLayout.CENTER);
+                JButton button = new JButton("Print");
+                ActionListener printAction =  new ActionListener() {
+                    public void actionPerformed(ActionEvent event) {
+                        try {
+                            table.print();
+                        }
+                        catch(PrinterException pe) {
+                            System.out.println("Error printing: "+pe.getMessage());
+                        }
+                    }
+                };
+                button.addActionListener(printAction);
+                frame.add(button, BorderLayout.SOUTH);
+                frame.setSize(300, 150);
+                frame.setVisible(true);
+            }
+        };
+        EventQueue.invokeLater(runner);
+    }
+
+}</pre>
+</div>
+<p>在点击打印Print按钮之后，会向用户提示一个经典的打印机选择对话框，如图18-15所示。</p>
+<div class="figure">
+<img alt="Swing_18_15.png" src="_images/Swing_18_15.png" />
+<p class="caption">Swing_18_15.png</p>
+</div>
+<p>在用户点击打印对话框中的打印按钮之后，打印开始。会显示一个类似于图18-16中所示的对话框。</p>
+<div class="figure">
+<img alt="Swing_18_16.png" src="_images/Swing_18_16.png" />
+<p class="caption">Swing_18_16.png</p>
+</div>
+<p>确实，很容易使用JDK
+5.0打印多页表格。print()方法会返回一个boolean值，从而我们可以发现用户是否关闭了操作。</p>
+<p>对于查找更多打印操作控制的用户，JTable具有多个重载的print()方法版本。类似于简单的print()方法，他们都抛出PrinterException。</p>
+<p>其中一个print()版本会允许我们指定打印模式：</p>
+<div class="code java highlight-python"><pre>public boolean print(JTable.PrintModel printMode)</pre>
+</div>
+<p>JTable.PrintModel参数是一个FIT_WIDTH与NORMAL的枚举。当使用无参数的print()版本没有指定时，则默认为FIT_WIDTH。</p>
+<p>另一个版本的方法允许我们指定页眉与页脚：</p>
+<div class="code java highlight-python"><pre>public boolean print(JTable.PrintMode printMode, MessageFormat headerFormat,
+  MessageFormat footerFormat)</pre>
+</div>
+<p>MessageFormat来自于java.text包。页眉与页脚格式化字符串的一个参数是页数。要显示页数，在我们的格式化字符串我们希望显示页数的地方包含{0}。两个都会显示在页面的中间，而页眉使用稍大一些的字符。为了演示，将列表18-19中的print()方法调用改为下面的形式：</p>
+<div class="code java highlight-python"><pre>MessageFormat headerFormat = new MessageFormat("Page {0}");
+MessageFormat footerFormat = new MessageFormat("- {0} -");
+table.print(JTable.PrintMode.FIT_WIDTH, headerFormat, footerFormat);</pre>
+</div>
+<p>最后一个print()版本是一个综合版本，使得我们在不显示打印机对话框的情况配置默认打印机所需要的属性，例如要打印多少份。</p>
+<div class="code java highlight-python"><pre>public boolean print(JTable.PrintMode printMode, MessageFormat headerFormat,
+MessageFormat footerFormat, boolean showPrintDialog,
+PrintRequestAttributeSet attr, boolean interactive)</pre>
+</div>
+<p>对于我们不希望用户与打印机交互的情况下，可以考虑使用最后一个版本。</p>
+</div>
+<div class="section" id="id18">
+<h2>小结<a class="headerlink" href="#id18" title="Permalink to this headline">¶</a></h2>
+<p>在本章中我们探讨了JTable组件的内部细节。我们了解了如何为JTable自定义TableModel，TableColumnModel与ListSelectionModel。我们深入了不同的表格模型的抽象与具体实现。另外，我们探讨了各种表格模型的内部元素，例如TableColumn与JTableHeader类。我们同时了解了如何通过提供一个自定义的TableCellRenderer与TableCellEditor来自定义JTable的显示与编辑。最后，我们了解了通过print()方法打印表格。</p>
+<p>在第19章中，我们将会探讨JFC/Swing组件集合的拖拽体系结构。</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Tables</a><ul>
+<li><a class="reference internal" href="#intoducing-tables">Intoducing Tables</a></li>
+<li><a class="reference internal" href="#jtable">JTable类</a><ul>
+<li><a class="reference internal" href="#id1">创建JTable</a></li>
+<li><a class="reference internal" href="#id2">滚动JTable组件</a></li>
+<li><a class="reference internal" href="#id3">手动放置JTable视图</a></li>
+<li><a class="reference internal" href="#id4">移除列头</a></li>
+<li><a class="reference internal" href="#id5">JTable属性</a></li>
+<li><a class="reference internal" href="#id6">渲染表格单元</a></li>
+<li><a class="reference internal" href="#id7">处理JTable事件</a></li>
+<li><a class="reference internal" href="#id8">自定义JTable观感</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#tablemode">TableMode接口</a><ul>
+<li><a class="reference internal" href="#abstracttablemodel">AbstractTableModel类</a></li>
+<li><a class="reference internal" href="#defaulttablemodel">DefaultTableModel类</a></li>
+<li><a class="reference internal" href="#id9">排序JTable元素</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#tablecolumnmodel">TableColumnModel接口</a><ul>
+<li><a class="reference internal" href="#defaulttablecolumnmodel">DefaultTableColumnModel类</a></li>
+<li><a class="reference internal" href="#tablecolumnmodellistenerjtable">使用TableColumnModelListener监听JTable事件</a></li>
+<li><a class="reference internal" href="#tablecolumn">TableColumn类</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#jtableheader">JTableHeader类</a><ul>
+<li><a class="reference internal" href="#id10">创建JTableHeader</a></li>
+<li><a class="reference internal" href="#id11">JTableHeader属性</a></li>
+<li><a class="reference internal" href="#id12">在表格头中使用工具提示</a></li>
+<li><a class="reference internal" href="#id13">自定义JTableHeader观感</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#id14">编辑表格单元</a><ul>
+<li><a class="reference internal" href="#tablecelleditordefaultcelleditor">TableCellEditor接口与DefaultCellEditor类</a></li>
+<li><a class="reference internal" href="#id15">创建一个简单的单元编辑器</a></li>
+<li><a class="reference internal" href="#id16">创建复杂的单元编辑器</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#id17">打印表格</a></li>
+<li><a class="reference internal" href="#id18">小结</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="ch17.html"
+                        title="previous chapter">树</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="ch19.html"
+                        title="next chapter">拖放支持</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/ch18.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="ch19.html" title="拖放支持"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="ch17.html" title="树"
+             >previous</a> |</li>
+        <li><a href="index.html">The Definitive Guide to Java Swing Third Edtion 0.01 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2014, mylxiaoyi.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2b3.
+    </div>
+  </body>
+</html>

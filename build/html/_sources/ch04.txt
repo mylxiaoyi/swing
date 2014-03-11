@@ -1,0 +1,1824 @@
+Core Swing Components
+=====================
+
+在第3章，我们简要介绍了JFC/Swing工程组件所用的Model-View-Controller（MVC）模式。在本章中，我们将会开始探讨如何使用许多可用组件中的关键部分。
+
+所有的Swing组件都是以JComponent类为起点的。尽管Swing库的某些部分并不以JComponent类为根，但所有的组件在其继承的某些级别上共享JComponent类作为通用父类。JComponent类定义通用的行为与属性。在本章中，我们将会了解一些通用功能，例如组件绘制，自定义义，工具提示以及变化大小。
+
+随着特定JComponent子孙类被关注
+，我们将会特别了解JLabel，JButton以及JPanel，三个更为广泛使用的Swing组件类。为了组件内显示图像，我们需要理解Icon接口，以及当使用预定义图像时的ImageIcon类与GrayFilter类的支持。另外，我们将会了解AbstractButton类，他是JButton类的父类。所有的AbstractButton的子类所共享的数据模型是ButtonModel接口；我们将会探讨这个接口及其特定实现，DefaultButtonModel。
+
+JComponent类
+------------
+
+JComponent类是所有的Swing组件继承的抽象基类。JComponent类有42个派生子类，每一个都继承了JComponent的功能。图4-1显示了继承层次结构。
+
+尽管JComponent类是所有Swing组件的共同基类，但是Swing工程库中的许多类并不是由JComponent类派生类。这包括所有的高层窗口对象，例如JFrame，JApplet以及JInternalFrame；所有的MVC相关的类；事件处理相关的接口与类；等。所有这些类将会后面的章节中进行讨论。
+
+尽管所有的Swing组件扩展JComponent，JComponent类扩展AWT的Container类，相应的，其扩展AWT的Component类。这就意味着许多的JComponent方面都是由AWT的Component与Container类所共享的。
+
+.. figure:: images/Swing_4_1.png
+   :alt: Swing_4_1.png
+
+   Swing\_4\_1.png
+组件分片
+~~~~~~~~
+
+JComponent类定义了许多超出原始的AWT组件集合功能的AWT组件面。这包括自定义绘制行为以及自定义显示设置的不同方法，例如颜色，字体以及其他的客户端设置。
+
+**绘制JComponent对象**
+
+因为Swing的JComponent类是由Container类扩展而来的，因而会遵循基本的AWT绘制模型：所有的绘制都是通过paint()方法来完成的，而repaint()方法则用来触发更新。然而，许多任务的完成是不同的。JComponent类优化了绘制的许多方面从而改进性能与可扩展性。另外，RepaintManager类可以用来自定义绘制行为。
+
+为了改进绘制性能与扩展性，JComponent将绘制操作分为三个任务。public void
+paint(Graphics
+g)方法被分为三个独立的protected方法调用。由调用的顺序，他们依次为paintComponent(g),
+paintBorder(g)以及paintChildren(g)，通过原始的paint()调用传递Graphics参数。组件本身首先通过paintComponent(g)进行绘制。如果我们希望自定义Swing组件的绘制，我们可以重写paintComponent()方法而不是paint()方法。除非我们希望完全替换所有的绘制，我们需要首先调用super.paintComponent()，正如下面所示的，来获得默认的paintComponent()行为。
+
+.. code:: java
+
+    public class MyComponent extends JPanel {
+      protected void paintComponent(Graphics g) {
+        super.paintComponent(g);
+        // Customize after calling super.paintComponent(g)
+      }
+      ...
+    }
+
+paintBorder()与paintChildren()方法是不可重写的。paintBorder()方法绘制组件周围的边框，第7章会对其概念进行更为完全的描述。如果在Swing容器对象内存在组件，则paintChildren()方法会绘制这些组件。
+
+为了优化绘制，JComponent类提供了三个额外的绘制属性：opaque,
+optimizedDrawingEnabled以及doubleBuffered。其作用如下：
+
+-  Optacity：JComponent的opaque属性定义了一个组件是否透明。当透明时，JComponent容器必须在组件之后绘制背景。为了改进性能，我们可以保留JComponent的不透明物并使得JComponent绘制其背景，而不要依赖于容器来绘制被覆盖的背景。
+-  Optimization：optimizedDrawingEanbled属性紧邻的子元素是否可以重叠。如果子元素不可以重叠，可以极大的减少重绘时间。在默认情况下，优化绘制对于绝大多数的Swing组件是允许的，除了JDesktopPane，JLayeredPane以及JViewport。
+-  Double
+   buffering：在默认情况下，所有的Swing组件会将他们的绘制操作重复缓存到一个完整的容器层次结构所共享的缓冲区中；也就是，在一个窗体内的所有组件。这极大的改善了绘制性能，因为当允许双缓冲时（通过doubleBuffered属性），只有一个屏幕更新绘制。
+
+JComponent的public void
+revalidate()方法也提供绘制支持。当这个方法被调用时，组件的高级容器会验证其本身。这与AWT的直接调用高级组件的revalidate()方法不同。
+
+Swing组件绘制加强的最后一个方面就是RepaintManager类。
+
+**RepaintManager类**
+
+RepaintManager类负责保证当前显示的Swing组件之上的重绘请求的高效，确保当一个区域无效时只更新屏幕的最小“脏”区域。
+
+尽管不能进行自定义，RepaintManager是公开并且提供了一个静态的安装例程来使用自定义管理器：public
+static void setCurrentManager(RepaintManager
+manager)。要获得当前的管理器，只需要调用public static void
+currentmanager(JComponent)方法。参数通常为null，除非我们已经自定义了管理器来提供组件级别的支持。一旦我们拥有管理器在，我们可以做的一件事就是将屏幕缓冲区获取为图像。因为缓冲区就是实际显示在屏幕上的内容，这可以使得我们高效的实现窗体内部的屏幕复制。
+
+.. code:: java
+
+    Component comp = ... 
+    RepaintManager manager = RepaintManager.currentManager(null);
+    Image htmlImage = manager.getOffscreenBuffer(comp, comp.getWidth(),
+      comp.getHeight());
+    // or
+    Image volatileImage = manager.getVolatileOffscreenBuffer(comp, comp.getWidth(),
+      comp.getHeight());
+
+表4-1显示了RepaintManager的两个属性。他可以使得我们禁止一个组件（层次结构）的所有绘制操作的双缓冲，并且设置最大的双缓冲尺寸，默认为终端用户的屏幕尺寸。
+
++---------------------------+-------------+------------+
+| 属性名                    | 数据类型    | 可访问性   |
++---------------------------+-------------+------------+
+| doubleBufferingEnabled    | boolean     | 读写       |
++---------------------------+-------------+------------+
+| doubleBufferMaximumSize   | Dimension   | 读写       |
++---------------------------+-------------+------------+
+
+Table: RepaintManager属性
+
+尽管很少实现，提供我们自己的RepaintManager子类确实允许我们自定义屏幕脏区域的绘制机制，或者是当绘制完成时的最少跟踪。重写下面四个方法的一个可以允许我们自定义机制：
+
+.. code:: java
+
+    public synchronized void addDirtyRegion(JComponent component, int x, int y,
+      int width, int height)
+    public Rectangle getDirtyRegion(JComponent component)
+    public void markCompletelyClean(JComponent component)
+    public void markCompletelyDirty(JComponent component)
+
+**UIDefaults类**
+
+UIDefaults类表示为当前的观感所安装的包含显示设置的查询表，例如JList中所用的字体，在JTree节中所显示的颜色或图标。UIDefaults的使用将会在第20章探讨Java可插拨的观感体系结构时进行详细讨论。在这里，我们只是简要介绍UIDefaults表。
+
+当我们创建一个组件时，组件会自动的请求UIManager在UIDefaults表中查找组件所用的当前设置。大多数的颜色，字体相关的组件设置，以及其他的一些与颜色与字体无关的设置，都是可配置的。如果你不喜欢一个特定的设置，我们可以简单的通过更新UIDefaults查询表中的相应项目进行修改。
+
+首先我们需要知道我们希望修改的UIDefaults设置的名字。我们可以在本书的附录A中找到这些设置名字，在这个附录中包含J2SE
+5.0中预定义观感的所有已知设置的完整列表。（由于发行版本的不同会略有不同。）另外，包含有每个组件描述的是一个包含UIResource相关属性元素的表。（要查找本书中特定组件部分，请查看内容表或是索引。）
+
+一旦我们知道了设置的名字，我们可以使用UImanager的public static void
+put(Object key, Object
+value)方法来存放一个新的设置，其中key是键值字符串。例如，下面的代码会将新创建的按钮的背景颜色改变黑色，而前景色改变红色：
+
+.. code:: java
+
+    UIManager.put("Button.background", Color.BLACK);
+    UIManager.put("Button.foreground", Color.RED);
+
+**获取UIResource属性**
+
+如果我们正在创建自己的组件，或者是我们只需要查看当前的设置值，我们可以请求UIManager。尽管public
+static Object get(Object
+key)方法是最为通用的，却需要我们将返回值转换为合适的类型。相对应的，我们可以下列更为特定的getXXX()方法，这些方法会为我们执行錾，从而返回合适的类型：
+
+.. code:: java
+
+    public static boolean getBoolean(Object key)
+    public static Border getBorder(Object key)
+    public static Color getColor(Object key)
+    public static Dimension getDimension(Object key)
+    public static Font getFont(Object key)
+    public static Icon getIcon(Object key)
+    public static Insets getInsets(Object key)
+    public static int getInt(Object key)
+    public static String getString(Object key)
+    public static ComponentUI getUI(JComponent target)
+
+这是一组接受Locale参数的重载的方法集合。
+
+**客户属性**
+
+除了UIManager维护一个key/value对设置以外，每一个组件实例还维护一个自己的key/value对集合。这对于维护一个不同于一定观感的组件或者是维护与一个组件关联的数据而不需要新类或是方法来存储这些数据的情况十分有用。
+
+.. code:: java
+
+    public final void putClientProperty(Object key, Object value)
+    public final Object getClientProperty(Object key)
+
+例如，JTree类具有一个属性通过Metal观感来连接线风格或是显示JTree中的节点。因为设置特定于一个观感，因而向树API中添加一些内容并不合理。相反，我们可以通过下面的代码在一个特定的树实例上设置属性：
+
+.. code:: java
+
+    tree.putClientProperty("JTree.lineStyle", "None")
+
+然后，当观感是默认的Metal时，树的节点将会用线连接。如果安装了其他的观感，客户属性就会被忽略。图4-2显示具有与不具有线的树。
+
+.. figure:: images/Swing_4_2.png
+   :alt: Swing_4_2.png
+
+   Swing\_4\_2.png
+JComopnent属性
+~~~~~~~~~~~~~~
+
+我们已经了解了一些不同的JComponent子类所共享的属性。现在是了解JavaBean属性的时候了。表4-2显示了JComponent所定义的完整属性列表，包括由AWT
+Container为戌Component类所继承的属性。
+
++--------------------------------+-----------------------------+--------------+------------+------------------+
+| 属性名                         | 数据类型                    | 组件访问     | 容器访问   | JComponent访问   |
++--------------------------------+-----------------------------+--------------+------------+------------------+
+| accessibleContext              | AccessibleContext           | 只读         | N/A        | 只读             |
++--------------------------------+-----------------------------+--------------+------------+------------------+
+| actionMap                      | ActionMap                   | N/A          | N/A        | 读写             |
++--------------------------------+-----------------------------+--------------+------------+------------------+
+| alignmentX                     | float                       | 只读         | 只读       | 读写             |
++--------------------------------+-----------------------------+--------------+------------+------------------+
+| alignmentY                     | float                       | 只读         | 只读       | 读写             |
++--------------------------------+-----------------------------+--------------+------------+------------------+
+| ancestorListeners              | AncestorListener[]          | N/A          | N/A        | 只读             |
++--------------------------------+-----------------------------+--------------+------------+------------------+
+| autoscrolls                    | boolean                     | N/A          | N/A        | 读写             |
++--------------------------------+-----------------------------+--------------+------------+------------------+
+| background                     | Color                       | 读写绑定     | N/A        | 只写             |
++--------------------------------+-----------------------------+--------------+------------+------------------+
+| backgroundSet                  | boolean                     | 只读         | N/A        | N/A              |
++--------------------------------+-----------------------------+--------------+------------+------------------+
+| border                         | Border                      | N/A          | N/A        | 读写绑定         |
++--------------------------------+-----------------------------+--------------+------------+------------------+
+| bounds                         | Rectangle                   | 读写         | N/A        | N/A              |
++--------------------------------+-----------------------------+--------------+------------+------------------+
+| colorModel                     | ColorModel                  | 只读         | N/A        | N/A              |
++--------------------------------+-----------------------------+--------------+------------+------------------+
+| componentCount                 | int                         | N/A          | 只读       | N/A              |
++--------------------------------+-----------------------------+--------------+------------+------------------+
+| componentListeners             | ComponentListener[]         | 只读         | N/A        | N/A              |
++--------------------------------+-----------------------------+--------------+------------+------------------+
+| componentOrientation           | ComponentOrientation        | 读写绑定     | N/A        | N/A              |
++--------------------------------+-----------------------------+--------------+------------+------------------+
+| componentPopupMenu             | JPopupMenu                  | N/A          | N/A        | 读写             |
++--------------------------------+-----------------------------+--------------+------------+------------------+
+| components                     | Component[]                 | N/A          | 只读       | N/A              |
++--------------------------------+-----------------------------+--------------+------------+------------------+
+| containerListeners             | ContainerListener[]         | N/A          | 只读       | N/A              |
++--------------------------------+-----------------------------+--------------+------------+------------------+
+| cursor                         | Cursor                      | 读写         | N/A        | N/A              |
++--------------------------------+-----------------------------+--------------+------------+------------------+
+| cursorSet                      | boolean                     | 只读         | N/A        | N/A              |
++--------------------------------+-----------------------------+--------------+------------+------------------+
+| debugGraphicsOptions           | int                         | N/A          | N/A        | 读写             |
++--------------------------------+-----------------------------+--------------+------------+------------------+
+| displayable                    | boolean                     | 只读         | N/A        | N/A              |
++--------------------------------+-----------------------------+--------------+------------+------------------+
+| doubleBuffered                 | boolean                     | 只读         | N/A        | 读写             |
++--------------------------------+-----------------------------+--------------+------------+------------------+
+| dropTarget                     | DropTarget                  | 读写         | N/A        | N/A              |
++--------------------------------+-----------------------------+--------------+------------+------------------+
+| enabled                        | boolean                     | 读写         | N/A        | 只写绑定         |
++--------------------------------+-----------------------------+--------------+------------+------------------+
+| focusable                      | boolean                     | 读写绑定     | N/A        | N/A              |
++--------------------------------+-----------------------------+--------------+------------+------------------+
+| focusCycleRoot                 | boolean                     | N/A          | 读写绑定   | N/A              |
++--------------------------------+-----------------------------+--------------+------------+------------------+
+| focusCycleRootAncestor         | Container                   | 只读         | N/A        | N/A              |
++--------------------------------+-----------------------------+--------------+------------+------------------+
+| focusListeners                 | FocusListener[]             | 只读         | N/A        | N/A              |
++--------------------------------+-----------------------------+--------------+------------+------------------+
+| focusOwner                     | boolean                     | 只读         | N/A        | N/A              |
++--------------------------------+-----------------------------+--------------+------------+------------------+
+| focusTraversalKeyEnabled       | boolean                     | 读写         | N/A        | N/A              |
++--------------------------------+-----------------------------+--------------+------------+------------------+
+| focusTraversalPolicy           | FocusTraversalPolicy        | N/A          | 读写绑定   | N/A              |
++--------------------------------+-----------------------------+--------------+------------+------------------+
+| focusTraversalPolicyProvider   | boolean                     | N/A          | 读写绑定   | N/A              |
++--------------------------------+-----------------------------+--------------+------------+------------------+
+| focusTraversalPolicySet        | boolean                     | N/A          | 只读       | N/A              |
++--------------------------------+-----------------------------+--------------+------------+------------------+
+| font                           | Font                        | 读写绑定     | 只写       | 只写             |
++--------------------------------+-----------------------------+--------------+------------+------------------+
+| fontSet                        | boolean                     | 只读         | N/A        | N/A              |
++--------------------------------+-----------------------------+--------------+------------+------------------+
+| foreground                     | Color                       | 读写绑定     | N/A        | 只写             |
++--------------------------------+-----------------------------+--------------+------------+------------------+
+| foregroundSet                  | boolean                     | 只读         | N/A        | N/A              |
++--------------------------------+-----------------------------+--------------+------------+------------------+
+| graphics                       | Graphics                    | 只读         | N/A        | 只读             |
++--------------------------------+-----------------------------+--------------+------------+------------------+
+| graphicsConfiguration          | GraphicsConfiguration       | 只读         | N/A        | N/A              |
++--------------------------------+-----------------------------+--------------+------------+------------------+
+| height                         | int                         | 只读         | N/A        | N/A              |
++--------------------------------+-----------------------------+--------------+------------+------------------+
+| hierarchyBoundsLIsteners       | HierarchyBoundsListener[]   | 只读         | N/A        | N/A              |
++--------------------------------+-----------------------------+--------------+------------+------------------+
+| hierarchyListeners             | HierarchyListener[]         | 只读         | N/A        | N/A              |
++--------------------------------+-----------------------------+--------------+------------+------------------+
+| ignoreRepaint                  | boolean                     | 读写         | N/A        | N/A              |
++--------------------------------+-----------------------------+--------------+------------+------------------+
+| inheritsPopupMenu              | boolean                     | N/A          | N/A        | 读写             |
++--------------------------------+-----------------------------+--------------+------------+------------------+
+| inputContext                   | InputContext                | 只读         | N/A        | N/A              |
++--------------------------------+-----------------------------+--------------+------------+------------------+
+| inputMap                       | InputMap                    | N/A          | N/A        | 只读             |
++--------------------------------+-----------------------------+--------------+------------+------------------+
+| inputMethodListeners           | InputMethodListener[]       | 只读         | N/A        | N/A              |
++--------------------------------+-----------------------------+--------------+------------+------------------+
+| inputMethodRequests            | InputMethodRequests         | 只读         | N/A        | N/A              |
++--------------------------------+-----------------------------+--------------+------------+------------------+
+| inputVerifiers                 | InputVerifier               | N/A          | N/A        | 读写绑定         |
++--------------------------------+-----------------------------+--------------+------------+------------------+
+| insets                         | Insets                      | N/A          | 只读       | 只读             |
++--------------------------------+-----------------------------+--------------+------------+------------------+
+| keyListeners                   | KeyListener[]               | 只读　       | N/A        | N/A              |
++--------------------------------+-----------------------------+--------------+------------+------------------+
+| layout                         | LayoutManager               | N/A　        | 　读写     | N/A              |
++--------------------------------+-----------------------------+--------------+------------+------------------+
+| lightweight                    | boolean                     | 只读         | N/A        | N/A              |
++--------------------------------+-----------------------------+--------------+------------+------------------+
+| locale                         | Locale                      | 读写绑定　   | N/A        | N/A              |
++--------------------------------+-----------------------------+--------------+------------+------------------+
+| location                       | Point                       | 读写　       | N/A        | N/A              |
++--------------------------------+-----------------------------+--------------+------------+------------------+
+| locationOnScreen               | Point                       | 只读         | N/A        | N/A              |
++--------------------------------+-----------------------------+--------------+------------+------------------+
+| maximumSize                    | Dimension                   | 读写绑定　   | 　只读　   | 　读写　         |
++--------------------------------+-----------------------------+--------------+------------+------------------+
+| maximumSizeSet                 | boolean                     | 只读         | N/A        | N/A              |
++--------------------------------+-----------------------------+--------------+------------+------------------+
+| minimumSize                    | Dimension                   | 　读写绑定   | 只读       | 读写             |
++--------------------------------+-----------------------------+--------------+------------+------------------+
+| minimumSizeSet                 | boolean                     | 只读         | N/A        | N/A              |
++--------------------------------+-----------------------------+--------------+------------+------------------+
+| mouseListeners                 | MouseListener[]             | 只读         | N/A        | N/A              |
++--------------------------------+-----------------------------+--------------+------------+------------------+
+| mouseMotionListeners           | MouseMotionListener[]       | 只读         | N/A        | N/A              |
++--------------------------------+-----------------------------+--------------+------------+------------------+
+| mousePosition                  | Point                       | 只读         | N/A        | N/A              |
++--------------------------------+-----------------------------+--------------+------------+------------------+
+| mousWheelListeners             | MouseWheelListener          | 只读         | N/A        | N/A              |
++--------------------------------+-----------------------------+--------------+------------+------------------+
+| name                           | String                      | 读写         | N/A        | N/A              |
++--------------------------------+-----------------------------+--------------+------------+------------------+
+| opaque                         | boolean                     | 只读         | N/A        | 读写绑定         |
++--------------------------------+-----------------------------+--------------+------------+------------------+
+| optimizedDrawingEnabled        | boolean                     | N/A          | N/A        | 只读             |
++--------------------------------+-----------------------------+--------------+------------+------------------+
+| paintingTile                   | boolean                     | N/A          | N/A        | 只读             |
++--------------------------------+-----------------------------+--------------+------------+------------------+
+| parent                         | Container                   | 只读         | N/A        | N/A              |
++--------------------------------+-----------------------------+--------------+------------+------------------+
+| preferredSize                  | Dimension                   | 读写绑定     | 只读       | 读写             |
++--------------------------------+-----------------------------+--------------+------------+------------------+
+| preferredSizeSet               | boolean                     | 只读         | N/A        | N/A              |
++--------------------------------+-----------------------------+--------------+------------+------------------+
+| propertyChangeListeners        | PropertyChangeListener[]    | 只读         | N/A        | N/A              |
++--------------------------------+-----------------------------+--------------+------------+------------------+
+| registeredKeyStrokes           | KeyStroke[]                 | N/A          | N/A        | 只读             |
++--------------------------------+-----------------------------+--------------+------------+------------------+
+| requestFocusEnabled            | boolean                     | N/A          | N/A        | 读写             |
++--------------------------------+-----------------------------+--------------+------------+------------------+
+| rootPane                       | JRootPane                   | N/A          | N/A        | 只读             |
++--------------------------------+-----------------------------+--------------+------------+------------------+
+| showing                        | boolean                     | 只读         | N/A        | N/A              |
++--------------------------------+-----------------------------+--------------+------------+------------------+
+| size                           | Dimension                   | 读写         | N/A        | N/A              |
++--------------------------------+-----------------------------+--------------+------------+------------------+
+| toolkit                        | Toolkit                     | 只读         | N/A        | N/A              |
++--------------------------------+-----------------------------+--------------+------------+------------------+
+| tooltipText                    | String                      | N/A          | N/A        | 读写             |
++--------------------------------+-----------------------------+--------------+------------+------------------+
+| topLevelAncestor               | Container                   | N/A          | N/A        | 只读             |
++--------------------------------+-----------------------------+--------------+------------+------------------+
+| transferHandler                | TransferHandler             | N/A          | N/A        | 读写绑定         |
++--------------------------------+-----------------------------+--------------+------------+------------------+
+| treeLock                       | Object                      | 只读         | N/A        | N/A              |
++--------------------------------+-----------------------------+--------------+------------+------------------+
+| uiClassID                      | String                      | N/A          | N/A        | 只读             |
++--------------------------------+-----------------------------+--------------+------------+------------------+
+| valid                          | boolean                     | 只读         | N/A        | N/A              |
++--------------------------------+-----------------------------+--------------+------------+------------------+
+| validateRoot                   | boolean                     | 只读         | N/A        | N/A              |
++--------------------------------+-----------------------------+--------------+------------+------------------+
+| verifyInputWhenFocusTarget     | boolean                     | N/A          | N/A        | 只读             |
++--------------------------------+-----------------------------+--------------+------------+------------------+
+| vetoableChangeListeners        | vetoableChangeListener[]    | N/A          | N/A        | 只读             |
++--------------------------------+-----------------------------+--------------+------------+------------------+
+| visible                        | boolean                     | 读写         | N/A        | 只写             |
++--------------------------------+-----------------------------+--------------+------------+------------------+
+| visibleRect                    | Rectangle                   | N/A          | N/A        | 只读             |
++--------------------------------+-----------------------------+--------------+------------+------------------+
+| width                          | int                         | 只读         | N/A        | 只读             |
++--------------------------------+-----------------------------+--------------+------------+------------------+
+| x                              | int                         | 只读         | N/A        | 只读             |
++--------------------------------+-----------------------------+--------------+------------+------------------+
+| y                              | int                         | 只读         | N/A        | 只读             |
++--------------------------------+-----------------------------+--------------+------------+------------------+
+
+Table: JComponent属性
+
+包括由父结构继承的属性，JComponent共有92个属性。正如这个数字所表明的，JComponent类极为适用于可视化开发。JComponent属性可以分十类，如下面所述。
+
+**面向位置的属性**
+
+处理JComponnent事件
+~~~~~~~~~~~~~~~~~~~
+
+所有的JComponent子类共享许多不同类型的事件。大多数的事件类型来自于父类，例如Component与Container。首先我们将会探讨由Container继承而来的PropertyChangeListener。然后我们会了解一下所有的JComponent子类所共享的两种事件处理功能的使用：VetoableChangeListener与AncestorListener。最后，我们来了解一下由Component继承的完全监听器集合。
+
+**使用PropertyChangeListener监听组件事件**
+
+JComponent类具有一些直接或间接的组件绑定属性。通过将PropertyChangeListener绑定到组件，我们可以监听特定的JComponent属性变化，并进行相应的响应。
+
+.. code:: java
+
+    public interface PropertyChangeListener extends EventListener {
+      public void propertyChange(PropertyChangeEvent propertyChangeEvent);
+    }
+
+为了演示的目的，列表4-1中的PropertyChangeListener演示当监听JButton组件中Action类型属性的变化时我们所需要的行为。属性的变化可以决定执行哪一个if语句块。
+
+.. code:: java
+
+
+    package swingstudy.ch04;
+
+    import java.beans.PropertyChangeEvent;
+    import java.beans.PropertyChangeListener;
+
+    import javax.swing.Action;
+    import javax.swing.Icon;
+    import javax.swing.JButton;
+
+    public class ActionChangedListener implements PropertyChangeListener {
+
+        private JButton button;
+        
+        public ActionChangedListener(JButton button) {
+            this.button = button;
+        }
+        
+        @Override
+        public void propertyChange(PropertyChangeEvent e) {
+            // TODO Auto-generated method stub
+
+            String propertyName = e.getPropertyName();
+            if(e.getPropertyName().equals(Action.NAME)) {
+                String text = (String)e.getNewValue();
+                button.setText(text);
+                button.repaint();
+            } 
+            else if(propertyName.equals("enabled")) {
+                Boolean enabledState = (Boolean)e.getNewValue();
+                button.setEnabled(enabledState.booleanValue());
+                button.repaint();
+            }
+            else if(propertyName.equals(Action.SMALL_ICON)) {
+                Icon icon = (Icon)e.getNewValue();
+                button.setIcon(icon);
+                button.invalidate();
+                button.repaint();
+            }
+        }
+
+    }
+
+**使用VetoableChangeListener监听组件事件**
+
+VetoableChangeListener是Swing组件所使用的另一个JavaBean监听器。他使用限制属性，而PropertyChangeListener只使用绑定属性。这两个监听器之间的一个关键区别就在于如果监听器不能处理所请求的变化，则public
+void vetoableChange(PropertyChangeEvent
+propertyChangeEvent)方法会抛出一个PerpotyVetoException异常。
+
+.. code:: java
+
+    public interface VetoableChangeListener extends EventListener {
+      public void vetoableChange(PropertyChangeEvent propertyChangeEvent)
+        throws PropertyVetoException;
+    }
+
+**使用AncestorListener监听JComponent事件**
+
+我们可以使用AncestorListener可以确定组件何时移动，何时可见，以及何时不可见。如果我们允许用户通过在屏幕上移动组件以及由屏幕中移除组件进行屏幕定制，则AncestorListener就十分有用。
+
+.. code:: java
+
+    public interface  AncestorListener extends EventListener {
+      public void ancestorAdded(AncestorEvent ancestorEvent);
+      public void ancestorMoved(AncestorEvent ancestorEvent);
+      public void ancestorRemoved(AncestorEvent ancestorEvent);
+    }
+
+为了演示，列表4-2将一个AncestorListener与JFrame的根面板相关联。当程序首次启动时我们会看到Removed，
+Added以及Move信息。另外，当我们拖动窗体是我们会看Moved消息。
+
+.. code:: java
+
+
+    package swingstudy.ch04;
+
+    import java.awt.EventQueue;
+
+    import javax.swing.JFrame;
+    import javax.swing.event.AncestorEvent;
+    import javax.swing.event.AncestorListener;
+
+    public class AncestorSample {
+
+        /**
+         * @param args
+         */
+        public static void main(String[] args) {
+            // TODO Auto-generated method stub
+
+            Runnable runner = new Runnable() {
+                public void run() {
+                    JFrame frame = new JFrame("Ancestor Sample");
+                    frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+                    
+                    AncestorListener ancestorListener = new AncestorListener() {
+                        public void ancestorAdded(AncestorEvent event) {
+                            System.out.println("Added");
+                        }
+                        public void ancestorMoved(AncestorEvent event) {
+                            System.out.println("Moved");
+                        }
+                        public void ancestorRemoved(AncestorEvent event) {
+                            System.out.println("Removed");
+                        }
+                    };
+                    
+                    frame.getRootPane().addAncestorListener(ancestorListener);
+                    frame.setSize(300, 200);
+                    frame.setVisible(true);
+                    frame.getRootPane().setVisible(false);
+                    frame.getRootPane().setVisible(true);
+                }
+            };
+            
+            EventQueue.invokeLater(runner);
+        }
+
+    }
+
+**监听JComponent的继承事件**
+
+除了监听JComponent的AncestorEvent或是PropertyChangeEvent实际的功能，JComponent由其父类Container与Component继承了监听其他事件的能力。
+
+表4-4列出了十个事件监听器。我们也许我们使用了相当多的JComponent监听器，但是旧版本也可以工作。使用最合适的来解决我们的任务。
+
++-------------+---------------------------+-----------------------------------------------+
+| 类          | 事件监听器                | 事件对象                                      |
++-------------+---------------------------+-----------------------------------------------+
+| Component   | ComponentListener         | | componentHidden(ComponentEvent)             |
+|             |                           | | componentMoved(ComponenetEvent)             |
+|             |                           | | componentResized(ComponentEvent)            |
+|             |                           | | componentShow(ComponentEvent)               |
++-------------+---------------------------+-----------------------------------------------+
+| Component   | FocusListener             | | focusGained(FocusEvent)                     |
+|             |                           | | focusLost(FocusEvent)                       |
++-------------+---------------------------+-----------------------------------------------+
+| Component   | HierarchyBoundsListener   | | ancestorMoved(HierarchyEvent)               |
+|             |                           | | ancestorResized(HierarchyEvent)             |
++-------------+---------------------------+-----------------------------------------------+
+| Component   | HierarchyListener         | hierarchyChanged(HierarchyEvent)              |
++-------------+---------------------------+-----------------------------------------------+
+| Component   | InputMethodListener       | | carePositionChanged(InputMethodEvent)       |
+|             |                           | |  inputMethodTextChanged(InputMethodEvent)   |
++-------------+---------------------------+-----------------------------------------------+
+| Component   | KeyListener               | | keyPressed(KeyEvent)                        |
+|             |                           | |  keyReleased(KeyEvent)                      |
+|             |                           | |  keyTyped(KeyEvent)                         |
++-------------+---------------------------+-----------------------------------------------+
+| Component   | MouseListener             | | mouseClicked(MouseEvent)                    |
+|             |                           | |  mouseEntered(MouseEvent)                   |
+|             |                           | |  mouseExited(MouseEvent)                    |
+|             |                           | |  mousePressed(MouseEvent)                   |
+|             |                           | | mouseReleased(MouseEvent)                   |
++-------------+---------------------------+-----------------------------------------------+
+| Component   | MouseMotionListener       | | mouseDragged(MouseEvent)                    |
+|             |                           | | mouseMoved(MouseEvent)                      |
++-------------+---------------------------+-----------------------------------------------+
+| Component   | MouseWheelListener        | mouseWheelMoved(MouseWheelEvent)              |
++-------------+---------------------------+-----------------------------------------------+
+| Container   | ContainerListener         | | componentAdd(ContainerEvent)                |
+|             |                           | | componentRemoved(ContainerEvent)            |
++-------------+---------------------------+-----------------------------------------------+
+
+Table: JComponent继承的事件监听器
+
+JToolTip类
+----------
+
+Swing组件支持当光标停留在其上时显示简短的弹出信息的功能。用来显示弹出信息的类就是JToolTip。
+
+创建JToolTip
+~~~~~~~~~~~~
+
+调用JComponent的public void setToolTipText(String
+text)方法可以使得当鼠标停留在一个安装了弹出信息的组件上时自动创建JToolTip实例。我们通常并不直接调用JToolTip构造函数。只有一个构造器，而他是无参数的变体。
+
+工具提示的文本通常只是一行的长度。然而，如果文本字符串以
+
+.. raw:: html
+
+   <html>
+
+开头（在许多情况下如此），那么文本的内容可以任意的HTML
+3.2格式化文本。例如，下面的代码使得弹出信息如图4-3所示：
+
+.. code:: java
+
+    component.setToolTipText("<html>Tooltip<br>Message");
+
+.. figure:: images/Swing_4_3.png
+   :alt: Swing_4_3.png
+
+   Swing\_4\_3.png
+创建自定义的JToolTip对象
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+正如在本章稍后的“自定义JToolTip观感”一节中所讨论的，我们可以通过为JToolTip设置UIResource元素很容易的自定义所有的弹出信息的显示特点。
+
+JComponent类定义了一种简单的方法可以使得我们自定义当光标停留在某一个特定的组件上时工具提示的显示特点。我们只需要简单的继承我们要自定义的组件类并重写继承的public
+JToolTip
+createToolTip()方法。当ToolTipManager决定需要显示弹出信息的时候会调用createToolTip()方法。
+
+要自定义弹出工具提示的外观，只需要重写这个方法并自定义由继承的方法所返回的JToolTip。例如，下面的代码显示了JButton工具提示的颜色的自定义，如图4-4所示。
+
+.. code:: java
+
+    JButton b = new JButton("Hello, World") {
+      public JToolTip createToolTip() {
+        JToolTip tip = super.createToolTip();
+        tip.setBackground(Color.YELLOW);
+        tip.setForeground(Color.RED);
+        return tip;
+      }
+    };
+
+.. figure:: images/Swing_4_4.png
+   :alt: Swing_4_4.png
+
+   Swing\_4\_4.png
+在创建了JToolTip之后，我们可以配置继承的JComponent属性或是任何特定的JToolTip属性，如表4-5所示。
+
++---------------------+---------------------+----------+
+| 属性名              | 数据类型            | 访问性   |
++---------------------+---------------------+----------+
+| accessibleContext   | AccessibleContext   | 只读     |
++---------------------+---------------------+----------+
+| component           | JComponent          | 读写     |
++---------------------+---------------------+----------+
+| tipText             | String              | 读写     |
++---------------------+---------------------+----------+
+| UI                  | ToolTipUI           | 只读     |
++---------------------+---------------------+----------+
+| UIClassID           | String              | 只读     |
++---------------------+---------------------+----------+
+
+Table: JToolTip属性
+
+显示位置工具提示文本
+~~~~~~~~~~~~~~~~~~~~
+
+Swing组件甚至支持基于鼠标位置的不同工具提示文本的显示。这需要重写public
+boolean contains(int x, int y)方法，这是由Component类继承的。
+
+例如，在实现了前一节自定义的JButton的创建之后，工具提示文本可以依据鼠标点是否位距离组件左边50像素之内而显示不同的文本。
+
+.. code:: java
+
+    JButton button = new JButton("Hello, World") {
+      public JToolTip createToolTip() {
+        JToolTip tip = super.createToolTip();
+        tip.setBackground(Color.YELLOW);
+        tip.setForeground(Color.RED);
+        return tip;
+      }
+      public boolean contains(int x, int y) {
+        if (x < 50) {
+          setToolTipText("Got Green Eggs?");
+        }  else {
+          setToolTipText("Got Ham?");
+        }
+        return super.contains(x, y);
+      }
+    };
+
+自定义义JToolTip观感
+~~~~~~~~~~~~~~~~~~~~
+
+每一个已安装的Swing观感都会提供一个不同的JToolTip外观以及一个默认的UIResource值设置集合。图4-5显示了预安装的观感类型的JToolTip组件：Motif，
+Widnows与Ocean。
+
+.. figure:: images/Swing_4_5.png
+   :alt: Swing_4_5.png
+
+   Swing\_4\_5.png
+用于JToolTip的UIResource相关的属性显示在表4-6中。对于JToolTip组件，有9个不同的属性。
+
++------------------------------+-------------+
+| 属性字符串                   | 对象类型    |
++------------------------------+-------------+
+| ToolTip.background           | Color       |
++------------------------------+-------------+
+| ToolTip.backgroundInactive   | Color       |
++------------------------------+-------------+
+| ToolTip.border               | Border      |
++------------------------------+-------------+
+| ToolTip.borderInactive       | Color       |
++------------------------------+-------------+
+| ToolTip.font                 | Font        |
++------------------------------+-------------+
+| ToolTip.foreground           | Color       |
++------------------------------+-------------+
+| ToolTip.foregroundInactive   | Color       |
++------------------------------+-------------+
+| ToolTip.hideAccelerator      | Boolean\\   |
++------------------------------+-------------+
+| ToolTipUI                    | String      |
++------------------------------+-------------+
+
+Table: JToolTip UIResource元素
+
+正如在本章的前面所注意到的，JToolTip类支持HTML内容的显示。这可以实现多列与多行输入的显示。
+
+ToolTipManager类
+~~~~~~~~~~~~~~~~
+
+尽管由于JComponent创建并创建并显示其自己的JToolTip，JToolTip在某种程度上是一个被动对象，其使用也有许多可以配置的方面。然而，这些配置是由管理工具提示的类来负责的，而不是由JToolTip本身负责。管理工具提示使用的类被称之为ToolTipManager类。由于使用了单例设计模式，ToolTipManager类并不存在构造函数。相反，我们可以通过ToolTipManager的静态sharedInstance()方法获得当前的管理器。
+
+ToolTipManager属性
+~~~~~~~~~~~~~~~~~~
+
+一旦我们获得了ToolTipManager的共享实例，我们就可以定制工具提示文本何时以及是否显示。如表4-7所示，有五个可配置的属性。
+
++---------------------------+------------+----------+
+| 属性名                    | 数据类型   | 访问性   |
++---------------------------+------------+----------+
+| dimissDelay               | int        | 读写     |
++---------------------------+------------+----------+
+| enabled                   | boolean    | 读写     |
++---------------------------+------------+----------+
+| initialDelay              | int        | 读写     |
++---------------------------+------------+----------+
+| lightWeightPopupEnabled   | boolean    | 读写     |
++---------------------------+------------+----------+
+| reshowDelay               | int        | 只读     |
++---------------------------+------------+----------+
+
+Table: ToolTipManager属性
+
+初始时，工具提示是允许的，我们可通过ToolTipManager.shareInstance().setEnabled(false)方法来禁止。这使得我们可以将工具提示与组件相关联，并允许终端在需要允许或禁止工具提示。
+
+有三个面向时间的属性：initialDelay,
+dimissDelay与reshowDelay。他们均以毫秒计数。initialDelay属性是合适的工具提示出现之前用户必须将鼠标停留在组件内部的毫秒数。dismissDelay指定当鼠标停止运动时文本显示的时间长度；如果用户移动鼠标，也会使得文本消失。reshowDelay决定用户重新进入组件并且使得弹出文本显示时在组件外部必须停留的时间。
+
+lightWeightPopupEnabled属性用来决定存储工具提示文本的弹出窗口类型。如果这个属性为true，则弹出文本适应顶级窗口的边界之内，文本出现在一个Swing
+JPanel内部。如果这个属性为false，则弹出文本适应顶级窗口的边界之内，文本出现在一个AWT
+Panel之内。如果文本的部分内容不能出现在顶级窗口之内，无论属性设置为何值，弹出文本将会出现在Window内。
+
+尽管不是ToolTipManager的属性，ToolTipManager的两个方法值得一提：
+
+.. code:: java
+
+    public void registerComponent(JComponent component)
+    public void unregisterComponent(JComponent component)
+
+当我们调用JComponent的setToolTipText()方法时，这会使得组件将其自身注册到ToolTipManager。然而，有时我们需要直接注册一个组件。当组件部分的显示是由其他渲染器完成时必须如此。例如，对于JTree而言，TreeCellRenderer显示树的所有节点。当渲染器显示工具提示时，我们注册JTree并通知渲染器显示什么文本。
+
+.. code:: java
+
+    JTree tree = new JTree(...);
+    ToolTipManager.sharedInstance().registerComponent(tree);
+    TreeCellRenderer renderer = new ATreeCellRenderer(...);
+    tree.setCellRenderer(renderer);
+    ...
+    public class ATreeCellRenderer implements TreeCellRenderer {
+    ...
+      public Component getTreeCellRendererComponent(JTree tree, Object value,
+        boolean selected, boolean expanded, boolean leaf, int row, boolean hasFocus) { 
+      ...
+        renderer.setToolTipText("Some Tip");
+        return renderer;
+      }
+    }
+
+JLabel类
+--------
+
+我们要近距离查看的第一个真正的Swing组件就是最简单的JLabel。JLabel用作AWT
+Label的替换组件，但是所能做的事情更多。AWT
+Label仅限制为单行文本，JLabel可以是文本，图片，或者是两者都有。文本可以是单行文本也可以是HTML文本。另外，JLabel可以支持不同的允许与禁止的图片。图4-6显示了一些示例JLabel组件。
+
+.. figure:: images/Swing_4_6.png
+   :alt: Swing_4_6.png
+
+   Swing\_4\_6.png
+创建JLabel
+~~~~~~~~~~
+
+JLabel有6个构造函数：
+
+.. code:: java
+
+    public JLabel()
+    JLabel label = new JLabel();
+
+    public JLabel(Icon image)
+    Icon icon = new ImageIcon("dog.jpg");
+    JLabel label = new JLabel(icon);
+
+    public JLabel(Icon image, int horizontalAlignment)
+    Icon icon = new ImageIcon("dog.jpg");
+    JLabel label = new JLabel(icon, JLabel.RIGHT);
+
+    public JLabel(String text)
+    JLabel label = new JLabel("Dog");
+
+    public JLabel(String text, int horizontalAlignment)
+    JLabel label = new JLabel("Dog", JLabel.RIGHT);
+
+    public JLabel(String text, Icon icon, int horizontalAlignment)
+    Icon icon = new ImageIcon("dog.jpg");
+    JLabel label = new JLabel("Dog", icon, JLabel.RIGHT);
+
+通过JLabel的构造函数，我们可以自定义JLabel的三个属性：text,
+icon或是horizontalAlignment。默认情况下，text与icon属性是空的，而初始的horizontalAlignment属性设置依赖于构造函数的参数。这些设置可以是JLabel.LEFT，JLabel.CENTER或是JLabel.RIGHT。在大多数情况下，没有指定horizontalAlignment会导致左对齐标签。然而，如果仅指定了初始图标，则默认的对齐方式为居中对齐。
+
+JLabel属性
+~~~~~~~~~~
+
+表4-8显示了JLabel的14个属性。这些属性允许我们定制JLabel的内容，位置以及行为。
+
++--------------------------+---------------------+------------+
+| 属性名                   | 数据类型            | 访问性     |
++--------------------------+---------------------+------------+
+| accessibleContext        | AccessibleContext   | 只读       |
++--------------------------+---------------------+------------+
+| disabledIcon             | Icon                | 读写绑定   |
++--------------------------+---------------------+------------+
+| displayedMnemonic        | char                | 读写绑定   |
++--------------------------+---------------------+------------+
+| displaydMnemonicIndex    | int                 | 读写绑定   |
++--------------------------+---------------------+------------+
+| horizontalAlignment      | int                 | 读写绑定   |
++--------------------------+---------------------+------------+
+| horizontalTextPosition   | int                 | 读写绑定   |
++--------------------------+---------------------+------------+
+| icon                     | Icon                | 读写绑定   |
++--------------------------+---------------------+------------+
+| iconTextGap              | int                 | 读写绑定   |
++--------------------------+---------------------+------------+
+| labelFor                 | Component           | 读写绑定   |
++--------------------------+---------------------+------------+
+| text                     | String              | 读写绑定   |
++--------------------------+---------------------+------------+
+| UI                       | LabelUI             | 读写       |
++--------------------------+---------------------+------------+
+| UIClassID                | String              | 只读       |
++--------------------------+---------------------+------------+
+| verticalAlignment        | int                 | 读写绑定   |
++--------------------------+---------------------+------------+
+| verticalTextPosition     | int                 | 读写绑定   |
++--------------------------+---------------------+------------+
+
+Table: JLabel属性
+
+JLabel的内容是文本以及相关联的图片。在一个JLabel内显示图片将会在本章稍后的“接口Icon”一节中进行讨论。然而，我们可以依据于JLabel是允许或是禁止的而显示不同的图标。在默认情况下，如果允许的图标来自一个Image对象（ImageIcon，在本章稍后进行讨论），则允许的图标是灰度平衡的。如果允许图标并不是来自于一个Image，当Jlabel被禁止时则没有图标，除非我们手动指定。
+
+JLabel内容的位置是由四个不同的属性来描述的：horizontalAlignment,
+horizontalTextPosition,
+verticalAlignment以及verticalTextPosition。horizontalAlignment与verticalAlignment属性描述了JLabel的内容在其所在的窗口的位置。
+
+水平位置可以是JLabel的LEFT, RIGHT或是CENTER常量。垂直位置可以在TOP,
+BOTTOM或是CENTER。图4-7显示了各种对齐设置，通过图标显示对齐。
+
+当同时指定了文本与图标时，文本位置属性反应了文本相对于图标的位置。这些属性可以设置为与对齐属性相同的常量。图4-8显示了各种文本属性设置，通过图标反应这些设置。
+
+.. figure:: images/Swing_4_7.png
+   :alt: Swing_4_7.png
+
+   Swing\_4\_7.png
+.. figure:: images/Swing_4_8.png
+   :alt: Swing_4_8.png
+
+   Swing\_4\_8.png
+JLabel事件处理
+~~~~~~~~~~~~~~
+
+JLabel并没有特定的事件处理功能。除了通过JComponent继承的事件处理功能以外，JLabel最接近于事件处理的就是displaydMnemonic,
+displayedMnemonicIndex与labelFor属性的组合使用。
+
+当设置了displayedMnemonic与labelFor属性时，通过配合平台相关的热键按下指定的键时，会使得输入焦点移动到与labelFor属性相关联的组件上。当一个组件并没有自己的方式来显示记忆键设置时，例如所有的输入文本组件，这种用法就十分用。下面是一个演示示例，其运行结果如图4-9所示：
+
+.. code:: java
+
+    JLabel label = new JLabel("Username");
+    JTextField textField = new JTextField();
+    label.setDisplayedMnemonic(KeyEvent.VK_U);
+    label.setLabelFor(textField);
+
+.. figure:: images/Swing_4_9.png
+   :alt: Swing_4_9.png
+
+   Swing\_4\_9.png
+displayedMnemonicIndex属性可以使得所强调的记忆键并不一定是标签文本中的第一个记忆键实例。我们所指定的索引表示文本中的位置，而不是记忆键的实例。要强调Username中的第二个e，我们需要指定索引7：label.setDisplayedMnemonicIndex(7)。
+
+自定义JLabel观感
+~~~~~~~~~~~~~~~~
+
+每一个安装的Swing观感都会提供一个同的JLabel外观以及默认的UIResource值设置集合。尽管外观会依据当前的观感而不同，但是在预安装的观感类型集合中区别很小。表4-9显示了JLabel的UIResource相关的属性集合。对于JLabel组件有八个不同的属性。
+
++---------------------------+-------------+
+| 属性字符串                | 对象类型    |
++---------------------------+-------------+
+| Label.actionMap           | ActionMap   |
++---------------------------+-------------+
+| Label.background          | Color       |
++---------------------------+-------------+
+| Label.border              | Border      |
++---------------------------+-------------+
+| Label.disableForeground   | Color       |
++---------------------------+-------------+
+| Label.disableShadow       | Color       |
++---------------------------+-------------+
+| Label.font                | Font        |
++---------------------------+-------------+
+| Lable.foreground          | Color       |
++---------------------------+-------------+
+| LabelUI                   | String      |
++---------------------------+-------------+
+
+Table: JLabel UIResource元素
+
+Icon接口
+--------
+
+Icon接口用来将图标与各种组件相关联。一个图标可以是简单的绘画或者是使用ImageIcon类由磁盘所载入的GIF图像。这个接口包含描述尺寸的两个属性以及一个用来绘制图标的方法。
+
+.. code:: java
+
+    public interface Icon {
+      // Properties 
+      public int getIconHeight();
+      public int getIconWidth();
+      // Other methods
+      public void paintIcon(Component c, Graphics g, int x, int y);
+    }
+
+创建图标
+~~~~~~~~
+
+图标的创建非常简单，只需要简单的实现接口。我们所需要做的就是指定图标的尺寸以及要绘制的内容。列表4-3演示了一个Icon的实现。这个图标是一个菱形图标，其尺寸，颜色以及填充状态都是可以配置的。
+
+.. code:: java
+
+    package swingstudy.ch04;
+
+    import java.awt.Color;
+    import java.awt.Component;
+    import java.awt.Graphics;
+    import java.awt.Polygon;
+
+    import javax.swing.Icon;
+
+    public class DiamondIcon implements Icon {
+
+        private Color color;
+        private boolean selected;
+        private int width;
+        private int height;
+        private Polygon polygon;
+        private static final int DEFAULT_WIDTH = 10;
+        private static final int DEFAULT_HEIGHT = 10;
+        
+        public DiamondIcon(Color color) {
+            this(color, true, DEFAULT_WIDTH, DEFAULT_HEIGHT);
+        }
+        
+        public DiamondIcon(Color color, boolean selected) {
+            this(color, selected, DEFAULT_WIDTH, DEFAULT_HEIGHT);
+        }
+        
+        public DiamondIcon(Color color, boolean selected, int width, int height) {
+            this.color = color;
+            this.selected = selected;
+            this.width = width;
+            this.height = height;
+            initPolygon();
+        }
+        
+        private void initPolygon() {
+            polygon = new Polygon();
+            int halfWidth = width/2;
+            int halfHeight = height/2;
+            polygon.addPoint(0, halfHeight);
+            polygon.addPoint(halfWidth, 0);
+            polygon.addPoint(width, halfHeight);
+            polygon.addPoint(halfWidth, height);
+        }
+        @Override
+        public int getIconHeight() {
+            // TODO Auto-generated method stub
+            return height;
+        }
+
+        @Override
+        public int getIconWidth() {
+            // TODO Auto-generated method stub
+            return width;
+        }
+
+        @Override
+        public void paintIcon(Component c, Graphics g, int x, int y) {
+            // TODO Auto-generated method stub
+            g.setColor(color);
+            g.translate(x, y);
+            if(selected) {
+                g.fillPolygon(polygon);
+            }
+            else {
+                g.drawPolygon(polygon);
+            }
+            g.translate(-x, -y);
+        }
+
+    }
+
+使用图标
+~~~~~~~~
+
+一旦我们有了Icon的实现，使用Icon就如何查看一个组件具有相应的属性一样简单。例如，下面的代码创建了一个具有图标的标签：
+
+ Icon icon = new DiamondIcon(Color.RED, true, 25, 25); JLabel label =
+new JLabel(icon);
+
+.. raw:: html
+
+   </syntaxhighlight>
+
+图4-10显这个标签的运行结果。
+
+.. figure:: images/Swing_4_10.png
+   :alt: Swing_4_10.png
+
+   Swing\_4\_10.png
+ImageIcon类
+~~~~~~~~~~~
+
+ImageIcon类提供了由AWT
+Image对象创建图标的Icon接口实现，Image对象可以来自内存（byte[]），来自磁盘（文件名）或是来自网络（URL）。与普通的Image对象不同，ImageIcon的载入是当ImageIcon被创建时立即启动的，尽管当使用时他也许还没有完全载入。另外，与Image对象不同，ImageIcon对象是可序列化的，所以他们可以很容易为JavaBean组件所使用。
+
+**创建ImageIcon**
+
+有九个构造函数可以用于创建ImageIcon：
+
+.. code:: java
+
+    public ImageIcon()
+    Icon icon = new ImageIcon();
+    icon.setImage(anImage);
+
+    public ImageIcon(Image image)
+    Icon icon = new ImageIcon(anImage);
+
+    public ImageIcon(String filename)
+    Icon icon = new ImageIcon(filename);
+
+    public ImageIcon(URL location)
+    Icon icon = new ImageIcon(url);
+
+    public ImageIcon(byte imageData[])
+    Icon icon = new ImageIcon(aByteArray);
+
+    public ImageIcon(Image image, String description)
+    Icon icon = new ImageIcon(anImage, "Duke");
+
+    public ImageIcon(String filename, String description)
+    Icon icon = new ImageIcon(filename, filename);public ImageIcon(URL location, String description)
+    Icon icon = new ImageIcon(url, location.getFile());
+
+    public ImageIcon(URL location, String description)
+    Icon icon = new ImageIcon(url, location.getFile());
+
+    public ImageIcon(byte imageData[], String description)
+    Icon icon = new ImageIcon(aByteArray, "Duke");
+
+无参数的构造函数创建一个未初始化的版本。其余的八个构造函数提供了由Image，byte数组，文件名String或是URL，带有或是不带有描述来创建ImageIcon的功能。
+
+**使用ImageIcon**
+
+使用ImageIcon就如同使用Icon一样简单：仅需要创建ImageIcon并将其组件相关联。
+
+.. code:: java
+
+    Icon icon = new ImageIcon("Warn.gif");
+    JLabel label3 = new JLabel("Warning", icon, JLabel.CENTER)
+
+**ImageIcon属性**
+
+表4-10显示了ImageIcon的六个属性。ImageIcon的高与宽是实际的Image对象的高与宽。imageLoadStatus属性表示由隐藏MediaTracker载入ImageIcon的结果，或者是MediaTracker.ABORTED，MediaTracker.ERRORED，MediaTracker.COMPLETE。
+
++-------------------+-----------------+----------+
+| 属性名            | 数据类型        | 访问性   |
++-------------------+-----------------+----------+
+| description       | String          | 读写     |
++-------------------+-----------------+----------+
+| iconHeight        | int             | 只读     |
++-------------------+-----------------+----------+
+| iconWidth         | int             | 只读     |
++-------------------+-----------------+----------+
+| image             | Image           | 读写     |
++-------------------+-----------------+----------+
+| imageLoadStatus   | int             | 只读     |
++-------------------+-----------------+----------+
+| imageObserver     | ImageObserver   | 读写     |
++-------------------+-----------------+----------+
+
+Table: ImageIcon属性
+
+有时使用ImageIcon来载入一个Image，然后由Image对象获取Icon是十分有用的。
+
+.. code:: java
+
+    ImageIcon imageIcon = new ImageIcon(...);
+    Image image = imageIcon.getImage();
+
+使用ImageIcon对象时有一个主要问题：使用图标的图像与类文件都是由JAR文件载入时，他们不能工作，除非我们为JAR中的文件指定了完全的URL。我们不能仅仅指定文件名为一个String并使得ImageIcon查找这个文件。我们必须首先手动获取图像数据，然后将这些数据传递给ImageIcon构造函数。
+
+为了解决在JAR文件外部载入图像，列表4-4显示了一个ImageLoader类，这个类提供了一个public
+static Image getImage(Class relativeClass, String
+filename)方法。我们同时指定图像文件相对的基类以及图像文件的名字。然后我们只需要将返回的Image对象传递给ImageIcon的构造函数。
+
+.. code:: java
+
+
+    package swingstudy.ch04;
+
+    import java.awt.Image;
+    import java.awt.Toolkit;
+    import java.io.BufferedInputStream;
+    import java.io.ByteArrayOutputStream;
+    import java.io.IOException;
+    import java.io.InputStream;
+
+    public class ImageLoader {
+
+        private ImageLoader() {
+            
+        }
+        
+        public static Image getImage(Class relativeClass, String filename) {
+            Image returnValue = null;
+            InputStream is = relativeClass.getResourceAsStream(filename);
+            if(is != null) {
+                BufferedInputStream bis = new BufferedInputStream(is);
+                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                try {
+                    int ch;
+                    while ((ch = bis.read()) != -1) {
+                        baos.write(ch);
+                    }
+                    returnValue = Toolkit.getDefaultToolkit().createImage(baos.toByteArray());
+                }
+                catch(IOException e) {
+                    System.err.println("Error loading: "+filename);
+                }
+            }
+            return returnValue;
+        }
+    }
+
+下面的代码显示如何使用这个帮助类：
+
+.. code:: java
+
+    Image warnImage = ImageLoader.getImage(LabelJarSample.class, "Warn.gif");
+    Icon warnIcon = new ImageIcon(warnImage);
+    JLabel label2 = new JLabel(warnIcon);
+
+GrayFilter类
+~~~~~~~~~~~~
+
+另一个值得一提的类就是GrayFilter类。许多Swing组件依赖这个类来创建一个禁止的Image版本用作Icon。组件自动使用这个类，但是有时我们需要使用AWT的ImageFilter类实现灰度平衡。我们可以通过调用类的一个方法将一个Image由普通形式转换为灰度形式：public
+static Image crateDisabledImage(Image image)。
+
+.. code:: java
+
+    Image normalImage = ...
+    Image grayImage = GrayFilter.createDisabledImage(normalImage)
+
+现在我们可以使用一个灰色的图像作为组件的Icon：
+
+.. code:: java
+
+    Icon warningIcon = new ImageIcon(grayImage);
+    JLabel warningLabel = new JLabel(warningIcon);
+	
+AbstractionButton类
+-------------------
+
+如图4-1所示，AbstractButton类是作用在幕后作为所用
+的Swing按钮组件的一个重要Swing类。在本章稍后的JButton类中所描述的JButton是最简单的子类。其余的子类将会在后续的章节中进行描述。
+
+所有的AbstractButton子类使用ButtonModel接口来存储数据模型。DefaultButtonModel类是所使用的默认实现。另外，我们可以将任意的AbstractButton对象组合为一个ButtonGroup。尽管这种组合对于JRadioButton与JRadioButtonMenuItem组件最为自然，然而任意的AbstractButton子类都会起作用。
+
+AbstractButton属性
+~~~~~~~~~~~~~~~~~~
+
+表4-11列出了AbstractButton子类所共享的32个属性。这些属性可以使得我们自定义所有按钮的外观。
+
++--------------------------+--------------------+------------+
+| 属性名                   | 数据类型           | 访问性     |
++--------------------------+--------------------+------------+
+| action                   | Action             | 读写绑定   |
++--------------------------+--------------------+------------+
+| actionCommand            | String             | 读写       |
++--------------------------+--------------------+------------+
+| actionListeners          | ActionListener[]   | 只读       |
++--------------------------+--------------------+------------+
+| borderPainted            | boolean            | 读写绑定   |
++--------------------------+--------------------+------------+
+| changeListeners          | ChangeListener[]   | 只读       |
++--------------------------+--------------------+------------+
+| contentAreaFilled        | boolean            | 读写绑定   |
++--------------------------+--------------------+------------+
+| disabledIcon             | Icon               | 读写绑定   |
++--------------------------+--------------------+------------+
+| disabledSelectedIcon     | Icon               | 读写绑定   |
++--------------------------+--------------------+------------+
+| disabledMnemonicIndex    | int                | 读写绑定   |
++--------------------------+--------------------+------------+
+| enabled                  | boolean            | 只写       |
++--------------------------+--------------------+------------+
+| focusPainted             | boolean            | 读写绑定   |
++--------------------------+--------------------+------------+
+| horizontalAlignment      | int                | 读写绑定   |
++--------------------------+--------------------+------------+
+| horizontalTextPosition   | int                | 读写绑定   |
++--------------------------+--------------------+------------+
+| icon                     | Icon               | 读写绑定   |
++--------------------------+--------------------+------------+
+| iconTextGap              | int                | 读写绑定   |
++--------------------------+--------------------+------------+
+| itemListeners            | ItemListener[]     | 只读       |
++--------------------------+--------------------+------------+
+| layout                   | LayoutManager      | 只写       |
++--------------------------+--------------------+------------+
+| margin                   | Insets             | 读写绑定   |
++--------------------------+--------------------+------------+
+| mnemonic                 | char               | 读写绑定   |
++--------------------------+--------------------+------------+
+| mnemonic                 | int                | 只写       |
++--------------------------+--------------------+------------+
+| model                    | ButtonModel        | 读写绑定   |
++--------------------------+--------------------+------------+
+| multiClickThreshhold     | long               | 读写       |
++--------------------------+--------------------+------------+
+| pressedIcon              | Icon               | 读写绑定   |
++--------------------------+--------------------+------------+
+| rolloverEnabled          | boolean            | 读写绑定   |
++--------------------------+--------------------+------------+
+| rolloverIcon             | Icon               | 读写绑定   |
++--------------------------+--------------------+------------+
+| rolloverSelectedIcon     | Icon               | 读写绑定   |
++--------------------------+--------------------+------------+
+| selected                 | boolean            | 读写       |
++--------------------------+--------------------+------------+
+| selectedIcon             | Icon               | 读写绑定   |
++--------------------------+--------------------+------------+
+| selectedObjects          | Object[]           | 只读       |
++--------------------------+--------------------+------------+
+| text                     | String             | 读写绑定   |
++--------------------------+--------------------+------------+
+| UI                       | ButtonUI           | 读写       |
++--------------------------+--------------------+------------+
+| verticalAlignment        | int                | 读写绑定   |
++--------------------------+--------------------+------------+
+| verticalTextPosition     | int                | 读写绑定   |
++--------------------------+--------------------+------------+
+
+Table: AbstractButton属性
+
+在这里值得一提的就是multiClickThreshhold。这个属性表示以毫秒计数的时间。如果一个按钮在这段时间间隔被鼠标多次选中，并不会产生额外的动作事件。默认情况下这个属性值为0，意味着每一次点击都会产生一个事件。为了避免在重要的对话框中偶然重复提交动作的发生，应将这个属性值设置0以上的合理值。
+
+**ButtonModel/Class DefaultButtonModel接口**
+
+ButtonModel接口被用来描述AbstractButton组件的当前状态。另外，他描述了为所有不同的AbstractButton子类所支持的事件监听器对象的集合。其定义如下：
+
+.. code:: java
+
+    public interface ButtonModel extends ItemSelectable {
+      // Properties
+      public String getActionCommand();
+      public void setActionCommand(String newValue);
+      public boolean isArmed();
+      public void setArmed(boolean newValue);
+      public boolean isEnabled();
+      public void setEnabled(boolean newValue);
+      public void setGroup(ButtonGroup newValue);
+      public int getMnemonic();
+      public void setMnemonic(int newValue);
+      public boolean isPressed();
+      public void setPressed(boolean newValue);
+      public boolean isRollover();
+      public void setRollover(boolean newValue);
+      public boolean isSelected();
+      public void setSelected(boolean newValue);
+      // Listeners
+      public void addActionListener(ActionListener listener);
+      public void removeActionListener(ActionListener listener);
+      public void addChangeListener(ChangeListener listener);
+      public void removeChangeListener(ChangeListener listener);
+      public void addItemListener(ItemListener listener);
+      public void removeItemListener(ItemListener listener);
+    }
+
+我们将要使用的特定的ButtonModel实现是DefaultButtonModel类，除非我们定义了自己的类。DefaultButtonModel类定义了不同的事件监听器的所有事件注册方法并且管理按钮状态并组织在ButtonGroup中。表4-12显示其9个属性。除了selectedObjects以外，他们均来自ButtonGroup接口，selectedObjects属性是DefaultButtonModel类的新成员，但是对于JToggleButton十分有用。在第5章中将会讨论ToggleButtonModel。
+
++-------------------+---------------+----------+
+| 属性名            | 数据类型      | 访问性   |
++-------------------+---------------+----------+
+| actionCommand     | String        | 读写     |
++-------------------+---------------+----------+
+| armed             | boolean       | 读写     |
++-------------------+---------------+----------+
+| enabled           | boolean       | 读写     |
++-------------------+---------------+----------+
+| group             | ButtonGroup   | 读写     |
++-------------------+---------------+----------+
+| mnemonic          | int           | 读写     |
++-------------------+---------------+----------+
+| pressed           | boolean       | 读写     |
++-------------------+---------------+----------+
+| rollover          | boolean       | 读写     |
++-------------------+---------------+----------+
+| selected          | boolean       | 读写     |
++-------------------+---------------+----------+
+| selectedObjects   | Object[]      | 只读     |
++-------------------+---------------+----------+
+
+Table: DefaultButtonModel属性
+
+大多数情况下，我们并不直接访问ButtonModel。相反，使用ButtonModel的组件封装他们属性调用来更新模型属性。
+
+**理解AbstractButton热键**
+
+热键是一种特殊的键盘快捷键，当按下时会使用一个特定的动作发生。在前的JLable类一节中讨论JLablel时，按下所显示的热键会使得相关联的组件获得输入焦点。在AbstractButton的情况下，按下按键的热键会使得按钮被选中。
+
+热键的实际点击需要一个观感特定的热键的点击（这个键通常是Alt键）。所以，如果一个按钮的热键是B键，我们需要按下Alt-B来激活具有B热键的按钮。当按钮被激活时，所注册的监听器会被通知相应的状态变化。例如，对于JButton，所有的ActionListener对象都会被通知。
+
+如果热键是按钮文本标签的一部分，我们会看到这个字符以下划线表示。这会由于当前的观感不同而有不同的显示。另外，如果热键并不是文本标签的一部分，对于特定的热键的选中并不有可见的指示符，除非观感在工具提示文本中进行显示。
+
+图4-11显示了两个按钮：一个具有W热键，而另一个具有H热键。左边的按钮在其内容具有W的标签，所以第一个W会以下划线显示。第二个组件并没有由按钮上的这种行为获益，但是在Ocean观感中，如果工具提示文本进行了设置则会时行标识。
+
+.. figure:: images/Swing_4_11.png
+   :alt: Swing_4_11.png
+
+   Swing\_4\_11.png
+要为抽象按钮赋予一个热键，我们可以使用任意一个setMnemonic()方法。其中一个接受char参数，而另一个则接受int参数。就个人而言，我比较喜欢int版本，其参数值是KeyEvent类中众多VK\_\*常量的一个。我们也可以通过displayedMnemonicIndex属性来指定热键。
+
+.. code:: java
+
+    AbstractButton button1 = new JButton("Warning");
+    button1.setMnemonic(KeyEvent.VK_W);
+    content.add(button1);
+
+**理解AbstractButton图标**
+
+AbstractButton具有七个特定的图标属性。默认的图标是icon属性。这个属性用于所有的情况，除非指定了一个不同的图标或是组件提供了默认的行为。selectedIcon属性是按钮被选中时所使用的图标。pressedIcon是按钮被按下时所用的图标。使用这两种图标中的哪一种依赖于组件，因为JButton被按下但是并没有被选中，而JCheckBox被选中却没有被按下。
+
+当按钮通过setEnabled(false)被禁止时要使用disabledIcon与disabledSelectedIcon属性。默认情况下，如果图标是一个ImageIcon，将会使用图标的一个灰度平衡版本。
+
+其他的两个属性，rolloverIcon与rolloverSelectedIcon允许我们当鼠标划过按钮时（rolloverEnabled为true）显示不同的图标。
+
+**理解内部的AbstractButton位置**
+
+horizontalAlignment, horizontalTextPosition,
+verticalAlignment与verticalTextPostion属性与JLabel类共享相同的设置与行为。表4-13列出这些属性。
+
++--------------------------+-----------------------+
+| 位置属性                 | 可用调用              |
++--------------------------+-----------------------+
+| horizontalAlignment      | LEFT, CENTER, RIGHT   |
++--------------------------+-----------------------+
+| horizontalTextPosition   | LEFT, CENTER, RIGHT   |
++--------------------------+-----------------------+
+| verticalAlignment        | TOP, CENTER, BOTTOM   |
++--------------------------+-----------------------+
+| verticalTextPosition     | TOP, CENTER, BOTTOM   |
++--------------------------+-----------------------+
+
+Table: AbstractButton位置常量
+
+处理AbstractButton事件
+~~~~~~~~~~~~~~~~~~~~~~
+
+尽管我们并不会直接创建一个AbstractButton实例，但是我们会创建其子类。所有子类共享一个共同的事件处理功能集合。我们可以向抽象按钮注册PropertyChangeListener，ActionListener，ItemListener以及ChangeListener对象。在这里将会讨论PropertyChangeListener对象，其余的对象将会在后续的章节中进行讨论。
+
+与JComponent类类似，AbstractButton组件支持当类的实例的绑定属性变化时支持PropertyChangeListener对象注册的检测。与JComponent类不同的是，AbstractButton组件提供了下列的类常量集合来表示不同的属性变化：
+
+•BORDER\_PAINTED\_CHANGED\_PROPERTY
+•CONTENT\_AREA\_FILLED\_CHANGED\_PROPERTY
+•DISABLED\_ICON\_CHANGED\_PROPERTY
+•DISABLED\_SELECTED\_ICON\_CHANGED\_PROPERTY
+•FOCUS\_PAINTED\_CHANGED\_PROPERTY
+•HORIZONTAL\_ALIGNMENT\_CHANGED\_PROPERTY
+•HORIZONTAL\_TEXT\_POSITION\_CHANGED\_PROPERTY •ICON\_CHANGED\_PROPERTY
+•MARGIN\_CHANGED\_PROPERTY •MNEMONIC\_CHANGED\_PROPERTY
+•MODEL\_CHANGED\_PROPERTY •PRESSED\_ICON\_CHANGED\_PROPERTY
+•ROLLOVER\_ENABLED\_CHANGED\_PROPERTY •ROLLOVER\_ICON\_CHANGED\_PROPERTY
+•ROLLOVER\_SELECTED\_ICON\_CHANGED\_PROPERTY
+•SELECTED\_ICON\_CHANGED\_PROPERTY •TEXT\_CHANGED\_PROPERTY
+•VERTICAL\_ALIGNMENT\_CHANGED\_PROPERTY
+•VERTICAL\_TEXT\_POSITION\_CHANGED\_PROPERTY
+
+所以，我们可以创建一个使用这些常量的PropertyChangeListener，而不需要硬编码特定的文本字符串，如列表4-5所示。
+
+.. code:: java
+
+    import javax.swing.*;
+    import java.beans.*;
+    public class AbstractButtonPropertyChangeListener
+        implements PropertyChangeListener {
+      public void propertyChange(PropertyChangeEvent e) {
+        String propertyName = e.getPropertyName();
+        if (e.getPropertyName().equals(AbstractButton.TEXT_CHANGED_PROPERTY)) {
+          String newText = (String) e.getNewValue();
+          String oldText = (String) e.getOldValue();
+          System.out.println(oldText + " changed to " + newText);
+        }  else if (e.getPropertyName().equals(AbstractButton.ICON_CHANGED_PROPERTY)) {
+          Icon icon = (Icon) e.getNewValue();
+          if (icon instanceof ImageIcon) {
+            System.out.println("New icon is an image");
+          }
+        }
+      }
+    }
+
+JButton类
+---------
+
+JButton组件是可以被选中的最基本的AbstractButton组件。他支持文本，图像以及基于HTML的标签，如图4-12所示。
+
+.. figure:: images/Swing_4_12.png
+   :alt: Swing_4_12.png
+
+   Swing\_4\_12.png
+创建JButton
+~~~~~~~~~~~
+
+JButton类具有5个构造函数：
+
+.. code:: java
+
+    public JButton()
+    JButton button = new JButton();
+
+    public JButton(Icon image)
+    Icon icon = new ImageIcon("dog.jpg");
+    JButton button = new JButton(icon);
+
+    public JButton(String text)
+    JButton button = new JButton("Dog");
+
+    public JButton(String text, Icon icon)
+    Icon icon = new ImageIcon("dog.jpg");
+    JButton button = new JButton("Dog", icon);
+
+    public JButton(Action action)
+    Action action = ...;
+    JButton button = new JButton(action);
+
+我们可以创建带有或是不带有文本标签或图标的按钮。图标表示AbstractButton中的默认或是selected图标属性。
+
+JButton属性
+~~~~~~~~~~~
+
+JButton组件并没有为AbstactButton添加更多的内容。如表4-14所示，JButton的四个属性，唯一新添加的行为就是使用按钮成为默认。
+
++----------------------+----------------------+------------+
+| 属性名               | 数据类型             | 访问性     |
++----------------------+----------------------+------------+
+| accessiableContext   | AccessiableContext   | 只读       |
++----------------------+----------------------+------------+
+| defaultButton        | boolean              | 只读       |
++----------------------+----------------------+------------+
+| defaultCapable       | boolean              | 读写绑定   |
++----------------------+----------------------+------------+
+| UIClassID            | String               | 只读       |
++----------------------+----------------------+------------+
+
+Table: JButton属性
+
+默认按钮使用与其他按钮不同的深色边框进行绘制。当一个按钮是默认按钮时，当在顶级窗口内按下回车键时会使得按钮被选中。这只有具有输入焦点的组件，例如文本组件或是其他的按钮，并不捕捉回车键的情况下才会起作用。因为defaultButton属性是只读的，（也许我们会问）我们如何将一个按钮设置为默认按钮呢？正如在第8章所描述的，所有的顶级窗口都包含一个JRootPane。我们通过设置JRootPane的defaultButton属性来告诉JRootPane哪一个按钮是默认按钮。只有defaultCapable属性为true的按钮才可以被设置为默认按钮。图4-13显示了右上解的按钮设置为默认按钮。
+
+.. figure:: images/Swing_4_13.png
+   :alt: Swing_4_13.png
+
+   Swing\_4\_13.png
+列表4-6演示了设置默认按钮以及基本JButton的使用。如果默认按钮的外观并没有如图4-13所示的那样明显，在第9章中会介绍JOptionPane，此时外观的区别将会更为明显。图4-13使用了一个2X2的GirdLayout布局。构造函数的另外两个参数表示间距，从而有助于使用默认按钮的外观更为明显。
+
+.. code:: java
+
+
+    package swingstudy.ch04;
+
+    import java.awt.EventQueue;
+    import java.awt.GridLayout;
+    import java.awt.event.KeyEvent;
+
+    import javax.swing.JButton;
+    import javax.swing.JFrame;
+    import javax.swing.JRootPane;
+
+    public class DefaultButton {
+
+        /**
+         * @param args
+         */
+        public static void main(String[] args) {
+            // TODO Auto-generated method stub
+
+            Runnable runner = new Runnable() {
+                public void run() {
+                    JFrame frame = new JFrame("DefaultButton");
+                    frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+                    
+                    frame.setLayout(new GridLayout(2,2,10,10));
+                    
+                    JButton button1 = new JButton("Text Button");
+                    button1.setMnemonic(KeyEvent.VK_B);
+                    frame.add(button1);
+                    
+                    JButton button2 = new JButton("WarnIcon");
+                    frame.add(button2);
+                    
+                    JButton button3 = new JButton("Warn");
+                    frame.add(button3);
+                    
+                    String htmlButton = "<html><sup>HTML</sup><sub><em>Button</em></sub><br>"+
+                        "<font color\"#FF0080\"><u>Multi-line</u></font>";
+                    JButton button4 = new JButton(htmlButton);
+                    frame.add(button4);
+                    
+                    JRootPane rootPane = frame.getRootPane();
+                    rootPane.setDefaultButton(button2);
+                    
+                    frame.setSize(300, 200);
+                    frame.setVisible(true);
+                }
+            };
+            EventQueue.invokeLater(runner);
+        }
+
+    }
+
+处理JButton事件
+~~~~~~~~~~~~~~~
+
+JButton组件本身并没有特定的事件处理功能。他们都是由AbstractButton继承来的。尽管我们可以监听Change事件，Item事件以及PropertyChange事件，但是JButton最有用的监听器是ActionListener。
+
+当JButton组件被选中时，所有注册的ActionListener对象都会被通知到。当按钮被选中时，ActionEvent会被传递到每一个监听器。当在多个组件之间使用共享监听器时，这个事件会传递按钮的actionCommand属性从而助于标识哪一个按钮被选中。如果actionCommand属性并没有被显示设置，则会传递当前的text属性。actionCommand属性的显式应用有助于本地化。因为JButton的text属性是用户所看到的，作为按钮被选中事件监听器的我们不能依赖于本地化文本标签来确定哪一个按钮被选中。所以由于text属性可以被本地化，因而在英语为Yes的按钮而在西班牙语中则是
+Sí
+按钮。如果我们显式的设置actionCommand属性为Yes字符串，那么无论用户正在使用哪一种语言
+，actionCommand会保持Yes不变，而并不会使用本地化的text属性字符串。
+
+列表4-7在为列表4-6中的默认按钮添加了事件处理功能。注意，默认的行为可以正确工作：由任何组件按下回车键，按钮2（默认按钮）都会被激活。
+
+.. code:: java
+
+
+    package swingstudy.ch04;
+
+    import java.awt.EventQueue;
+    import java.awt.GridLayout;
+    import java.awt.event.ActionEvent;
+    import java.awt.event.ActionListener;
+    import java.awt.event.KeyEvent;
+
+    import javax.swing.JButton;
+    import javax.swing.JFrame;
+    import javax.swing.JRootPane;
+
+    public class ActionButtonSample {
+
+        /**
+         * @param args
+         */
+        public static void main(String[] args) {
+            // TODO Auto-generated method stub
+
+            Runnable runner = new Runnable() {
+                public void run() {
+                    JFrame frame = new JFrame("DefaultButton");
+                    frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+                    
+                    frame.setLayout(new GridLayout(2,2,10,10));
+                    
+                    ActionListener actionListener = new ActionListener() {
+                        public void actionPerformed(ActionEvent event) {
+                            String command = event.getActionCommand();
+                            System.out.println("Selected: "+command);
+                        }
+                    };
+                    
+                    JButton button1 = new JButton("Text Button");
+                    button1.setMnemonic(KeyEvent.VK_B);
+                    button1.setActionCommand("First");
+                    button1.addActionListener(actionListener);
+                    frame.add(button1);
+                    
+                    JButton button2 = new JButton("WarnIcon");
+                    button2.setActionCommand("Second");
+                    button2.addActionListener(actionListener);
+                    frame.add(button2);
+                    
+                    JButton button3 = new JButton("Warn");
+                    button3.setActionCommand("Third");
+                    button3.addActionListener(actionListener);
+                    frame.add(button3);
+                    
+                    String htmlButton = "<html><sup>HTML</sup><sub><em>Button</em></sub><br>"+
+                        "<font color\"#FF0080\"><u>Multi-line</u></font>";
+                    JButton button4 = new JButton(htmlButton);
+                    button4.setActionCommand("Fourth");
+                    button4.addActionListener(actionListener);
+                    frame.add(button4);
+                    
+                    JRootPane rootPane = frame.getRootPane();
+                    rootPane.setDefaultButton(button2);
+                    
+                    frame.setSize(300, 200);
+                    frame.setVisible(true);
+                }
+            };
+            EventQueue.invokeLater(runner);
+        }
+
+    }
+
+自定义JButton观感
+~~~~~~~~~~~~~~~~~
+
+每一个已安装的Swing观感都会提供一个不同的JButton外观与默认的UIResource值设置集合。图4-14显示了预安装的观感类型集合的JButton组件的外观：Motif，Windows以及Ocean。
+
+.. figure:: images/Swing_4_14.png
+   :alt: Swing_4_14.png
+
+   Swing\_4\_14.png
+表4-15显示了JButton的与UIResource相关的属性集合。对于JButton组件，共有34个不同的属性。
+
++------------------------------------------+-------------+
+| 属性字符串                               | 对象类型    |
++------------------------------------------+-------------+
+| Button.actionMap                         | ActionMap   |
++------------------------------------------+-------------+
+| Button.background                        | Color       |
++------------------------------------------+-------------+
+| Button.border                            | Border      |
++------------------------------------------+-------------+
+| Button.contentAreaFilled                 | Boolean     |
++------------------------------------------+-------------+
+| Button.darkShadow                        | Color       |
++------------------------------------------+-------------+
+| Button.dashedRectGapHeight               | Integer     |
++------------------------------------------+-------------+
+| Button.dashedRectGapWidth                | Integer     |
++------------------------------------------+-------------+
+| Button.dashedRectGapX                    | Integer     |
++------------------------------------------+-------------+
+| Button.dashedRectGapY                    | Integer     |
++------------------------------------------+-------------+
+| Button.defaultButtonFollowsFocus         | Boolean     |
++------------------------------------------+-------------+
+| Button.disabledForeground                | Color       |
++------------------------------------------+-------------+
+| Button.disabledGrayRang                  | Integer[]   |
++------------------------------------------+-------------+
+| Button.disabledShadow                    | Color       |
++------------------------------------------+-------------+
+| Button.disabledText                      | Color       |
++------------------------------------------+-------------+
+| Button.disabledToolBarBorderBackground   | Color       |
++------------------------------------------+-------------+
+| Button.focus                             | Color       |
++------------------------------------------+-------------+
+| Button.focusInputMap                     | InputMap    |
++------------------------------------------+-------------+
+| Button.font                              | Font        |
++------------------------------------------+-------------+
+| Button.foreground                        | Color       |
++------------------------------------------+-------------+
+| Button.gradient                          | List        |
++------------------------------------------+-------------+
+| Button.highlight                         | Color       |
++------------------------------------------+-------------+
+| Button.icon                              | Icon        |
++------------------------------------------+-------------+
+| Button.iconTextGap                       | Integer     |
++------------------------------------------+-------------+
+| Button.light                             | Color       |
++------------------------------------------+-------------+
+| Button.margin                            | Insets      |
++------------------------------------------+-------------+
+| Button.rollover                          | Boolean     |
++------------------------------------------+-------------+
+| Button.rolloverIconType                  | String      |
++------------------------------------------+-------------+
+| Button.select                            | Color       |
++------------------------------------------+-------------+
+| Button.shadow                            | Color       |
++------------------------------------------+-------------+
+| Button.showMnemonics                     | Boolean     |
++------------------------------------------+-------------+
+| Button.textIconGap                       | Integer     |
++------------------------------------------+-------------+
+| Button.textShiftOffset                   | Integer     |
++------------------------------------------+-------------+
+| Button.toolBarBorderBackground           | Color       |
++------------------------------------------+-------------+
+| ButtonUI                                 | String      |
++------------------------------------------+-------------+
+
+Table: JButton UIResource元素
+
+JPanel类
+--------
+
+最后一个基本的Swing组件是JPanel组件。JPanel组件可以作为一个通常目的的窗口对象，替换了AWT的Panel窗口，而当我们需要一个可绘制的Swing组件区域时，JPanel替换了Canvas组件。
+
+创建JPanel
+~~~~~~~~~~
+
+JPanel有四个构造函数：
+
+.. code:: java
+
+    public JPanel()
+    JPanel panel = new JPanel();
+
+    public JPanel(boolean isDoubleBuffered)
+    JPanel panel = new JPanel(false);
+
+    public JPanel(LayoutManager manager)
+    JPanel panel = new JPanel(new GridLayout(2,2));
+
+    public JPanel(LayoutManager manager, boolean isDoubleBuffered)
+    JPanel panel = new JPanel(new GridLayout(2,2), false);
+
+使用这些构造函数，我们可以修改FlowLayout中的默认布局管理器，或是通过执行true或false修改默认的双缓冲。
+
+使用JPanel
+~~~~~~~~~~
+
+我们可以将JPanel用我们通常目的的容器，或者是用作新组件的基类。对于通常目的容器，其过程很简单：创建面析，如果需要设置其布局管理器，并且使用add()方法添加组件。
+
+.. code:: java
+
+    JPanel panel = new JPanel();
+    JButton okButton = new JButton("OK");
+    panel.add(okButton);
+    JButton cancelButton = new JButton("Cancel");
+    panel.add(cancelButton);
+
+当我们需要创建一个新的组件时，派生JPanel并且重写public void
+paintComponent(Graphics
+g)方法。尽管我们可以直接派生JComponent，但派生JPanel修改更为合理。列表4-8演示了一个组件绘制适应组件尺寸的椭圆的简单组件，同时包含一个测试驱动。
+
+.. code:: java
+
+    package swingstudy.ch04;
+
+    import java.awt.Color;
+    import java.awt.EventQueue;
+    import java.awt.Graphics;
+    import java.awt.GridLayout;
+
+    import javax.swing.JFrame;
+    import javax.swing.JPanel;
+
+    public class OvalPanel extends JPanel {
+
+        Color color;
+        
+        public OvalPanel() {
+            this(Color.black);
+        }
+        
+        public OvalPanel(Color color) {
+            this.color = color;
+        }
+        
+        public void paintComponent(Graphics g) {
+            int width = getWidth();
+            int height = getHeight();
+            g.setColor(color);
+            g.drawOval(0, 0, width, height);
+        }
+        /**
+         * @param args
+         */
+        public static void main(String[] args) {
+            // TODO Auto-generated method stub
+
+            Runnable runner = new Runnable() {
+                public void run() {
+                    JFrame frame = new JFrame("Oval Sample");
+                    frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+                    
+                    frame.setLayout(new GridLayout(2,2));
+                    
+                    Color colors[] = {Color.RED, Color.BLUE, Color.GREEN, Color.YELLOW };
+                    
+                    for (int i=0;i<4;i++) {
+                        OvalPanel panel = new OvalPanel(colors[i]);
+                        frame.add(panel);
+                    }
+                    
+                    frame.setSize(300, 200);
+                    frame.setVisible(true);
+                }
+            };
+            
+            EventQueue.invokeLater(runner);
+        }
+
+    }
+
+图4-15显示了测试驱动的运行结果。
+
+.. figure:: images/Swing_4_15.png
+   :alt: Swing_4_15.png
+
+   Swing\_4\_15.png
+自定义JPanel观感
+~~~~~~~~~~~~~~~~
+
+表4-16显示了JPanelUIResource相关的属性集合。对于JPanel组件，有五个不同的属性。这些设置也许会影响到面板内的组件。
+
++--------------------+------------+
+| 属性字符串         | 对象类型   |
++--------------------+------------+
+| Panel.background   | Color      |
++--------------------+------------+
+| Panel.border       | Border     |
++--------------------+------------+
+| Panel.font         | Font       |
++--------------------+------------+
+| Panel.foreground   | Color      |
++--------------------+------------+
+| PanelUI            | String     |
++--------------------+------------+
+
+Table: JPanel UIResource元素
+
+小结
+----
+
+在本章中，我们探讨了所有Swing组件的基类：JComponent类。由讨论我们了解了所有组件的共同元素，例如工具提示，以及特定的组件，例如JLabel。同时我们了解了如何使用Icon接口以及ImageIcon类为组件添加图标，而GrayFilter图像过滤器用于禁止图标。
+
+我们同时了解了AbstractButton组件，他是所有Swing按钮对象的根对象。我们了解了其数据模型接口，ButtonModel，以及这个接口的默认实现，DefalutButtonModel。接着，我们了解了JButton类，他是最简单的AbstractButton实现。最后，我们了解了作为基本Swing容器对象的JPanel。
+
+在第5章中，我们将会深入一些复杂的AbstractButton实现：转换按钮。

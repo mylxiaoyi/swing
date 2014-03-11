@@ -1,0 +1,1505 @@
+高级文本功能
+============
+
+在第15章中，我们介绍了Swing文本组件的各种功能。在本章中，我们将会通过在了解在特殊情况下证明有用的高级功能来继续我们的探讨。
+
+Swing文本组件带有许多预定义的功能。例如，正如我们在第15章中看到的，尽管文本组件具有如cut()，copy()与paste()方法来使用系统剪切板，但是事实上我们并不使用这些方法。这是因为Swing文本组件带有他们自己预定义的Action对象集合，我们将会在本章中探讨这一集合。要使用Action对象，只需要将其关联到组件，例如一个按钮或是菜单项，然后简单的选中激发Action的组件。对于文本组件，Action对象是TextAction的一个实例，他具有知道哪一个组件最后具有输入焦点的额外特性。
+
+在本章中，我们同时还会了解如何创建在JTextPane中显示的格式化文本。如果我们希望显示多种颜色的文本文档或是不同字体风格，JTextPane组件提供了一系列的接口与类来描述与文档相关联的属性。AttributeSet接口在只读基础上为我们提供这些功能，而MutableAttributeSet接口为了设置属性扩展了AttributeSet。我们将会看到SimpleAttributeSet类如何通过提供Hashtable存储文本属性来实现这些接口，以及StyleConstants类如何有助于配置我们可以应用的多种文本属性。而且，我们将会了解如何在我们的文档中使用Tab，包括如何定义起始字符以及文本如何对齐。
+
+接下来，我们将会概略了解Swing所提供的不同的编辑器工具集，我们将会关注HTMLDocument的内部工作。当JEditorPane显示HTML时，HTMLEditorKit控制如何在HTMLDocument中载入与显示HTML内容。我们将会了解分析器如何载入内容以及如何在文档的不同标记间进行遍历。
+
+最后，我们将会了解如何利用JFormattedTextField组件的格式化输入选项以及验证合法性。我们将会了解如何提供格式化日期与数字，以及隐藏类似于电话与社会安全号码的输入。
+
+配合文本组件使用Action
+----------------------
+
+TextAction类是Action接口的一个特殊类，在第2章定义了Action接口以及其他的Swing事件处理功能并且在第15章进行了概述。TextAction类的目的就是提供可以用于文本组件的Action实现。这些实现是如此精巧，可以知道哪一个组件是最近具有输入焦点的，从而应是动作的目标。
+
+对于所有的文本组件，我们需要一种方法将按键与特定的动作相关联。这是通过Keymap接口来实现的，他将KeyStroke映射到TextAction，从而为了监听组件，单独的KeyListener对象不需要与文本组件相关联。键盘映射可以在多个组件之间共享并且/或者为特定的观感进行定制。JTextComponent还具有允许我们读取或是自定义按键映射的getKeymap()与setKeymap()方法。
+
+注意，尽管Swing文本组件使用TextAction，KeyStroke与Keymap，他们仍然支持关联KeyListener的功能。然而使用KeyListener通常并不合适，特别是我们希望限制输入来匹配特定的情况时更是如此。限制输入的更好的方法就是构建自定义的DocumentFilter，如第15章中演示所示，或是使用InputVerifier。另外，实际的Keymap实现仅是对在非文本Swing组件中按键动作映射所用的InputMap/ActionMap组合的包装。
+
+文本组件带有许多预定义的TextAction实现。通过默认的按键映射，文本组件知道这些预定义的动作，从而他们知道如何插入或是移除内容，以及如何跟踪光标与Caret的位置。如果文本组件支持格式化内容，如JTextPane所做的那样，还有额外的默认动作来支持这些内容。所有这些实现派生于JFC/Swing技术编辑器工具集。正如本章稍后在“编辑器工具集”中所讨论的，编辑器工具集提供了编辑特定文本组件类型的各种方法的逻辑组合。
+
+列出Action
+~~~~~~~~~~
+
+要确定JTextComponent支持哪些动作，我们仅需要通过public Action[]
+getActions()方法进行查询。这会返回一个Action对象的数组，通常是TextAction，他可以像其他的Action一样使用，例如在JToolBar上创建按钮。
+
+图16-1显示了将会列出不同的预定义组件的动作的程序。由JRadioButton组合中选择一个组件，而其文本动作列表将会显示在文本区域中。对于每一个动作，程序会显示出动作名与类名。
+
+.. figure:: images/Swing_16_1.png
+   :alt: Swing_16_1.png
+
+   Swing\_16\_1.png
+相同的53个动作集合可以适用于所有的文本组件。JTextField，JFormattedTextField与JPasswordField还有一个额外的动作，被称为notify-field-accept，用于当在文本组件中按下Enter键时进行检测。JFormattedTextField具有第二个额外动作，reset-field-edit，用于内容不符合所提供的格式掩码的情况。JTextPane添加了他独有的20个动作集合用于处理多属性文本。
+
+列表16-1显示了用于生成图16-1的源友。RadioButtonUtils类在第5章中创建。
+
+.. code:: java
+
+
+    /**
+     * 
+     */
+    package swingstudy.ch16;
+
+    import java.awt.BorderLayout;
+    import java.awt.Container;
+    import java.awt.EventQueue;
+    import java.awt.event.ActionEvent;
+    import java.awt.event.ActionListener;
+    import java.io.PrintWriter;
+    import java.io.StringWriter;
+    import java.util.Arrays;
+    import java.util.Comparator;
+
+    import javax.swing.Action;
+    import javax.swing.JEditorPane;
+    import javax.swing.JFormattedTextField;
+    import javax.swing.JFrame;
+    import javax.swing.JPasswordField;
+    import javax.swing.JScrollPane;
+    import javax.swing.JTextArea;
+    import javax.swing.JTextField;
+    import javax.swing.JTextPane;
+    import javax.swing.text.JTextComponent;
+
+    /**
+     * @author mylxiaoyi
+     *
+     */
+    public class ListActions {
+
+        /**
+         * @param args
+         */
+        public static void main(String[] args) {
+            // TODO Auto-generated method stub
+
+            Runnable runner = new Runnable() {
+                public void run() {
+                    JFrame frame = new JFrame("TextAction List");
+                    frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+                    
+                    String components[] = {
+                            "JTextField", "JFormattedTextField", "JPasswordField",
+                            "JTextArea", "JTextPane", "JEditorPane"
+                    };
+                    
+                    final JTextArea textArea = new JTextArea();
+                    textArea.setEditable(false);
+                    JScrollPane scrollPane =  new JScrollPane(textArea);
+                    frame.add(scrollPane, BorderLayout.CENTER);
+                    
+                    ActionListener actionListener = new ActionListener() {
+                        public void actionPerformed(ActionEvent event) {
+                            // Determine which component selected
+                            String command = event.getActionCommand();
+                            JTextComponent component = null;
+                            if(command.equals("JTextField")) {
+                                component = new JTextField();
+                            }
+                            else if(command.equals("JFormattedTextField")){
+                                component = new JFormattedTextField();
+                            }
+                            else if(command.equals("JPasswordField")) {
+                                component = new JPasswordField();
+                            }
+                            else if(command.equals("JTextArea")) {
+                                component = new JTextArea();
+                            }
+                            else if(command.equals("JTextPane")) {
+                                component = new JTextPane();
+                            }
+                            else {
+                                component = new JEditorPane();
+                            }
+                            
+                            // Process action list
+                            Action actions[] = component.getActions();
+                            // Define comparator to sort actions
+                            Comparator<Action> comparator = new Comparator<Action>() {
+                                public int compare(Action a1, Action a2) {
+                                    String firstName = (String)a1.getValue(Action.NAME);
+                                    String secondName = (String)a2.getValue(Action.NAME);
+                                    return firstName.compareTo(secondName);
+                                }
+                            };
+                            Arrays.sort(actions, comparator);
+                            StringWriter sw = new StringWriter();
+                            PrintWriter pw = new PrintWriter(sw, true);
+                            int count = actions.length;
+                            pw.println("Count: "+count);
+                            for(int i=0; i<count; i++) {
+                                pw.print(actions[i].getValue(Action.NAME));
+                                pw.print(" : ");
+                                pw.println(actions[i].getClass().getName());
+                            }
+                            pw.close();
+                            textArea.setText(sw.toString());
+                            textArea.setCaretPosition(0);
+                        }
+                    };
+                    
+                    final Container componentsContainer = RadioButtonUtils.createRadioButtonGrouping(components, "Pick to List Actions", actionListener);
+                    
+                    frame.add(componentsContainer, BorderLayout.WEST);
+                    frame.setSize(400, 250);
+                    frame.setVisible(true);
+                }
+            };
+            EventQueue.invokeLater(runner);
+        }
+
+    }
+
+Using Actions
+~~~~~~~~~~~~~
+
+到目前为止，我们已经了解对于各种文本组件有许多预定义的TextAction实现可用，但是我们还没有使用其中的任何一个。通过对列表16-1做一些小的修改，我们就可以对程序进行加强。修改后的程序显示在列表16-2中。在这个版本中，当一个单选按钮被选中，文本组件的类型就会显示在Action对象的文本列表显示在图16-1中。另外，不同的Action对象被添加到位于显示窗口顶部的新JMenuBar中。
+
+注意，在列表16-2所显示的程序中，在所有的菜单按钮被激活之后，我们也许会停留在一个也许我们并不希望的文本标签上。然而，我们可以很容易的通过JMenuItem的public
+void setText(String
+label)方法来修改。如果我们这样做，记住我们需要知道哪些位于菜单项中从而将会标签修改为某些有意义的说明。
+
+.. code:: java
+
+
+    package swingstudy.ch16;
+
+    import java.awt.BorderLayout;
+    import java.awt.Container;
+    import java.awt.EventQueue;
+    import java.awt.event.ActionEvent;
+    import java.awt.event.ActionListener;
+
+    import javax.swing.Action;
+    import javax.swing.JEditorPane;
+    import javax.swing.JFormattedTextField;
+    import javax.swing.JFrame;
+    import javax.swing.JMenu;
+    import javax.swing.JMenuBar;
+    import javax.swing.JPasswordField;
+    import javax.swing.JScrollPane;
+    import javax.swing.JTextArea;
+    import javax.swing.JTextField;
+    import javax.swing.JTextPane;
+    import javax.swing.text.JTextComponent;
+
+    public class ActionsMenuBar {
+
+        /**
+         * @param args
+         */
+        public static void main(String[] args) {
+            // TODO Auto-generated method stub
+
+            Runnable runner = new Runnable() {
+                public void run() {
+                    final JFrame frame = new JFrame("TextAction Ussage");
+                    frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+                    final JScrollPane scrollPane = new JScrollPane();
+                    frame.add(scrollPane, BorderLayout.CENTER);
+                    
+                    final JMenuBar menuBar = new JMenuBar();
+                    frame.setJMenuBar(menuBar);
+                    
+                    ActionListener actionListener = new ActionListener() {
+                        JTextComponent component;
+                        public void actionPerformed(ActionEvent event) {
+                            // Determine which component selected
+                            String command = event.getActionCommand();
+                            if(command.equals("JTextField")) {
+                                component = new JTextField();
+                            }
+                            else if(command.equals("JFormattedTextField")) {
+                                component = new JFormattedTextField();
+                            }
+                            else if(command.equals("JPasswordField")) {
+                                component = new JPasswordField();
+                            }
+                            else if(command.equals("JTextArea")) {
+                                component = new JTextArea();
+                            }
+                            else if(command.equals("JTextPane")) {
+                                component =  new JTextPane();
+                            }
+                            else {
+                                component = new JEditorPane();
+                            }
+                            scrollPane.setViewportView(component);
+                            // Process action list
+                            Action actions[] = component.getActions();
+                            menuBar.removeAll();
+                            menuBar.revalidate();
+                            JMenu menu = null;
+                            for(int i=0, n=actions.length; i<n; i++) {
+                                if((i%10)==0) {
+                                    menu = new JMenu("From "+i);
+                                    menuBar.add(menu);
+                                }
+                                menu.add(actions[i]);
+                            }
+                            menuBar.revalidate();
+                        }
+                    };
+                    
+                    String components[] = {
+                            "JTextField", "JFormattedTextField", "JPasswordField",
+                            "JTextArea", "JTextPane", "JEditorPane"
+                    };
+                    final Container componentContainer = RadioButtonUtils.createRadioButtonGrouping(components, "Pick to List Actions", actionListener);
+                    frame.add(componentContainer, BorderLayout.WEST);
+                    
+                    frame.setSize(400, 300);
+                    frame.setVisible(true);
+                }
+            };
+            EventQueue.invokeLater(runner);
+        }
+
+    }
+
+图16-2显示了JTextArea的一些可用操作。当我们选择不同的菜单选项时，JTextComponent就会受到相应的影响。
+
+.. figure:: images/Swing_16_2.png
+   :alt: Swing_16_2.png
+
+   Swing\_16\_2.png
+这一技术十分有用，因为他显示了我们可以发现一个文本组件所支持的操作，并且可以在没有确切知道实际行为是什么的情况下提供到这种行为的访问。这仅是我们可以使用TextAction对象的许多方法中的一种演示。
+
+Finding Actions
+~~~~~~~~~~~~~~~
+
+尽管列出与使用与一个文本组件相关的Action对象是一个相当具有扩展性的过程，除非我们知道我们正在查找什么，否则这种技术并不是十分有用。幸运的是，DefaultEditorKit具有46个与所有的文本组件所共享的46个Action对象相匹配的类常量。这些类常量的名字或多或少的反映了他们的功能。JTextField添加了一个与JFormattedTextField和JPasswordField共享的Action的额外常量。不幸的是，与JTextPane可用的额外动作相关联的名字并不是任何文本组件的类常量，而仅是在StyledEditorKit内部使用，在那里我们可以看到定义的额外的Action实现。
+
+注意，存在一个的Action仅是出于高度的目的。其Action名字为dump-model，并没有与其相关的类常量。当初始化时，方法会在内部导出文本组件的Document模型Element结构。
+
+表16-1列出了可以帮助我们定位我们正在查找的预定义Action的47个常量。
+
+.. figure:: images/Swing_table_16_1_1.png
+   :alt: Swing_table_16_1_1.png
+
+   Swing\_table\_16\_1\_1.png
+.. figure:: images/Swing_table_16_1_2.png
+   :alt: Swing_table_16_1_2.png
+
+   Swing\_table\_16\_1\_2.png
+有了这些常量列表，实际上我们要如何使用他们呢？首先我们要查找我们希望使用的预定义的TextAction的常量（如果没有常量则要了解必须的文本字符串）。这相对来说较为简单因为名字是自解释的。
+
+为了演示，列表16-3包含了一个程序，显示了如何使用这些常量。这个程序有两个文本区域来显示TextAction对象确实知道使用具有输入焦点的文本组件。菜单项的一个集合包含两个用于将文本区域由只读切换到可写的选项。这个动作是通过使用DefaultEditorKit.readOnlyAction与DefaultEditorKit.writableAction名字来实现的。另一个菜单选项集合包含用于剪切，粘贴与复制支持的选项，其相应的常量分别为DefaultEditorKit.cutAction，DefaultEditorKit.copyAction与DefaultEditorKit.pasteAction。因为这些常量是String值，我们需要查找要使用的实际的Action对象。
+
+查找的过程需要使用getActionMap()方法获得组件的ActionMap，然后使用ActionMap的get()方法查找键值，如下面的示例所示：
+
+.. code:: java
+
+    Action readAction = component.getActionMap().get(DefaultEditorKit.readOnlyAction);
+
+.. code:: java
+
+    package swingstudy.ch16;
+
+    import java.awt.BorderLayout;
+    import java.awt.Dimension;
+    import java.awt.EventQueue;
+
+    import javax.swing.Action;
+    import javax.swing.JFrame;
+    import javax.swing.JMenu;
+    import javax.swing.JMenuBar;
+    import javax.swing.JMenuItem;
+    import javax.swing.JScrollPane;
+    import javax.swing.JSplitPane;
+    import javax.swing.JTextArea;
+    import javax.swing.text.DefaultEditorKit;
+
+    public class UseActions {
+
+        /**
+         * @param args
+         */
+        public static void main(String[] args) {
+            // TODO Auto-generated method stub
+
+            Runnable runner = new Runnable() {
+                public void run() {
+                    JFrame frame = new JFrame("Use TextAction");
+                    frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+                    Dimension empty = new Dimension(0,0);
+                    
+                    final JTextArea leftArea = new JTextArea();
+                    JScrollPane leftScrollPane = new JScrollPane(leftArea);
+                    leftScrollPane.setPreferredSize(empty);
+                    
+                    final JTextArea rightArea = new JTextArea();
+                    JScrollPane rightScrollPane = new JScrollPane(rightArea);
+                    rightScrollPane.setPreferredSize(empty);
+                    
+                    JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, leftScrollPane, rightScrollPane);
+                    
+                    JMenuBar menuBar = new JMenuBar();
+                    frame.setJMenuBar(menuBar);
+                    JMenu menu = new JMenu("Options");
+                    menuBar.add(menu);
+                    JMenuItem menuItem;
+                    
+                    Action readAction = leftArea.getActionMap().get(DefaultEditorKit.readOnlyAction);
+                    menuItem = menu.add(readAction);
+                    menuItem.setText("Make read-only");
+                    Action writeAction = leftArea.getActionMap().get(DefaultEditorKit.writableAction);
+                    menuItem = menu.add(writeAction);
+                    menuItem.setText("Make writable");
+                    
+                    menu.addSeparator();
+                    
+                    Action cutAction = leftArea.getActionMap().get(DefaultEditorKit.cutAction);
+                    menuItem = menu.add(cutAction);
+                    menuItem.setText("Cut");
+                    Action copyAction = leftArea.getActionMap().get(DefaultEditorKit.copyAction);
+                    menuItem = menu.add(copyAction);
+                    menuItem.setText("Copy");
+                    Action pasteAction = leftArea.getActionMap().get(DefaultEditorKit.pasteAction);
+                    menuItem = menu.add(pasteAction);
+                    menuItem.setText("Paste");
+                    
+                    frame.add(splitPane, BorderLayout.CENTER);
+                    frame.setSize(400, 250);
+                    frame.setVisible(true);
+                    splitPane.setDividerLocation(.5);
+                }
+            };
+            EventQueue.invokeLater(runner);
+        }
+
+    }
+
+图16-3显示了程序运行时的样子。注意，每一个JMenuItem被创建后，文本标签被修改为一个更为用户友好的设置。
+
+.. figure:: images/Swing_16_3.png
+   :alt: Swing_16_3.png
+
+   Swing\_16\_3.png
+通过查找特定的TextAction实例，我们并不需要记录重复操作。事实上，如果我们发现我们在一个文本组件上一次次重复相同的操作，那么也许我们就需要考虑创建自己的TextAction对象了。
+
+Creating Styled Text
+--------------------
+
+在第15章中，我们已经了解了显示了普通文本与HTML。通过Swing文本组件－或者至少是JTextPane－我们也可以显示格式化文本，其中不同的文本块可以具有多种属性。这些属性也许包含粗体，斜体，不同的字体或是字符级别的颜色，或者是段落级别的对齐，就如现现代的字处理软件一样。
+
+要支持这些功能，Swing提供了许多不同的接口与类，所有这些接口与类以特殊的StyledDocument的Document接口扩展开始。我们在第15章中介绍了Document接口，专注于PlainDocument实现类。StyledDocument接口，或者更确切的说是DefaultStyledDocument实现，管理Document内容的一系列格式与属性集合。
+
+StyleDocument所用的各种格式初始时是由AttributeSet接口来描述的，他是一个只读属性的键/值对集合。一个属性的键也许是“当前的字体”，在这种情况下设置将是所用的字体。要实际修改字体，我们需要求助于MutableAttributeSet接口，他提供了添加也移除属性的功能。例如，如果我们有一个用于“粗体”的AttributeSet，我们可以使用MutableAttributeSet来添加斜体，下划线或是颜色设置。
+
+对于AttributeSet的简单实现，有一个StyleContext.SmallAttributeSet类，他使用一个数组来管理属性集合。对于MutableAttributeSet接口的实现，有一个SimpleAttributeSet类，他使用Hashtable来管理属性。更为复杂的属性设置需要Style接口，他向属性集合添加由MutableAttributeSet定义的名字。实际的Style实现类是StyleContext.NamedStyle类。除了添加一个名字，Style接口添加功能来使得ChangeListener监视属性集合的变化。
+
+为StyledDocument管理Style对象集合的类是StyleContext类。他是AbstractDocument.AttributeContext接口的一个实现，StyleContext使用StyleConstants类为常用的格式定义各种属性。当使用HTML文档时，StyleContext实际上是一个StyleSheet，这他也许会有助于我们理解整个布局。记住在这里所讨论的所有类与接口（除了StyleSheet）仅需要用来为一个特定的JTextPane设置Document数据模型。
+
+StyledDocument接口与DefaultStyledDocument类
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+StyledDocument接口通过添加了存储文档内容格式的功能来扩展Document接口。这些格式可以描述字符或是段落属性，例如颜色，方向或是字体。
+
+.. code:: java
+
+    public interface StyledDocument extends Document {
+      public Style addStyle(String nm, Style parent);
+      public Color getBackground(AttributeSet attribute);
+      public Element getCharacterElement(int position);
+      public Font getFont(AttributeSet attribute);
+      public Color getForeground(AttributeSet attribute);
+      public Style getLogicalStyle(int position);
+      public Element getParagraphElement(int position);
+      public Style getStyle(String name);
+      public void removeStyle(String name);
+      public void setCharacterAttributes(int offset, int length, AttributeSet s,
+        boolean replace);
+      public void setLogicalStyle(int position, Style style);
+      public void setParagraphAttributes(int offset, int length, AttributeSet s,
+        boolean replace);
+    }
+
+DefaultStyledDocument类是Swing组件所提供的StyledDocument接口的实现。他作为JTextPane组件的数据模型。
+
+**创建DefaultStyledDocument**
+
+我们可以使用下面所列的三种方法来创建DefaultStyledDocument：
+
+.. code:: java
+
+    public DefaultStyledDocument()
+    DefaultStyledDocument document = new DefaultStyledDocument();
+    public DefaultStyledDocument(StyleContext styles)
+    StyleContext context = new StyleContext();
+    DefaultStyledDocument document = new DefaultStyledDocument(context);
+    public DefaultStyledDocument(AbstractDocument.Content content, StyleContext styles)
+    AbstractDocument.Content content = new StringContent();
+    DefaultStyledDocument document = new DefaultStyledDocument(content, context);
+
+我们可以在多个文档之间共享StyleContext或是使用默认的上下文环境。另外，我们可以使用AbstractDocument.Content的一个实现，GapContent或是StringContent预定义内容。存储实际的Document内容是这些Content实现的职责。
+
+**DefaultStyledDocument属性**
+
+除了具有默认的根元素来描述文档的内容以外，DefaultStyledDocument将可用的格式名字作为Enumeration。这是在DefaultStyledDocument级别所定义的两个属性，如表16-2所示。当然我们也可以获得DefaultStyledDocument的其他属性；然而，他们需要获取时的位置或是AttributeSet。
+
+.. figure:: images/Swing_table_16_2.png
+   :alt: Swing_table_16_2.png
+
+   Swing\_table\_16\_2.png
+AttributeSet接口
+~~~~~~~~~~~~~~~~
+
+AttributeSet接口描述了一个只读的键/值属性集合，允许我们访问一系列属性的描述性内容。如果属性集合缺少特定的键定义，AttributeSet通过在一个链中遍历解析属性的父属性定义。这使得AttributeSet定义一个核心属性集合，并且允许开发者（或者可能是用户）仅修改他们所希望修改的属性集合。除非我们希望有人修改默认全局设置，我们不应提供到解析父属性的直接访问。这样，我们就不会丢失任何的原始设置。
+
+.. code:: java
+
+    public interface AttributeSet {
+      // Constants 
+      public final static Object NameAttribute;
+      public final static Object ResolveAttribute;
+      // Properties
+      public int getAttributeCount();
+      public Enumeration getAttributeNames();
+      public AttributeSet getResolveParent();
+      // Other methods
+      public boolean containsAttribute(Object name, Object value);
+      public boolean containsAttributes(AttributeSet attributes);
+      public AttributeSet copyAttributes();
+      public Object getAttribute(Object key);
+      public boolean isDefined(Object attrName);
+      public boolean isEqual(AttributeSet attr);
+    }
+
+MutableAttributeSet接口
+~~~~~~~~~~~~~~~~~~~~~~~
+
+MutableAttributeSet接口描述了我们如何由属性集合中添加或是移除属性，以及如何设置解析父属性。
+
+.. code:: java
+
+    public interface MutableAttributeSet extends AttributeSet {
+      public void addAttribute(Object name, Object value);
+      public void addAttributes(AttributeSet attributes);
+      public void removeAttribute(Object name);
+      public void removeAttributes(AttributeSet attributes);
+      public void removeAttributes(Enumeration names);
+      public void setResolveParent(AttributeSet parent);
+    }
+
+SimpleAttributeSet类
+~~~~~~~~~~~~~~~~~~~~
+
+SimpleAttributeSet类是AttributeSet接口的第一个实现。当我们开始使用这个类时，我们最终将会看到如何创建显示在JTextPane中的多属性文本。SimpleAttributeSet类是依赖用于管理键/属性对的标准Hashtable的AttributeSet的一个特定实现。
+
+**创建SimpleAttributeSet**
+
+SimpleAttributeSet有两个构造函数：
+
+.. code:: java
+
+    public SimpleAttributeSet()
+    SimpleAttributeSet attributeSet1 = new SimpleAttributeSet();
+    public SimpleAttributeSet(AttributeSet source)
+    SimpleAttributeSet attributeSet2 = new SimpleAttributeSet(attributeSet1);
+
+我们通常会创建一个空的SimpleAttributeSet，然后设置其属性。或者我们可以在构造函数中提供一个初始的设置集合。注意，这并不是解析父属性－他仅是一个初始化的数据结构。
+
+**SimpleAttributeSet属性**
+
+表16-3显示了SimpleAttributeSet的四个属性。他们提供了到属性集合的访问，使得我们可以了解属性是否存在，并且标记解析父属性。
+
+.. figure:: images/Swing_table_16_3.png
+   :alt: Swing_table_16_3.png
+
+   Swing\_table\_16\_3.png
+**使用SimpleAttributeSet**
+
+要创建SimpleAttributeSet所用的AttributeSet，我们需要查找我们要修改的属性的键。我们会在稍后讨论StyleConstants时了解一些助手方法。所有的键隐藏在StyleConstants的四个公开内联类中：CharacterConstants，ColorConstants，FontConstants与ParagraphConstants，如表16-4所示。
+
+.. figure:: images/Swing_table_16_4_1.png
+   :alt: Swing_table_16_4_1.png
+
+   Swing\_table\_16\_4\_1.png
+.. figure:: images/Swing_table_16_4_2.png
+   :alt: Swing_table_16_4_2.png
+
+   Swing\_table\_16\_4\_2.png
+.. figure:: images/Swing_table_16_4_3.png
+   :alt: Swing_table_16_4_3.png
+
+   Swing\_table\_16\_4\_3.png
+例如，要在创建DefaultStyledDocument之后填充JTextPane的StyledDocument，我们通过调用public
+void insertString(int offset, String contents, AttributeSet
+attributes)方法来向其中添加内容，该方法会抛出BadLocationException。然后我们可以修改属性集合并且添加更多的属性。所以，如果我们希望创建同时为粗体与斜体的内容，我们需要向SimpleAttributeSet中添加两个属性并将内容添加到文档中：
+
+.. code:: java
+
+    SimpleAttributeSet attributes = new SimpleAttributeSet();
+    attributes.addAttribute(StyleConstants.CharacterConstants.Bold, Boolean.TRUE);
+    attributes.addAttribute(StyleConstants.CharacterConstants.Italic, Boolean.TRUE);
+    // Insert content
+    try { 
+      document.insertString(document.getLength(), "Hello, Java", attributes);
+    }  catch (BadLocationException badLocationException) { 
+      System.err.println("Oops");
+    } 
+
+图16-4显示程序运行的结果。
+
+.. figure:: images/Swing_16_4.png
+   :alt: Swing_16_4.png
+
+   Swing\_16\_4.png
+列表16-4显示了完整的示例源码。
+
+.. code:: java
+
+    package swingstudy.ch16;
+
+    import java.awt.BorderLayout;
+    import java.awt.Color;
+    import java.awt.EventQueue;
+
+    import javax.swing.JFrame;
+    import javax.swing.JScrollPane;
+    import javax.swing.JTextPane;
+    import javax.swing.text.BadLocationException;
+    import javax.swing.text.DefaultStyledDocument;
+    import javax.swing.text.SimpleAttributeSet;
+    import javax.swing.text.StyleConstants;
+    import javax.swing.text.StyledDocument;
+
+    public class SimpleAttributeSample {
+
+        /**
+         * @param args
+         */
+        public static void main(String[] args) {
+            // TODO Auto-generated method stub
+
+            Runnable runner = new Runnable() {
+                public void run() {
+                    JFrame frame = new JFrame("Simple Attributes");
+                    frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+                    
+                    StyledDocument document = new DefaultStyledDocument();
+                    
+                    SimpleAttributeSet attributes = new SimpleAttributeSet();
+                    attributes.addAttribute(StyleConstants.CharacterConstants.Bold, Boolean.TRUE);
+                    attributes.addAttribute(StyleConstants.CharacterConstants.Italic, Boolean.TRUE);
+                    
+                    // Insert content
+                    try {
+                        document.insertString(document.getLength(), "Hello, Java", attributes);
+                    }
+                    catch(BadLocationException badLocationException) {
+                        System.err.println("Bad Insert");
+                    }
+                    
+                    attributes = new SimpleAttributeSet();
+                    attributes.addAttribute(StyleConstants.CharacterConstants.Bold, Boolean.FALSE);
+                    attributes.addAttribute(StyleConstants.CharacterConstants.Italic, Boolean.FALSE);
+                    attributes.addAttribute(StyleConstants.CharacterConstants.Foreground, Color.LIGHT_GRAY);
+                    
+                    // Insert content
+                    try {
+                        document.insertString(document.getLength(), " - Good-bye Visual Basic", attributes);
+                    }
+                    catch(BadLocationException badLocationException) {
+                        System.err.println("Bad Insert");
+                    }
+                    
+                    JTextPane textPane = new JTextPane(document);
+                    textPane.setEditable(false);
+                    JScrollPane scrollPane = new JScrollPane(textPane);
+                    frame.add(scrollPane, BorderLayout.CENTER);
+                    
+                    frame.setSize(300, 150);
+                    frame.setVisible(true);
+                    
+                }
+            };
+            EventQueue.invokeLater(runner);
+        }
+
+    }
+
+概括来说，要指定文档的格式，只需要简单的设置属性集合，插入内容，然后为我们要添加到的每一个内容重复以上步骤。
+
+StyleConstants类
+~~~~~~~~~~~~~~~~
+
+StyleConstants类满是简化设置属性集合的助手方法。而且我们并不需要深入StyleConstants内联类的常量，因为通守StyleConstants级别的类常量就可以进行访问。
+
+.. code:: java
+
+    public static final Object Alignment;
+    public static final Object Background;
+    public static final Object BidiLevel;
+    public static final Object Bold;
+    public static final Object ComponentAttribute;
+    public static final String ComponentElementName;
+    public static final Object ComposedTextAttribute;
+    public static final Object Family;
+    public static final Object FirstLineIndent;
+    public static final Object FontFamily;
+    public static final Object FontSize;
+    public static final Object Foreground;
+    public static final Object IconAttribute;
+    public static final String IconElementName;
+    public static final Object Italic;
+    public static final Object LeftIndent;
+    public static final Object LineSpacing;
+    public static final Object ModelAttribute;
+    public static final Object NameAttribute;
+    public static final Object Orientation;
+    public static final Object ResolveAttribute;
+    public static final Object RightIndent;
+    public static final Object Size;
+    public static final Object SpaceAbove;
+    public static final Object SpaceBelow;
+    public static final Object StrikeThrough;
+    public static final Object Subscript;
+    public static final Object Superscript;
+    public static final Object TabSet;
+    public static final Object Underline;
+
+一些静态方法可以使得我们使用更符合逻辑的方法来修改MutableAttributeSet，而不需要我们了解更为隐蔽的AttributeSet名字。使用StyleConstants变量的ALIGN\_CENTER，ALIGN\_JSTIFIED，ALIGN\_LEFT与ALIGN\_RIGH可以作为int参数用于setAlignment()方法。其余的设置都是自解释的。
+
+.. code:: java
+
+    public static void setAlignment(MutableAttributeSet a, int align);
+    public static void setBackground(MutableAttributeSet a, Color fg);
+    public static void setBidiLevel(MutableAttributeSet a, int o);
+    public static void setBold(MutableAttributeSet a, boolean b);
+    public static void setComponent(MutableAttributeSet a, Component c);
+    public static void setFirstLineIndent(MutableAttributeSet a, float i);
+    public static void setFontFamily(MutableAttributeSet a, String fam);
+    public static void setFontSize(MutableAttributeSet a, int s);
+    public static void setForeground(MutableAttributeSet a, Color fg);
+    public static void setIcon(MutableAttributeSet a, Icon c);
+    public static void setItalic(MutableAttributeSet a, boolean b);
+    public static void setLeftIndent(MutableAttributeSet a, float i);
+    public static void setLineSpacing(MutableAttributeSet a, float i);
+    public static void setRightIndent(MutableAttributeSet a, float i);
+    public static void setSpaceAbove(MutableAttributeSet a, float i);
+    public static void setSpaceBelow(MutableAttributeSet a, float i);
+    public static void setStrikeThrough(MutableAttributeSet a, boolean b);
+    public static void setSubscript(MutableAttributeSet a, boolean b);
+    public static void setSuperscript(MutableAttributeSet a, boolean b);
+    public static void setTabSet(MutableAttributeSet a, TabSet tabs);
+    public static void setUnderline(MutableAttributeSet a, boolean b);
+
+例如，我们并不需要使用下面的代码来使得SimpleAttributeSet成为粗体与斜体：
+
+.. code:: java
+
+    attributes.addAttribute(StyleConstants.CharacterConstants.Bold, Boolean.TRUE)
+    attributes.addAttribute(StyleConstants.CharacterConstants.Italic, Boolean.TRUE)
+
+相反，我们可以使用下面的方法来替代：
+
+.. code:: java
+
+    StyleConstants.setBold(attributes, true);
+    StyleConstants.setItalic(attributes, true);
+
+正如我们所看到的，后一种方法更易于阅读且更易于维护。
+
+提示，除了修改AttributeSet对象的方法，StyleConstants类还提供了许多其他的方法可以使得我们检测AttributeSet的状态来确定某一个当前设置是否被允许或是禁止。
+
+TabStop and TabSet类
+~~~~~~~~~~~~~~~~~~~~
+
+用于存储AttributeSet值的一个关键常量是ParagraphConstants.TabSet属性。TabSet类表示一个TabStop对象的集合，其中的每一个定义了tab位置，对象方式以及导引。如果我们希望为JTextPane定义我们自己的tab定位，我们需要创建一个TabStop对象集合，为每一个tab定位创建一个TabSet，然后将TabSet关联到MutableAttributeSet。
+
+**创建TabStop**
+
+TabStop类并不是通常意义上的JavaBean组件；他并没有一个无参数的构造函数。相反，我们必须以像素指定tab定位的位置。他有两个构造函数：
+
+.. code:: java
+
+    public TabStop(float position)
+    TabStop stop = new TabStop(40);
+    public TabStop(float position, int align, int leader)
+    TabStop stop = new TabStop(40, TabStop.ALIGN_DECIMAL, TabStop.LEAD_DOTS);
+
+注意，尽管由技术上来说可以指定，但是TabStop构造函数的leader参数当前被预定义的文本组件所忽略。
+
+**TabStop属性**
+
+表16-5显示了TabStop的三个属性，每一个都可以通过构造函数初始化。
+
+.. figure:: images/Swing_table_16_5.png
+   :alt: Swing_table_16_5.png
+
+   Swing\_table\_16\_5.png
+四个对齐设置是通过表16-6中的四个常量来指定的。图16-5显示了不同的设置。
+
+.. figure:: images/Swing_table_16_6.png
+   :alt: Swing_table_16_6.png
+
+   Swing\_table\_16\_6.png
+.. figure:: images/Swing_16_5.png
+   :alt: Swing_16_5.png
+
+   Swing\_16\_5.png
+注意，尽管ALIGN\_BAR与ALIGN\_LEFT由技术上来说是不同的常量，但是当前他们的对齐设置会产生相同的结果。他们是为RTF规范所定义的。
+
+**使用TabStop对象**
+
+一旦我们拥有了一个TabStop对象或是一个TabStop对象集合，我们将对象以TabStop对象数组的形式传递给TabSet构造函数，如下所示：
+
+.. code:: java
+
+    TabSet tabset = new TabSet(new TabStop[] {tabstop}) 
+
+作为一个示例，列表16-5显示了产生图16-5的TabStop对象程序的源码。
+
+.. code:: java
+
+
+    /**
+     * 
+     */
+    package swingstudy.ch16;
+
+    import java.awt.BorderLayout;
+    import java.awt.EventQueue;
+
+    import javax.swing.JFrame;
+    import javax.swing.JScrollPane;
+    import javax.swing.JTextPane;
+    import javax.swing.text.BadLocationException;
+    import javax.swing.text.DefaultStyledDocument;
+    import javax.swing.text.SimpleAttributeSet;
+    import javax.swing.text.StyleConstants;
+    import javax.swing.text.StyledDocument;
+    import javax.swing.text.TabSet;
+    import javax.swing.text.TabStop;
+
+    /**
+     * @author mylxiaoyi
+     *
+     */
+    public class TabSample {
+
+        /**
+         * @param args
+         */
+        public static void main(String[] args) {
+            // TODO Auto-generated method stub
+
+            Runnable runner = new Runnable() {
+                public void run() {
+                    JFrame frame = new JFrame("Tab Attributes");
+                    frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+                    
+                    StyledDocument document = new DefaultStyledDocument();
+                    
+                    int positions[] = {TabStop.ALIGN_BAR, TabStop.ALIGN_CENTER, TabStop.ALIGN_DECIMAL,
+                            TabStop.ALIGN_LEFT, TabStop.ALIGN_RIGHT };
+                    String strings[] = {"\tBAR\n", "\tCENTER\n", "\t3.14159265\n",
+                            "\tLEFT\n", "\tRIGHT\n" };
+                    
+                    SimpleAttributeSet attributes =  new SimpleAttributeSet();
+                    
+                    for(int i=0, n=positions.length; i<n; i++) {
+                        TabStop tabstop = new TabStop(150, positions[i], TabStop.LEAD_DOTS);
+                        try {
+                            int position = document.getLength();
+                            document.insertString(position, strings[i], null);
+                            TabSet tabset = new TabSet(new TabStop[] {tabstop});
+                            StyleConstants.setTabSet(attributes, tabset);
+                            document.setParagraphAttributes(position, 1, attributes, false);
+                        }
+                        catch(BadLocationException badLocationExeption) {
+                            System.err.println("Bad Location");
+                        }
+                    }
+                    JTextPane textPane = new JTextPane(document);
+                    textPane.setEditable(false);
+                    JScrollPane scrollPane = new JScrollPane(textPane);
+                    frame.add(scrollPane, BorderLayout.CENTER);
+                    
+                    frame.setSize(300, 150);
+                    frame.setVisible(true);
+                }
+            };
+            EventQueue.invokeLater(runner);
+        }
+
+    }
+
+除了指定位置与对齐方式，我们还可以指定我们希望使用哪种字符作为导引字符显示在通过tab字符所创建的空白空间中。默认情况下并不存在任何内容；所以是常量LEAD\_NONE。其他的TabStop值可以创建句点线，等号，连字符，细线或是下划线：LEAD\_DOTS，LEAD\_EQUALS，LEAD\_HYPHENS，LEAD\_THICKLINE或是LEAD\_UNDERLINE。不幸的是，这个选项可用但是并不被支持。虽然非标准的Swing组件也许会支持这种功能，但是标准的Swing组件当前并不支持不同的导引字符串。
+
+Style接口
+~~~~~~~~~
+
+Style接口是一种指定AttributeSet的加强方法。他为MutableAttributeSet添加了一个名字以及为了监视属性设置的变化将ChangeListener关联到Style的能力。例如，我们可以以下面的方式来配置粗体斜体格式：
+
+.. code:: java
+
+    String BOLD_ITALIC = "BoldItalic";
+    Style style = (Style)document.getStyle(StyleContext.DEFAULT_STYLE);
+    StyleConstants.setBold(style, true);
+    StyleConstants.setItalic(style, true);
+    document.addStyle(BOLD_ITALIC, null);
+
+稍后，我们可以将这个种格式关联到文本：
+
+.. code:: java
+
+    style = document.getStyle(BOLD_ITALIC);
+    document.insertString(document.getLength(), "Hello, Java", style);
+
+StyleContext类
+~~~~~~~~~~~~~~
+
+StyleContext类管理格式化文档的格式。借助于StyleContext.NamedStyle类，我们可以使用JTextPane仅做他自己的事情，因为StyleContext知道某些事情何时完成。对于HTMl文档，StyleContext就变为更为特殊的StyleSheet。
+
+The Editor Kits
+---------------
+
+我们已经概略的看到了本章前面所介绍的TextAction对象的一些默认的EditorKit功能。EditorKit类扮演将文本组件的所有不同方面组合在一起的粘合剂。他创建文档，管理动作，并且创建文档或是视图的可视化表示。另外，EditorKit知道如何读取或是写入流。每一个文档类型需要其自己的EditorKit，所以JFC/Project
+Swing组件为HTML与RTF文本以及普通文本与格式化文本提供了不同的EditorKit。
+
+Document内容的实际显示是通过EditorKit借助于ViewFactory来实现的。对于Document的每一个Element，ViewFatory确定哪一个View是为这个元素创建并且通过文本组件委托进行渲染。对于不同的元素类型，有不同的View子类。
+
+载入HTML文档
+~~~~~~~~~~~~
+
+在第15章中，我们看到JTextComponent的read()与write()方法如何允许我们读取或是写入一个文本组件的内容。尽管第15章中的列表15-3中的LoadSave示例显示了JTextField的这一过程，但是正如我们所希望的，他同样适用于所有的文本组件。确保载入与保存为正确的文档类型完成的唯一需求是为文档修改编辑器工具集。
+
+为了演示，在这里我们显示了我们如何将一个HTML文件作为StyledDocument载入到JEditorPane中：
+
+.. code:: java
+
+    JEditorPane editorPane = new JEditorPane();
+    editorPane.setEditorKit(new HTMLEditorKit());
+    reader = new FileReader(filename);
+    editorPane.read(reader, filename);
+
+这非常简单。组件的内容类型被设置为text/html，并且由filename载入作为HTML内容显示。值得注意的一件事就是载入是异步完成的。
+
+如果我们需要同步载入内容，从而我们可以等待所有的内容载入完成，例如用于分析目的，则这个过程有一些麻烦。我们需要使用HTML分析器（HTMLEditorKit.Parset类位于javax.swing.text.html包中），解析器委托器（ParsetDeleegator位于javax.swing.text.html.parset包中），以及我们可以由HTMLDocument（作为HTMLDocument.HTMLReader）中获取的解析器回调（HTMLEditorKit.ParsetCallback）。听起来要比实际复杂。为了演示，下面的代码异步载入一个文件到JEditorPane中。
+
+.. code:: java
+
+    reader = new FileReader(filename);
+    // First create empty empty HTMLDocument to read into
+    HTMLEditorKit htmlKit = new HTMLEditorKit();
+    HTMLDocument htmlDoc = (HTMLDocument)htmlKit.createDefaultDocument();
+    // Next create the parser
+    HTMLEditorKit.Parser parser = new ParserDelegator();
+    // Then get HTMLReader (parser callback) from document
+    HTMLEditorKit.ParserCallback callback = htmlDoc.getReader(0);
+    // Finally load the reader into it
+    // The final true argument says to ignore the character set
+    parser.parse(reader, callback, true);
+    // Examine contents
+
+在HTML文档中遍历
+~~~~~~~~~~~~~~~~
+
+在我们载入HTML文档之后，除了在JEditorPane中显示内容以外，也许我们会发现我们需要我们自己解析文档内容。HTMLDocument通过HTMLDocument.Iterator与ElementIterator类支持两种遍历方式。
+
+**HTMLDocument.Iterator类**
+
+要使用HTMLDocument.Iterator类，我们请求HTMLDocument为特定的HTML.Tag提供迭代器。然后，对于文档中标记的每个实例，
+我们可以查看标签的属性。
+
+HTML.Tag类包含用于所有标准HTML标签（HTMLEditorKit可以理解的）的76个类常量，例如用于H1标签的HTML.Tag.H1。表16-7列出了这些常量。
+
+.. figure:: images/Swing_table_16_7_1.png
+   :alt: Swing_table_16_7_1.png
+
+   Swing\_table\_16\_7\_1.png
+.. figure:: images/Swing_table_16_7_2.png
+   :alt: Swing_table_16_7_2.png
+
+   Swing\_table\_16\_7\_2.png
+在我们有了可以使用的特定迭代器之后，我们就可以借助于表16-8中所显示的类属性查看每一个标签实例的特定属性与内容。
+
+.. figure:: images/Swing_table_16_8.png
+   :alt: Swing_table_16_8.png
+
+   Swing\_table\_16\_8.png
+迭代过程的另一个方面就是next()方法，这个方法可以使得我们获得文档中的下一个标签实例。使用这个迭代器的基本结构如下：
+
+.. code:: java
+
+    // Get the iterator
+    HTMLDocument.Iterator iterator = htmlDoc.getIterator(HTML.Tag.A);
+    // For each valid one
+    while (iterator.isValid()) { 
+    // Process element
+    // Get the next one
+     iterator.next();
+    } 
+
+这也可以表示为一个基本的for循环结构：
+
+.. code:: java
+
+    for (HTMLDocument.Iterator iterator = htmlDoc.getIterator(HTML.Tag.A);
+           iterator.isValid();
+           iterator.next()) {
+      // Process element
+    }
+
+列表16-6演示了HTMLDocument.Iterator的用法。这个程序会在命令行提示我们输入URL，异步载入文件，查找所有的标签，然后显示所有的以HREF属性列出的锚点。可以将这个程序看作一个简单的的爬虫程序，因而我们可以构建一个文档之间URL的数据库。起始与结束偏移也可以用来获取链接文本。输入我们需要浏览的URL来启动这个程序。
+
+.. code:: java
+
+
+    /**
+     * 
+     */
+    package swingstudy.ch16;
+
+    import java.io.BufferedReader;
+    import java.io.InputStream;
+    import java.io.InputStreamReader;
+    import java.net.URL;
+    import java.net.URLConnection;
+
+    import javax.swing.text.AttributeSet;
+    import javax.swing.text.html.HTML;
+    import javax.swing.text.html.HTMLDocument;
+    import javax.swing.text.html.HTMLEditorKit;
+    import javax.swing.text.html.parser.ParserDelegator;
+
+    /**
+     * @author mylxiaoyi
+     *
+     */
+    public class DocumentIteratorExample {
+
+        /**
+         * @param args
+         */
+        public static void main(String[] args) throws Exception{
+            // TODO Auto-generated method stub
+
+            if(args.length != 1) {
+                System.err.println("Usage: java DocumentIteratorExample input-URL");
+            }
+            
+            // Load HTML file synchronously
+            URL url = new URL(args[0]);
+            URLConnection connection = url.openConnection();
+            InputStream is = connection.getInputStream();
+            InputStreamReader isr = new InputStreamReader(is);
+            BufferedReader br =  new BufferedReader(isr);
+            
+            HTMLEditorKit htmlKit = new HTMLEditorKit();
+            HTMLDocument htmlDoc = (HTMLDocument)htmlKit.createDefaultDocument();
+            HTMLEditorKit.Parser parser = new ParserDelegator();
+            HTMLEditorKit.ParserCallback callback = htmlDoc.getReader(0);
+            parser.parse(br, callback, true);
+            
+            // Parser
+            for(HTMLDocument.Iterator iterator = htmlDoc.getIterator(HTML.Tag.A); iterator.isValid(); iterator.next()) {
+                AttributeSet attributes = iterator.getAttributes();
+                String srcString = (String)attributes.getAttribute(HTML.Attribute.HREF);
+                System.out.print(srcString);
+                int startOffset = iterator.getStartOffset();
+                int endOffset = iterator.getEndOffset();
+                int length = endOffset - startOffset;
+                String text = htmlDoc.getText(startOffset, endOffset);
+                System.out.println(" - "+text);
+            }
+            System.exit(0);
+        }
+
+    }
+
+**ElementIterator类**
+
+检测HTMLDocument内容的另一种方法就是使用ElementIterator（并不是特定于HTML文档）。当使用ElementIteartor时，我们会看到文档的所有的Element对象并且询问每一个是什么。如果对象是我们感兴趣的，我们就可以近距离查看。
+
+要获得文档的迭代器，可以使用如下的代码：
+
+.. code:: java
+
+    ElementIterator iterator = new ElementIterator(htmlDoc);
+
+ElementIterator并不意味着一个简单的顺序迭代器。他是具有next()与previous()方法的双向迭代器，并且支持使用first()方法回到起始处。尽管next()与previous()方法返回要处理的下一个或前一个元素，我们还可以通过current()方法获取当前位置的元素。下面的代码显示在一个文档中遍历的基本循环方法：
+
+.. code:: java
+
+    Element element;
+    ElementIterator iterator = new ElementIterator(htmlDoc);
+    while ((element = iterator.next()) != null) {
+     // Process element
+    }
+
+我们如何确定我们获得了哪一个元素，并且如果不是我们感兴趣的我们希望忽略？我们需要由其属性集合中获取其名字与类型。
+
+.. code:: java
+
+    AttributeSet attributes = element.getAttributes();
+    Object name = attributes.getAttribute(StyleConstants.NameAttribute);
+    if (name instanceof HTML.Tag) {
+
+现在我们可以查找特定的标签类型，例如HTML.Tag.H1，HTML.Tag.H2等。标签的实际内容将会位于元素的子元素中。为了进行演示，下面的代码显示了如何在文档中查找H1，H2与H3标签，同时显示了与文档相关联的合适标题。
+
+.. code:: java
+
+    if ((name instanceof HTML.Tag) && ((name == HTML.Tag.H1) ||
+        (name == HTML.Tag.H2) || (name == HTML.Tag.H3))) {
+      // Build up content text as it may be within multiple elements
+      StringBuffer text = new StringBuffer();
+      int count = element.getElementCount();
+      for (int i=0; i<count; i++) {
+        Element child = element.getElement(i);
+        AttributeSet childAttributes = child.getAttributes();
+        if (childAttributes.getAttribute(StyleConstants.NameAttribute) ==
+            HTML.Tag.CONTENT) {
+          int startOffset = child.getStartOffset();
+          int endOffset = child.getEndOffset();
+          int length = endOffset - startOffset;
+          text.append(htmlDoc.getText(startOffset, length));
+        }
+      }
+    }
+
+要实际尝试，我们需要实际查找一个使用H1,H2或是H3标签的页面。
+
+JFormattedTextField格式
+-----------------------
+
+在第15章中，我们简单尝试了JFormattedTextField组件。现在，我们将会探讨该组件的其他方面。JFormattedTextField用来接收用户的格式化输入。这听起来简单，但是实际是这非常重要且复杂。如果没有JFormattedTextField，获得格式化输入就不会像听起来这样简单。如果考虑本地化需求则会使得事情更为有趣。
+
+JFormattedTextField组件不仅支持格式化输入，但是还会允许用户使用键盘来增加或是减少输入值；例如，在日期月份中滚动。
+
+对于JFormattedTextField，验证是通过focusLostBehavior属性来控制的。这可以设置为如下的四个值：
+
+-  COMMIT\_OR\_REVERT：这是默认值。当组件失去焦点时，组件会自动调用内部的commitEdit()方法。这会分析组件的内容并且在发生错误的情况下抛出ParseException，并将内容恢复为最近的正确值。
+-  COMMIT：该设置类似于COMMIT\_OR\_REVERT，但是他会将不正确的值保留在文本域中，并允许用户进行修正。
+-  REVERT：该设置总是会恢复值。
+-  PERSIST：该设置实际是并不会做任何事情。当focusLostBehavior属性被设置为PERSIST时，我们应手动调用commitEdit()方法来在使用内容之前检测内容是否合法。
+
+日期与数字
+~~~~~~~~~~
+
+作为开始，我们先来看一下如何使用JFormattedTextField接收应进行本地化的输入。这包括所有的日期，时间与数字格式，基本是由DateFormat或是NumberFormat对象所获得的所有内容。
+
+如果我们为JFormattedTextField构造函数提供了一个Date对象或是Number子类，组件会将输入String传递该对象类型的构造函数进行输入验证。相反，我们应通过向构造函数传递DateFormat或是NumberFormat来使用位于java.swing.text包中的InternationalFormatter类。这允许我们指定长的或是短的日期与时间，以及货币，百分比，数字的小数或是整数格式。
+
+**日期与时间格式**
+
+为了演示日期与时间格式，列表6-7的示例接收各种日期与时间输入。由上至下，输入分别为默认locale的短日期格式，对于美国英语的完全日期格式，意大利的中等日期格式，法国的星期以及默认locale的短时间格式。
+
+.. code:: java
+
+
+    /**
+     * 
+     */
+    package swingstudy.ch16;
+
+    import java.awt.EventQueue;
+    import java.awt.FlowLayout;
+    import java.text.DateFormat;
+    import java.text.Format;
+    import java.text.SimpleDateFormat;
+    import java.util.Date;
+    import java.util.Locale;
+
+    import javax.swing.BoxLayout;
+    import javax.swing.JFormattedTextField;
+    import javax.swing.JFrame;
+    import javax.swing.JLabel;
+    import javax.swing.JPanel;
+
+    /**
+     * @author mylxiaoyi
+     *
+     */
+    public class DateInputSample {
+
+        /**
+         * @param args
+         */
+        public static void main(String[] args) {
+            // TODO Auto-generated method stub
+
+            Runnable runner =  new Runnable() {
+                public void run() {
+                    JFrame frame = new JFrame("Date/Time Input");
+                    frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+                    
+                    JLabel label;
+                    JFormattedTextField input;
+                    JPanel panel;
+                    
+                    BoxLayout layout = new BoxLayout(frame.getContentPane(), BoxLayout.Y_AXIS);
+                    frame.setLayout(layout);
+                    
+                    Format shortDate = DateFormat.getDateInstance(DateFormat.SHORT);
+                    label = new JLabel("Short date:");
+                    input = new JFormattedTextField(shortDate);
+                    input.setValue(new Date());
+                    input.setColumns(20);
+                    panel =  new JPanel(new FlowLayout(FlowLayout.RIGHT));
+                    panel.add(label);
+                    panel.add(input);
+                    frame.add(panel);
+                    
+                    Format fullUSDate = DateFormat.getDateInstance(DateFormat.FULL, Locale.US);
+                    label = new JLabel("Full US date:");
+                    input =  new JFormattedTextField(fullUSDate);
+                    input.setValue(new Date());
+                    input.setColumns(20);
+                    panel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+                    panel.add(label);
+                    panel.add(input);
+                    frame.add(panel);
+                    
+                    Format mediumItalian = DateFormat.getDateInstance(DateFormat.MEDIUM, Locale.ITALIAN);
+                    label = new JLabel("Medium Italian date:");
+                    input = new JFormattedTextField(mediumItalian);
+                    input.setValue(new Date());
+                    input.setColumns(20);
+                    panel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+                    panel.add(label);
+                    panel.add(input);
+                    frame.add(panel);
+                    
+                    Format dayOfWeek = new SimpleDateFormat("E", Locale.FRENCH);
+                    label = new JLabel("French day of week:");
+                    input = new JFormattedTextField(dayOfWeek);
+                    input.setValue(new Date());
+                    input.setColumns(20);
+                    panel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+                    panel.add(label);
+                    panel.add(input);
+                    frame.add(panel);
+                    
+                    Format shortTime = DateFormat.getTimeInstance(DateFormat.SHORT);
+                    label = new JLabel("Short time:");
+                    input = new JFormattedTextField(shortTime);
+                    input.setValue(new Date());
+                    input.setColumns(20);
+                    panel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+                    panel.add(label);
+                    panel.add(input);
+                    frame.add(panel);
+                    
+                    frame.pack();
+                    frame.setVisible(true);
+                }
+            };
+            EventQueue.invokeLater(runner);
+        }
+
+    }
+
+图16-6显示了程序运行结果。要使用不同的locale启动程序，我们可以在命令行使用类似下面的命令来设置user.language与user.country设置。
+
+.. code:: java
+
+    java -Duser.language=fr -Duser.country=FR DateInputSample
+
+然而，这只会修改没有指定locale集合的输入格式。
+
+.. figure:: images/Swing_16_6.png
+   :alt: Swing_16_6.png
+
+   Swing\_16\_6.png
+**数字格式**
+
+数字的使用类似于日期，所不同的是使用java.text.NumberFormat类，而不是DateFormat类。可以实现的本地化是通过getCurrencyInstance()，getInstance()，IntegerInstance()，getNumberInstance()与getPercentInstance()方法来实现的。
+
+NumberFormat类会处理必要的逗号，句点，百分号等占位符。当输入数字时，并不需要输入额外的字符，例如用于千的逗号。组件会在输入之后在合适的位置进行添加，如图16-7的示例所示。注意，十进制的小数点以及逗号的位置会以及他们的格式会因locale的不同而不同。
+
+.. figure:: images/Swing_16_7.png
+   :alt: Swing_16_7.png
+
+   Swing\_16\_7.png
+列表16-8显示了生成图16-7的程序源码。所有的输入域都以值2425.50开始。在整数的情况下，输入值会进行近似处理。当设置JFormattedTextField的内容时，使用setValue()方法，而不是setText()方法。这会保证文本内容进行验证。
+
+.. code:: java
+
+
+    /**
+     * 
+     */
+    package swingstudy.ch16;
+
+    import java.awt.EventQueue;
+    import java.awt.FlowLayout;
+    import java.awt.Font;
+    import java.text.Format;
+    import java.text.NumberFormat;
+    import java.util.Locale;
+
+    import javax.swing.BoxLayout;
+    import javax.swing.JFormattedTextField;
+    import javax.swing.JFrame;
+    import javax.swing.JLabel;
+    import javax.swing.JPanel;
+
+    /**
+     * @author mylxiaoyi
+     *
+     */
+    public class NumberInputSample {
+
+        /**
+         * @param args
+         */
+        public static void main(String[] args) {
+            // TODO Auto-generated method stub
+
+            Runnable runner = new Runnable() {
+                public void run() {
+                    JFrame frame = new JFrame("Number Input");
+                    frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+                    Font font = new Font("SansSerif", Font.BOLD, 16);
+                    
+                    JLabel label;
+                    JFormattedTextField input;
+                    JPanel panel;
+                    
+                    BoxLayout layout = new BoxLayout(frame.getContentPane(), BoxLayout.Y_AXIS);
+                    frame.setLayout(layout);
+                    
+                    Format currency = NumberFormat.getCurrencyInstance(Locale.UK);
+                    label =  new JLabel("UK Currency");
+                    input = new JFormattedTextField(currency);
+                    input.setValue(2424.50);
+                    input.setColumns(20);
+                    input.setFont(font);
+                    panel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+                    panel.add(label);
+                    panel.add(input);
+                    frame.add(panel);
+                    
+                    Format general = NumberFormat.getInstance();
+                    label =  new JLabel("General/Instance");
+                    input = new JFormattedTextField(general);
+                    input.setValue(2424.50);
+                    input.setColumns(20);
+                    input.setFont(font);
+                    panel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+                    panel.add(label);
+                    panel.add(input);
+                    frame.add(panel);
+                    
+                    Format integer = NumberFormat.getIntegerInstance(Locale.ITALIAN);
+                    label = new JLabel("Italian integer:");
+                    input = new JFormattedTextField(integer);
+                    input.setValue(2424.50);
+                    input.setColumns(20);
+                    input.setFont(font);
+                    panel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+                    panel.add(label);
+                    panel.add(input);
+                    frame.add(panel);
+                    
+                    Format number = NumberFormat.getNumberInstance(Locale.FRENCH);
+                    label = new JLabel("French Number:");
+                    input = new JFormattedTextField(number);
+                    input.setValue(2424.50);
+                    input.setColumns(20);
+                    input.setFont(font);
+                    panel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+                    panel.add(label);
+                    panel.add(input);
+                    frame.add(panel);
+                    
+                    label = new JLabel("Raw Number:");
+                    input = new JFormattedTextField(2424.50);
+                    input.setColumns(20);
+                    input.setFont(font);
+                    panel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+                    panel.add(label);
+                    panel.add(input);
+                    frame.add(panel);
+                    
+                    frame.pack();
+                    frame.setVisible(true);
+                }
+            };
+            EventQueue.invokeLater(runner);
+        }
+
+    }
+
+图16-7中五个JFormattedTextField示例中的最后一个使用一个double初始化组件。值2424.50会被自动装箱为一个Double对象。向构造函数传递一个对象并没有错。然而，当我们在文本域内输入值的时候我们会发现一些不规则的地方。值似乎总是以一个十进制小数点开头，尽管已经接受更多的输入数字。我们不需要使用一个Format对象进行文本与Object对象的转换，在这里我们使用接收String的Double构造函数。
+
+当我们将java.text.Format对象传递给JFormattedTextField构造函数时，这在内部会映射到DateFormatter或是NumberFormatter对象。这两个对象都是InternationalFormatter类的子类。名为JFormattedTextField.AbstractFormatterFactory的内联类在JFormattedTextField内管理格式化对象的使用。工厂会在用户输入JFormattedTextField的时候install()格式器并且在离开时uninstall()格式器，从而保证格式器每次只在一个文本域内被激活。install()与uninstall()方法是由所有格式器的JFormattedTextField.AbstractFormatter超类继承来的。
+
+输入隐藏
+~~~~~~~~
+
+除了数字与日期，JFormattedTextField支持遵循某种模式或是隐藏的用户输入。例如，如果一个输入域是一个美国社会保险号（SSN），则他有一个典型的数字，数字，数字，短划线，数字，数字，短划线，数字，数字，数字，数字的模型。借助于MaskFormatter类，我们可以使用表16-9中所列的字符来指定输入隐藏。
+
+.. figure:: images/Swing_table_16_9.png
+   :alt: Swing_table_16_9.png
+
+   Swing\_table\_16\_9.png
+例如，下面的格式器创建了SSN输入掩码：
+
+.. code:: java
+
+    new MaskFormatter("###'-##'-####")
+
+输入掩码中单引号后的字符会被作为字面量处理，在这种情况是一个短划线。我们可以将这个格式器传递给JFormattedTextField的构造函数或是使用setMask()方法配置文本域。
+
+为了演示，列表16-9包含了两个JFormattedTextField组件：一个来接受SSN而另一个接收美国电话号码。
+
+.. code:: java
+
+
+    /**
+     * 
+     */
+    package swingstudy.ch16;
+
+    import java.awt.EventQueue;
+    import java.awt.FlowLayout;
+    import java.text.ParseException;
+
+    import javax.swing.BoxLayout;
+    import javax.swing.JFormattedTextField;
+    import javax.swing.JFrame;
+    import javax.swing.JLabel;
+    import javax.swing.JPanel;
+    import javax.swing.text.MaskFormatter;
+
+    /**
+     * @author mylxiaoyi
+     *
+     */
+    public class MaskInputSample {
+
+        /**
+         * @param args
+         */
+        public static void main(String[] args) {
+            // TODO Auto-generated method stub
+
+            Runnable runner = new Runnable() {
+                public void run() {
+                    JFrame frame = new JFrame("Mask Input");
+                    frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+                    
+                    JLabel label;
+                    JFormattedTextField input;
+                    JPanel panel;
+                    MaskFormatter formatter;
+                    
+                    BoxLayout layout = new BoxLayout(frame.getContentPane(), BoxLayout.Y_AXIS);
+                    frame.setLayout(layout);
+                    
+                    try {
+                        label = new JLabel("SSN");
+                        formatter = new MaskFormatter("###'-##'-####");
+                        input =  new JFormattedTextField(formatter);
+                        input.setValue("123-45-6789");
+                        input.setColumns(20);
+                        panel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+                        panel.add(label);
+                        panel.add(input);
+                        frame.add(panel);
+                    }
+                    catch(ParseException e) {
+                        System.err.println("Unable to add SSN");
+                    }
+                    
+                    try {
+                        label = new JLabel("US Phone");
+                        formatter = new MaskFormatter("'(###')' ###'-####");
+                        input = new JFormattedTextField(formatter);
+                        input.setColumns(20);
+                        panel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+                        panel.add(label);
+                        panel.add(input);
+                        frame.add(panel);
+                    }
+                    catch(ParseException e) {
+                        System.err.println("Unable to add Phone");
+                    }
+                    
+                    frame.pack();
+                    frame.setVisible(true);
+                }
+            };
+            EventQueue.invokeLater(runner);
+        }
+
+    }
+
+图16-8显示了程序的输出。在这个例子中，SSN文本域以初始值开始，然而电话号码文本域却没有。
+
+MaskFormatter提供了一些自定义选项。默认情况下，格式器处于覆写模式，所以当我们输入时，所输入的数字会替换文本域中的数字与空格。将overwriteModel属性设置为false可以禁止这一行为。通常情况下，这并没有必要，尽管对于输入长的日期会比较有帮助。
+
+如果我们希望使用不同的字符作为占位符，在位置被填充到掩码之前，设置MaskFormatter的placeholderCharacter属性。为了演示，将下面的代码行添加到列表16-9中的电话号码格式器之前：
+
+formatter.setPlaceholder('\*');
+
+我们将会看到显示在图16-9中底部的文本域的结果。
+
+.. figure:: images/Swing_16_9.png
+   :alt: Swing_16_9.png
+
+   Swing\_16\_9.png
+另一个比较有用的MaskFormatter属性就是validCharacters，用于限制哪一个字母数字字符对于输入域是合法的。
+
+DefaultFormatterFactory类
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+javax.swing.text包中的DefaultFormatterFactory类提供了一种方法来使得不同的格式器显示值，编辑以及null值的特殊情况。他提供了五个构造函数，由无参数的构造函数开始，然后为每一个构造函数添加了一个额外的AbstractFormatter参数。
+
+.. code:: java
+
+    public DefaultFormatterFactory()
+    DefaultFormatterFactory factory = new DefaultFormatterFactory()
+    public DefaultFormatterFactory(JFormattedTextField.AbstractFormatter defaultFormat)
+    DateFormat defaultFormat = new SimpleDateFormat("yyyy--MMMM--dd");
+    DateFormatter defaultFormatter = new DateFormatter(displayFormat);
+    DefaultFormatterFactory factory = new DefaultFormatterFactory(defaultFormatter);
+    public DefaultFormatterFactory(JFormattedTextField.AbstractFormatter defaultFormat,
+      JFormattedTextField.AbstractFormatter displayFormat)
+    DateFormat displayFormat = new SimpleDateFormat("yyyy--MMMM--dd");
+    DateFormatter displayFormatter = new DateFormatter(displayFormat);
+    DefaultFormatterFactory factory = new DefaultFormatterFactory(displayFormatter,
+      displayFormatter);
+    public DefaultFormatterFactory(JFormattedTextField.AbstractFormatter defaultFormat,
+      JFormattedTextField.AbstractFormatter displayFormat,
+      JFormattedTextField.AbstractFormatter editFormat)
+    DateFormat displayFormat = new SimpleDateFormat("yyyy--MMMM--dd");
+    DateFormatter displayFormatter = new DateFormatter(displayFormat);
+    DateFormat editFormat = new SimpleDateFormat("MM/dd/yy");
+    DateFormatter editFormatter = new DateFormatter(editFormat);
+    DefaultFormatterFactory factory = new DefaultFormatterFactory(
+      displayFormatter, displayFormatter, editFormatter);
+    public DefaultFormatterFactory(JFormattedTextField.AbstractFormatter defaultFormat,
+      JFormattedTextField.AbstractFormatter displayFormat,
+      JFormattedTextField.AbstractFormatter editFormat,
+      JFormattedTextField.AbstractFormatter nullFormat)
+    DateFormat displayFormat = new SimpleDateFormat("yyyy--MMMM--dd");
+    DateFormatter displayFormatter = new DateFormatter(displayFormat);
+    DateFormat editFormat = new SimpleDateFormat("MM/dd/yy");
+    DateFormatter editFormatter = new DateFormatter(editFormat);
+    DateFormat nullFormat = new SimpleDateFormat("'null'");
+    DateFormatter nullFormatter = new DateFormatter(nullFormat);
+    DefaultFormatterFactory factory = new DefaultFormatterFactory(
+      displayFormatter, displayFormatter, editFormatter, nullFormatter);
+
+DefaultFormatterFactory的使用并没有什么神奇之处。只需要创建一个实例然后传递给JFormattedTextField的构造函数。然后文本域的状态将会决定使用哪种格式器来显示当前值。通常情况下，显示格式器会为默认设置进行重复。如果格式器中的任何一个为null或是没有设置，则会使用默认的格式器。
+
+小结
+----
+
+在本章中，我们了解了使用JFC/Project
+Swing文本组件的一些高级方面。我们了解了如何使用预定义的TextAction对象来创建工作用户界面，而不需要定义我们自己的事件处理功能。另外，我们了JTextPane以及如何通过AttributeSet，MutableAttributeSet，SimpleAttributeSet与StyleConstants在JTextPane内创建多属性文本。我们同时了解了如何在Document内创建tab
+stop以及Swing的EditorKit实用程序，特别探讨了HTMLEditorKit的细节。最后，我们了解了使用JFormattedTextField接收格式化输入。
+
+在第17章中，我们将会探讨用于显示层次结构数据的Swing组件：JTree。

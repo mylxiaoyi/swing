@@ -1,0 +1,800 @@
+Borders
+=======
+
+Swing组件提供了对组件周围的边框区域进行定制的功能。为了简单，我们可以使用预定义的八个边框，或者是我们可以创建自己的边框。在本章中，我们将会了解如何最好的使用已存在边框以及如何创建我们自己的边框。
+
+Some Basics on Woring with Borders
+----------------------------------
+
+边框是带有标准的setBorder()与getBorder()属性方法的JComponent属性。所以，所有的JComponent子类的Swing组件都具有边框。默认情况下，一个组件并没有与其相关联的自定义边框。（JComponent的getBorder()方法返回null。）相反，组件显示的默认边框是依据当前的观感对于其状态最为合适的边框。例如，对于JButton，对于每一个观感特定不同的边框，边框可以表现为按下，未按下或是禁止。
+
+尽管对于所有的组件初始的边框属性设置为null，我们可以通过调用JComponent的setBorder(Border
+newValue)方法来修改组件的边框。一旦设置，修改的值就会覆盖当前观感的边框，并且在组件的区域内绘制新边框。如果在稍后的时候，我们希望将边框重新设置为对于状态与观感合适的边框，我们可以将边框属性修改为null，使用setBorder(null)并且调用组件的updateUI()方法。updateUI()方法会通知观感重新设置边框。如果我们没有调用updateUI()方法，则组件将没有边框。
+
+图7-1显示了一个JLabel周围的各种边框设置，通过文本标签来标明边框类型。如何创建不同的边框将会在本章的稍后部分进行讨论。
+
+.. figure:: images/swing_7_1.png
+   :alt: swing_7_1.png
+
+   swing\_7\_1.png
+Exploring the Border Inteface
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+我们可以在javax.swing.border包中找到Border接口。这个接口构成了所有边框类的基础。这个接口直接由AbstractBorder类实现，这个类是所有预定义的Swing边框类的父类：BevelBorder，CompoundBorder，EmptyBorder，EtchedBorder，LineBorder，MatteBorder，SoftBevelBorder以及TitledBorder。另外一个有趣的类就是BorderFactory类，我们可以在javax.swing包中找到这个类。这个类使用工厂设计模式来创建边框，隐藏了实现细节，并且可以缓存各种选项来优化共同使用。
+
+在这里显示的Border接口由三个方法构成：paintBorder()，getBordernsets()以及isBorderOpaque()。这些方法会在后面的章节中进行描述。
+
+**paintBorder()**
+
+paintBorder()方法是这个接口的关键方法。其定义如下：
+
+.. code:: java
+
+    public void paintBorder(Component c, Graphics g, int x, int y, int
+      width, int height)
+
+边框实现的绘制是由这个方法完成的。通常，Border实现首先会询问Insets维度，然后在外层区域的四个边进行绘制，如图7-2所示。如果边框是不透明的，paintBorder()实现必须填充整个内部区域。如果一个边框是不透明的，并没有填充区域，那么这是一个bug并且需要修正。
+
+列表7-1显示了一个简单的paintBorder()实现，这个实现使用比上部与下部略浅的颜色填充左边与右边。
+
+.. code:: java
+
+    public void paintBorder(Component c, Graphics g, int x, int y, int width,
+        int height) {
+      Insets insets = getBorderInsets(c);
+      Color color = c.getForeground();
+      Color brighterColor = color.brighter();
+    // Translate coordinate space
+      g.translate(x, y);
+    // Top
+      g.setColor(color);
+      g.fillRect(0, 0, width, insets.top);
+    // Left
+      g.setColor(brighterColor);
+      g.fillRect(0, insets.top, insets.left, height-insets.top-insets.bottom);
+    // Bottom
+      g.setColor(color);
+      g.fillRect(0, height-insets.bottom, width, insets.bottom);
+    // Right
+      g.setColor(brighterColor);
+      g.fillRect(width-insets.right, insets.top, insets.right,
+        height-insets.top-insets.bottom);
+    // Translate coordinate space back
+      g.translate(-x, -y);
+    }
+
+当创建我们自己的边框时，我们将会经常发现我们自己在填充相同的非重叠矩形区域。Graphics的translate()方法简化了绘制坐标的指定。无需转换坐标，我们需要通过原始的(x,y)来偏移绘制。
+
+注意：我们不能通过插入g.fillRect(x,y,width,height)来简化，因为这会填充整个组件区域，而不是边框区域。
+
+**getBorderInsets()**
+
+getBorderInsets()方法会返回在指定的组件c作为Insets对象的周围绘制边框所必须的空间。其定义如下：
+
+.. code:: java
+
+    public Insets getBorderInsets(Component c)
+
+如图7-2所示，这些内部区域定义了可以绘制边框的合法区域。Component参数可以使得我们使用他的一些属性来决定内部区域的尺寸。
+
+**isBorderOpaque()**
+
+边框可以是不透明的或是透明的。isBorderOpaque()方法可以返回true或是false来表明边框是哪种形式。其定义如下：
+
+.. code:: java
+
+    public boolean isBorderOpaque()
+
+当这个方法返回true时，边框需要是非透明的，填充其整个内部区域。当其返回false时，没有绘制的区域将会保持边框所在的组件的背景颜色。
+
+Introducing BorderFactory
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+现在我们已经基本了解了Border接口是如何工作的，现在我们来了解一下作为简单创建边框方法的BorderFactory类。我们可以在javax.swing包中找到这个类，BorderFactory类提供了一系列的static方法来创建预定义的边框。无需调用不同的边框类的特定构造函数，通过这个工厂类我们几乎可以创建所有的边框。这个工厂类同时可以缓存一些边框的创建从而避免多次重新创建经常使用的边框。这个类的定义如下：
+
+.. code:: java
+
+    public class BorderFactory {
+      public static Border createBevelBorder(int type);
+      public static Border createBevelBorder(int type, Color highlight,
+        Color shadow);
+      public static Border createBevelBorder(int type, Color highlightOuter,
+        Color highlightInner, Color shadowOuter, Color shadowInner);
+      public static CompoundBorder createCompoundBorder();
+      public static CompoundBorder createCompoundBorder(Border outside,
+        Border inside);
+      public static Border createEmptyBorder();
+      public static Border createEmptyBorder(int top, int left, int bottom,
+        int right);
+      public static Border createEtchedBorder();
+      public static Border createEtchedBorder(Color highlight, Color shadow);
+      public static Border createEtchedBorder(int type);
+      public static Border createEtchedBorder(int type, Color highlight,
+        Color shadow);
+      public static Border createLineBorder(Color color);
+      public static Border createLineBorder(Color color, int thickness);
+      public static Border createLoweredBevelBorder();
+      public static MatteBorder createMatteBorder(int top, int left, int bottom,
+        int right, Color color);
+      public static MatteBorder createMatteBorder(int top, int left, int bottom,
+        int right, Icon icon);
+      public static Border createRaisedBevelBorder();
+      public static TitledBorder createTitledBorder(Border border);
+      public static TitledBorder createTitledBorder(Border border, String title);
+      public static TitledBorder createTitledBorder(Border border, String title,
+        int justification, int position);
+      public static TitledBorder createTitledBorder(Border border, String title,
+        int justification, int position, Font font);
+      public static TitledBorder createTitledBorder(Border border, String title,
+        int justification, int position, Font font, Color color);
+      public static TitledBorder createTitledBorder(String title);
+    }
+
+我们将会在描述特定的边框类型的过程中描述这个类的不同方法。例如，要创建一个具有红线的边框，我们可以使用下面的语句，然后将这个边框关联到一个组件。
+
+.. code:: java
+
+    Border lineBorder = BorderFactory.createLineBorder(Color.RED);
+
+Starting with AbstractBorder
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+在我们了解javax.swing.border包中单个的边框之前，一个系统边框需要获得特别的关注：AbstractBorder。正如前面所提到的，AbstractBorder类是其他的预定义边框的父类。
+
+**创建AbstractBorder**
+
+AbstractBorder有一个构造函数：
+
+.. code:: java
+
+    public AbstractBorder()
+
+因为AbstractBorder是其他标准边框的父类，这个构造函数实际是为其他边框类自动调用的。
+
+**检测AbstractBorder方法**
+
+AbstractBorder类提供了Border接口的三个方法实现。
+
+.. code:: java
+
+    public Insets getBorderInsets(Component c)
+
+AbstractBorder的内部区域是零。每一个预定义的子类要重写getBorderInsets()方法。
+
+.. code:: java
+
+    public boolean isBorderOpaque()
+
+AbstractBorder的默认非透明属性设置为false。这就意味着如果我们需要绘制类似点划线的边框，组件的背景将会是透明的。许多预定义的子类重写了isBorderOpaque()方法。
+
+.. code:: java
+
+    public void paintBorder(Component c, Graphics g, int x, int y,
+      int width, int height)
+
+AbstractBorder的绘制边框是空的。所有的子类应该重写这个方法来实际绘制一个边框，也许除了EmptyBorder。
+
+除了提供了Border方法的默认实现以外，AbstractBorder提供了我们可以利用的其他两个功能，或者仅是允许系统使用。首先，还有另外一个需要两个参数Component与Insets的getBorderInsets()方法：
+
+.. code:: java
+
+    public Insets getBorderInsets(Component c, Insets insets)
+
+在这个方法版本中，并没有创建并返回一个新的Insets对象，所传递的Insets对象首先被修改然后返回。使用这个方法可以避免每次需要查询边框内部区域时创建然后销毁额外的Insets对象。
+
+第二个可用的新方法是getInteriorRectangle()，这个方法有静态与非静态版本。指定了Component，Border，以及四个整数参数，这个方法将会返回一个内部的Rectangle，从而组件可以在边框内部区域内绘制其自身。
+
+Examining the Predefined Borders
+--------------------------------
+
+现在我们已经描述了边框基础，现在我们来了解一下每一个预定义的特定边框，在某种程度上以复杂性的顺序进行描述。
+
+EmptyBorder Class
+~~~~~~~~~~~~~~~~~
+
+由逻辑上来说，空边框就是在其内部不进行任何绘制的边框。当我们在使用一个通常的AWT容器并且需要覆盖insets()或是getInsets()方法时我们可以使用EmptyBorder。他可以使得我们保留组件周围的额外空间从而略微向外一点扩展屏幕组件或是修改居中或是调整某些方面。图7-3显示了一个空边框以及一个非空边框。
+
+.. figure:: images/swing_7_3.png
+   :alt: swing_7_3.png
+
+   swing\_7\_3.png
+EmptyBorder有两个构造函数以及两个BorderFactory的工厂方法：
+
+.. code:: java
+
+    public static Border createEmptyBorder()
+    Border emptyBorder = BorderFactory.createEmptyBorder();
+    public static Border createEmptyBorder(int top, int left, int bottom, int right)
+    Border emptyBorder = BorderFactory.createEmptyBorder(5, 10, 5, 10);
+    public EmptyBorder(Insets insets)
+    Insets insets = new Insets(5, 10, 5, 10);
+    Border EmptyBorder = new EmptyBorder(insets);
+    public EmptyBorder(int top, int left, int bottom, int right)
+    Border EmptyBorder = new EmptyBorder(5, 10, 5, 10);
+
+每一个都允许我们以方法特定的方式来自定义边框的insets。无参数的版本会使用零insets创建一个空的边框；否则，我们可以使用AWT
+Insets实例或是insets片段来指定insets。在默认情况下，EmptyBorder是透明的。
+
+注意：当我们使用零insets创建一个空边框时，我们应该使用工厂方法来创建边框，而避免直接使用构造函数。这可以使用工厂创建一个共享的空边框。如果我们所希望做的是隐藏边框，而且组件是一个AbstractButton子类，则只需要调用setBorderPainted(false)。
+
+LineBorder Class
+~~~~~~~~~~~~~~~~
+
+LineBorder是围绕组件周围用户义定宽度的单色行边框。他可以具有方角或是圆角。如果我们希望修改不同边的粗细，我们需要使用MatteBorder，我们会在本章稍后进行讨论。图7-4显示了一个青筋LineBorder的示例，在这个例子中两个边框分别为1像素与12像素宽，带圆角以及不带圆角。
+
+**创建LineBorder**
+
+LineBorder有三个构造函数，两个工厂方法以及两个BorderFactory工厂方法：
+
+.. code:: java
+
+
+    public LineBorder(Color color)
+    Border lineBorder = new LineBorder (Color.RED);
+
+    public LineBorder(Color color, int thickness)
+    Border lineBorder = new LineBorder (Color.RED, 5);
+
+    public LineBorder (Color color, int thickness, boolean roundedCorners)
+    Border lineBorder = new LineBorder (Color.RED, 5, true);
+
+    public static Border createBlackLineBorder()
+    Border blackLine = LineBorder.createBlackLineBorder();
+
+    public static Border createGrayLineBorder()
+    Border grayLine = LineBorder.createGrayLineBorder();
+
+    public static Border createLineBorder(Color color)
+    Border lineBorder = BorderFactory.createLineBorder(Color.RED);
+
+    public static Border createLineBorder(Color color, int thickness)
+    Border lineBorder = BorderFactory.createLineBorder(Color.RED, 5);
+
+注意：LineBorder工厂方法工作如下：如果我们两次创建相同的边框，则会返回相同的LineBorder对象。然而，如同所有的对象对比，我们应总是使用equals()方法来检测对象相同。
+
+每一个方法允许我们自定义边框的颜色与线的粗细。如果没有指定粗细，则默认值为1。LineBorder的两个工厂方法可以用于通常使用的黑色与灰色。因为边框填充整个insets区域，所以LineBorder是不透明的，除非他们是圆角。所以，边框的透明性是圆角设置相反的。
+
+**设置LineBorder属性**
+
+表7-1列出了由AbstractBorder继承的borderOpaque属性以及LineBorder的特定属性。
+
++------------------+------------+----------+
+| 属性名           | 数据类型   | 访问性   |
++------------------+------------+----------+
+| borderOpaque     | Boolean    | 只读     |
++------------------+------------+----------+
+| lineColor        | Color      | 只读     |
++------------------+------------+----------+
+| roundedCorners   | boolean    | 只读     |
++------------------+------------+----------+
+| thickness        | int        | 只读     |
++------------------+------------+----------+
+
+Table: LineBorder属性
+
+BevelBorder Class
+~~~~~~~~~~~~~~~~~
+
+BevelBorder以三维外观绘制边框，其可以表现为升起或是降低。当边框升起时，在边框的底部与右边会出现阴影效果。当降低时，阴影的位置会相反。图7-5显示了带有默认与自定义颜色的升起与降低BevelBorder。
+
+.. figure:: images/swing_7_5.png
+   :alt: swing_7_5.png
+
+   swing\_7\_5.png
+在组件周围绘制一对一像素宽的线可以产生三维外观的模拟效果。非阴影的边框侧边以被称为highlight颜色进行绘制，而其他两边以shadow颜色进行绘制。highlight颜色与shadow颜色对于BevelBorder的外边与内边使用不同的阴影进行绘制。所以，一个BevelBorder总共使用四种不同的颜色。图7-6显示这四种颜色是如何组合在一起的。
+
+.. figure:: images/swing_7_6.png
+   :alt: swing_7_6.png
+
+   swing\_7\_6.png
+BevelBorder有三个构造函数以及一个工厂方法，同时还有BorderFactory创建BevelBorder对象的五个工厂方法：
+
+.. code:: java
+
+    public BevelBorder(int bevelType)
+    Border bevelBorder = new BevelBorder(BevelBorder.RAISED);
+
+    public static Border createBevelBorder(int bevelType)
+    Border bevelBorder = BorderFactory.createBevelBorder(BevelBorder.RAISED);
+
+    public static Border createLoweredBevelBorder()
+    Border bevelBorder = BorderFactory.createLoweredBevelBorder();
+
+    public static Border createRaisedBevelBorder()
+    Border bevelBorder = BorderFactory.createRaisedBevelBorder();
+
+    public BevelBorder(int bevelType, Color highlight, Color shadow)
+    Border bevelBorder = new BevelBorder(BevelBorder.RAISED, Color.PINK, Color.RED);
+
+    public static Border createBevelBorder(int bevelType, Color highlight, Color shadow)
+    Border bevelBorder = BorderFactory.createBevelBorder(BevelBorder.RAISED,
+      Color.PINK, Color.RED);
+
+    public BevelBorder(int bevelType, Color highlightOuter, Color highlightInner,
+      Color shadowOuter, Color shadowInner)
+    Border bevelBorder = new BevelBorder(BevelBorder.RAISED, Color.PINK,
+      Color.PINK.brighter(), Color.RED, Color.RED.darker());
+
+    public static Border createBevelBorder(int bevelType, Color highlightOuter,
+      Color highlightInner, Color shadowOuter, Color shadowInner)
+    Border bevelBorder = BorderFactory.createBevelBorder(BevelBorder.RAISED,
+      Color.PINK, Color.PINK.brighter(), Color.RED, Color.RED.darker());
+
+每一个方法都可以使得我们自定义斜面类型以及边框中明亮与阴影的颜色。斜面类型是通过下面两个值来指定的：BevelBorder.RAISED或是BevelBorder.LOWERED。如果没有指定明亮与阴影颜色，则会通过检测边框组件的背景颜色来生成合适的颜色。如果我们指定了相应的颜色，记住明亮颜色应亮一些，通常可以通过调用theColor.brighter()方法来实现。在默认情况下，BevelBorder是不透明的。
+
+SoftBevelBorder Class
+~~~~~~~~~~~~~~~~~~~~~
+
+SoftBevelBorder是BevelBorder的近亲。这个组件会包围四角，所以他们的边并不尖利，而他使用下边与右边的相应外边颜色只绘制一条线。如图7-7所示，升起与落下的SoftBevelBorder与BevelBorder基本相同。
+
+.. figure:: images/swing_7_7.png
+   :alt: swing_7_7.png
+
+   swing\_7\_7.png
+SoftBevelBorder有三个构造函数：
+
+.. code:: java
+
+    public SoftBevelBorder(int bevelType)
+    Border softBevelBorder = new SoftBevelBorder(SoftBevelBorder.RAISED);
+    public SoftBevelBorder(int bevelType, Color highlight, Color shadow)
+    Border softBevelBorder = new SoftBevelBorder(SoftBevelBorder.RAISED, Color.RED,
+      Color.PINK);
+    public SoftBevelBorder(int bevelType, Color highlightOuter, Color highlightInner,
+      Color shadowOuter, Color shadowInner)
+    Border softBevelBorder = new SoftBevelBorder(SoftBevelBorder.RAISED, Color.RED,
+      Color.RED.darker(), Color.PINK, Color.PINK.brighter());
+
+每一个方法都允许我们指定斜面类型以及边框内的明亮与阴影颜色。斜面类型是通过下面的值来指定的：SoftBevelBorder.RAISED或是SoftBevelBorder.LOWEERED。与BevelBorder类似，默认的颜色是由背景色得来的。一个SoftBevelBorder并不完全适应所指定的insets区域，所以SoftBevelBorder通常创建为透明的。
+
+并没有静态的BorderFactory方法来创建这种边框。
+
+EtchedBorder Class
+~~~~~~~~~~~~~~~~~~
+
+EtchedBorder是BevelBorder的一种特殊情况，但是并不其子类。当BevelBorder的外层明亮颜色与内层阴影颜色相同，并且外层阴影颜色与内层明亮颜色相同，则我们就得到了EtchedBorder。图7-8显示了一个升起来落下的EtchedBorder的样子。
+
+.. figure:: images/swing_7_8.png
+   :alt: swing_7_8.png
+
+   swing\_7\_8.png
+EtchedBorder有四个构造函数，同时有四个用于创建EtchedBorder对象的BorderFactory工厂方法：
+
+.. code:: java
+
+    public EtchedBorder()
+    Border etchedBorder = new EtchedBorder();
+
+    public EtchedBorder(int etchType)
+    Border etchedBorder = new EtchedBorder(EtchedBorder.RAISED);
+
+    public EtchedBorder(Color highlight, Color shadow)
+    Border etchedBorder = new EtchedBorder(Color.RED, Color.PINK);
+
+    public EtchedBorder(int etchType, Color highlight, Color shadow)
+    Border etchedBorder = new EtchedBorder(EtchedBorder.RAISED, Color.RED,
+      Color.PINK);
+
+    public static Border createEtchedBorder()
+    Border etchedBorder = BorderFactory.createEtchedBorder();
+
+    public static Border createEtchedBorder(Color highlight, Color shadow)
+    Border etchedBorder = BorderFactory.createEtchedBorder(Color.RED, Color.PINK);
+
+    public static Border createEtchedBorder(EtchedBorder.RAISED)
+    Border etchedBorder = BorderFactory.createEtchedBorder(Color.RED, Color.PINK);
+
+    public static Border createEtchedBorder(int type, Color highlight, Color shadow)
+    Border etchedBorder = BorderFactory.createEtchedBorder(EtchedBorder.RAISED,
+      Color.RED, Color.PINK);
+
+每一个方法都允许我们指定Etch类型以及边框中的明亮与阴影颜色。如果没有指定Etch类型，则边框是落下的。与BevelBorder与SoftBevelBorder类似，我们可以通过两个常量来指定Etch类型：EtchedBorder.RAISED或是EtchedBorder.LOWERED。如果没有指定颜色，则由传递给paintBorder()的组件的背景颜色得到合适的颜色。默认情况下，所有的EtchedBorder对象是不透明的。
+
+MatteBorder Class
+~~~~~~~~~~~~~~~~~
+
+MatteBorder是最通用的边框之一。他有两种形式。第一种形式如图7-9所示，在图中显示了一个MatteBorder，以与LineBorder类似的方式使用特定的颜色填充边框，但是在每一边有不同的粗细（有时一个普通的LineBorder并不能处理）。
+
+.. figure:: images/Swing_7_9.png
+   :alt: Swing_7_9.png
+
+   Swing\_7\_9.png
+第二种形式在边框区域内使用一个Icon进行连接。如果我们由一个Image对象创建，则这个Icon可以是一个ImageIcon，或者是我们通过实现Icon接口自己创建。图7-10显示了两种实现。
+
+.. figure:: images/Swing_7_10.png
+   :alt: Swing_7_10.png
+
+   Swing\_7\_10.png
+有七个构造函数以及两个BorderFactory工厂方法可以用来创建MatteBorder对象：
+
+.. code:: java
+
+    public MatteBorder(int top, int left, int bottom, int right, Color color)
+    Border matteBorder = new MatteBorder(5, 10, 5, 10, Color.GREEN);
+
+    public MatteBorder(int top, int left, int bottom, int right, Icon icon)
+    Icon diamondIcon = new DiamondIcon(Color.RED);
+    Border matteBorder = new MatteBorder(5, 10, 5, 10, diamondIcon);
+
+    public MatteBorder(Icon icon)
+    Icon diamondIcon = new DiamondIcon(Color.RED);
+    Border matteBorder = new MatteBorder(diamondIcon);
+
+    public MatteBorder(Insets insets, Color color)
+    Insets insets = new Insets(5, 10, 5, 10);
+    Border matteBorder = new MatteBorder(insets,  Color.RED);
+
+    public MatteBorder(Insets insets, Icon icon)
+    Insets insets = new Insets(5, 10, 5, 10);
+    Icon diamondIcon = new DiamondIcon(Color.RED);
+    Border matteBorder = new MatteBorder(insets, diamondIcon);
+
+    public static MatteBorder createMatteBorder(int top, int left, int bottom,
+      int right, Color color)
+    Border matteBorder = BorderFactory.createMatteBorder(5, 10, 5, 10, Color.GREEN);
+
+    public static MatteBorder createMatteBorder(int top, int left, int bottom,
+      int right, Icon icon)
+    Icon diamondIcon = new DiamondIcon(Color.RED);
+    Border matteBorder = BorderFactory.createMatteBorder(5, 10, 5, 10, diamondIcon);
+
+每一个方法都允许我们自定义在边框区域内映射的内容。当连接Icon时，如果我们没有指定边框insets的尺寸，则使用实现的图标维度。
+
+CompoundBorder Class
+~~~~~~~~~~~~~~~~~~~~
+
+在EmptyBorder之后，CompundBorder也许是使用最简单的预定义边框之一了。他使用两个已存在的边框，使用组合设计模式将其组合在一个边框中。一个Swing组件只有一个与其相关联的边框，所以，CompundBorder允许我们在将边框关联到一个组件之前组合边框。图7-11显示了应用CompundBorder的两个例子。左边的边框是斜面线边框。右边是一个六个线边框，多个边框组合在一起。
+
+.. figure:: images/Swing_7_11.png
+   :alt: Swing_7_11.png
+
+   Swing\_7\_11.png
+**创建CompundBorder**
+
+ComoundBorder有两个构造函数，以及用于创建CompondBorder对象的两个BorderFactory工厂方法（在这里无参数构造函数以及工厂方法是完全没用的，因为并没有setter方法用于稍后修改组合边框，所以在这里并没有显示示例源码）：
+
+.. code:: java
+
+    public CompoundBorder()
+    public static CompoundBorder createCompoundBorder()
+    public CompoundBorder(Border outside, Border inside)
+    Border compoundBorder = new CompoundBorder(lineBorder, matteBorder);
+    public static CompoundBorder createCompoundBorder(Border outside, Border inside)
+    Border compoundBorder = BorderFactory.createCompoundBorder(lineBorder,
+      matteBorder);
+
+组合边框的透明性依赖于所包含的边框的透明性。如果所包含的两个边框都是不透明的，那么组合边框也是不透明的。否则，组合边框就是透明的。
+
+**配置属性**
+
+除了由AbstractBorder继承的borderOpaque属性以外，表7-2列出了CompoundBorder添加的两个只读属性。
+
++-----------------+------------+----------+
+| 属性名          | 数据类型   | 访问性   |
++-----------------+------------+----------+
+| borderOpaque    | boolean    | 只读     |
++-----------------+------------+----------+
+| insideBorder    | Border     | 只读     |
++-----------------+------------+----------+
+| outsideBorder   | Border     | 只读     |
++-----------------+------------+----------+
+
+Table: CompoundBorder属性
+
+TitledBorder Class
+~~~~~~~~~~~~~~~~~~
+
+TitledBorder也许是最有趣，用起来最复杂的边框。TitledBorder允许我们在组件周围放置一个文本字符串。除了可以包围单一的组件，我们在还可以在一个组件组周围放置一个TitledBorder，例如JRadioButton对象，只要他们位于一个容器内，例如JPanel。TitledBorder的使用比较困难，但是有许多方法可以简化其使用。图7-12显示了一个简单的TitledBorder以及一个略为复杂一些的TitledBorder。
+
+.. figure:: images/Swing_7_12.png
+   :alt: Swing_7_12.png
+
+   Swing\_7\_12.png
+**创建TitledBorder**
+
+有六个构造函数以及六个BorderFactory工厂方法可以用来创建TitledBorder对象。每一个方法都允许我们自定义文本，位置，以及在一个特定的边框内的标题外观。当没有特别指定时，当前的观感控制边框，标题颜色，以及标题字体。默认的标题位置位于左上角，而默认的标题是空字符串。标题边框至少总是部分透明的，因为标题下部的区域是可以看过的。所以，isBorderOpaque()报告false。
+
+如果我们查看下面的方法，则这些方法会很容易理解。首先显示的是构造方法；然后显示的是等同的BorderFactory方法。
+
+.. code:: java
+
+    public TitledBorder(Border border)
+    Border titledBorder = new TitledBorder(lineBorder);
+
+    public static TitledBorder createTitledBorder(Border border)
+    Border titledBorder = BorderFactory.createTitledBorder(lineBorder);
+
+    public TitledBorder(String title)
+    Border titledBorder = new TitledBorder("Hello");
+
+    public static TitledBorder createTitledBorder(String title)
+    Border titledBorder = BorderFactory.createTitledBorder("Hello");
+
+    public TitledBorder(Border border, String title)
+    Border titledBorder = new TitledBorder(lineBorder, "Hello");
+
+    public static TitledBorder createTitledBorder(Border border, String title)
+    Border titledBorder = BorderFactory.createTitledBorder(lineBorder, "Hello");
+
+    public TitledBorder(Border border, String title, int justification, int position)
+    Border titledBorder = new TitledBorder(lineBorder, "Hello", TitledBorder.LEFT,
+      TitledBorder.BELOW_BOTTOM);
+
+    public static TitledBorder createTitledBorder(Border border, String title,
+      int justification, int position)
+    Border titledBorder = BorderFactory.createTitledBorder(lineBorder, "Hello",
+      TitledBorder.LEFT, TitledBorder.BELOW_BOTTOM);
+
+    public TitledBorder(Border border, String title, int justification, int position,
+      Font font)
+    Font font = new Font("Serif", Font.ITALIC, 12);
+    Border titledBorder = new TitledBorder(lineBorder, "Hello", TitledBorder.LEFT,
+      TitledBorder.BELOW_BOTTOM, font);
+
+    public static TitledBorder createTitledBorder(Border border, String title,
+      int justification, int position, Font font)
+    Font font = new Font("Serif", Font.ITALIC, 12);
+    Border titledBorder = BorderFactory.createTitledBorder(lineBorder, "Hello",
+      TitledBorder.LEFT, TitledBorder.BELOW_BOTTOM, font);
+
+    public TitledBorder(Border border, String title, int justification, int position,
+      Font font, Color color)
+    Font font = new Font("Serif", Font.ITALIC, 12);
+    Border titledBorder = new TitledBorder(lineBorder, "Hello", TitledBorder.LEFT,
+      TitledBorder.BELOW_BOTTOM, font, Color.RED);
+
+    public static TitledBorder createTitledBorder(Border border, String title,
+      int justification, int position, Font font, Color color)
+    Font font = new Font("Serif", Font.ITALIC, 12);
+    Border titledBorder = BorderFactory.createTitledBorder(lineBorder, "Hello",
+      TitledBorder.LEFT, TitledBorder.BELOW_BOTTOM, font, Color.RED);
+
+**配置属性**
+
+与其他的预定义边框不同，标题边框有六个setter方法在边框创建之后修改其属性。如表7-3所示，我们可以修改一个标题的底部边框，标题，绘制颜色，字体，文本适应，以及文本位置。
+
++----------------------+------------+----------+
+| 属性名               | 数据类型   | 访问性   |
++----------------------+------------+----------+
+| border               | Border     | 读写     |
++----------------------+------------+----------+
+| borderOpaque         | boolean    | 只读     |
++----------------------+------------+----------+
+| title                | String     | 读写     |
++----------------------+------------+----------+
+| titleColor           | Color      | 读写     |
++----------------------+------------+----------+
+| titleFont            | Font       | 读写     |
++----------------------+------------+----------+
+| titleJustification   | int        | 读写     |
++----------------------+------------+----------+
+| titlePosition        | int        | 读写     |
++----------------------+------------+----------+
+
+Table: TitledBorder属性
+
+TitledBorder中的标题字符串的文本适应是通过四个类常量来指定的：
+
+-  CENTER：标题放在中间。
+-  DEFAULT\_JUSTIFICATION：使用默认设置来放置文本。该值等同于LEFT。
+-  LEFT：将标题放在左边。
+-  RIGHT：将标题放在右边。
+
+图7-13显示了具有不同文本适应的相同的TitledBorder。
+
+.. figure:: images/Swing_7_13.png
+   :alt: Swing_7_13.png
+
+   Swing\_7\_13.png
+我们可以将标题字符串放在由下面的七个类常量指定的六个不同的位置：
+
+-  ABOVE\_BOTTOM：将标题放在底线上部。
+-  ABOVE\_TOP：将标题放在顶线上部。
+-  BELOW\_BOTTOM：将标题放在底线下部。
+-  BELOW\_TOP：将标题放在顶线下部。
+-  BOTTOM：将标题放在底线上。
+-  DEFAULT\_POSITION：使用默认设置放置文本。这个值等同于TOP。
+-  TOP：将标题放在顶线上。
+
+图7-14显示了TitledBorder的标题可以放置的六个不同位置。
+
+.. figure:: images/Swing_7_14.png
+   :alt: Swing_7_14.png
+
+   Swing\_7\_14.png
+因为TitledBorder包含另一个Border，我们可以组合多个边框来在一个边框中放置多个标题。例如，图7-15显示了在边框的顶部与底部显示标题。
+
+.. figure:: images/Swing_7_15.png
+   :alt: Swing_7_15.png
+
+   Swing\_7\_15.png
+用来生成图7-15的程序源码显示在列表7-2中。
+
+.. code:: java
+
+    package swingstudy.ch07;
+
+    import java.awt.BorderLayout;
+    import java.awt.EventQueue;
+
+    import javax.swing.BorderFactory;
+    import javax.swing.JButton;
+    import javax.swing.JFrame;
+    import javax.swing.border.TitledBorder;
+
+    public class DoubleTitle {
+
+        /**
+         * @param args
+         */
+        public static void main(String[] args) {
+            // TODO Auto-generated method stub
+
+            Runnable runner = new Runnable() {
+                public void run() {
+                    JFrame frame = new JFrame("Double Title");
+                    frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+                    
+                    TitledBorder topBorder = BorderFactory.createTitledBorder("Top");
+                    topBorder.setTitlePosition(TitledBorder.TOP);
+                    
+                    TitledBorder doubleBorder = new TitledBorder(topBorder, "Bottom", TitledBorder.RIGHT, TitledBorder.BOTTOM);
+                    
+                    JButton doubleButton = new JButton();
+                    doubleButton.setBorder(doubleBorder);
+                    
+                    frame.add(doubleButton, BorderLayout.CENTER);
+                    frame.setSize(300, 100);
+                    frame.setVisible(true);
+                }
+            };
+            EventQueue.invokeLater(runner);
+        }
+
+    }
+
+**自定义TitledBorder观感**
+
+表7-4显示了TitledBorder的UIResource相关属性的集合。他有三个不同的属性。
+
++---------------------------+------------+
+| 属性字符串                | 对象类型   |
++---------------------------+------------+
+| TitledBorder.font         | font       |
++---------------------------+------------+
+| TitledBorder.titleColor   | Color      |
++---------------------------+------------+
+| TitledBorder.border       | Border     |
++---------------------------+------------+
+
+Table: TitledBorder UIResource元素
+
+Creating Your Own Borders
+-------------------------
+
+当我们想要创建我们自己的独特的边框时，我们或者可以直接实现Border接口创建新类，或者是我们可以扩展AbstractBorder类。正如前面所提到的，扩展AbstractBorder是更好的方法，因为其中进行优化，从而特定的Swing类可以千年虫AbstractBorder的特定方法。例如，如果一个边框是一个AbstractBorder，当获取边框的Insets时，JComponent可以重用Insets对象。所以，当获取insets时只有少量的对象需要创建与销毁。
+
+除了考虑继承AbstractBorder与自己实现Border接口以外，我们需要考虑我们是否需要一个静态边框。如果我们将一个边框关联到一个按钮，我们希望这个按钮能够进行信息选择。我们必须检测传递给paintBorder()方法的组件，并进行相应的响应。另外，我们应该在组件不可以选择时绘制一个禁止的边框。尽管setEnabled(false)可以禁止组件的选择，如果组件有一个与其相关联的边框，边框仍然进行绘制，尽管他已经被禁止。图7-6实际显示了一个考虑了传递给边框的paintBorder()方法的组件选项的边框。
+
+.. figure:: images/Swing_7_16.png
+   :alt: Swing_7_16.png
+
+   Swing\_7\_16.png
+列表7-3显示了自定义边框与示例程序的源码。
+
+.. code:: java
+
+
+
+    package swingstudy.ch07;
+
+    import java.awt.BorderLayout;
+    import java.awt.Color;
+    import java.awt.Component;
+    import java.awt.EventQueue;
+    import java.awt.Graphics;
+    import java.awt.Insets;
+
+    import javax.swing.AbstractButton;
+    import javax.swing.ButtonModel;
+    import javax.swing.JButton;
+    import javax.swing.JFrame;
+    import javax.swing.border.AbstractBorder;
+    import javax.swing.border.Border;
+
+    public class RedGreenBorder extends AbstractBorder {
+
+        public boolean isBorderOpaque() {
+            return true;
+        }
+        
+        public Insets getBorderInsets(Component c) {
+            return new Insets(3, 3, 3, 3);
+        }
+        
+        public void paintBorder(Component c, Graphics g, int x, int y, int width, int height) {
+            Insets insets = getBorderInsets(c);
+            Color horizontalColor;
+            Color verticalColor;
+            if(c.isEnabled()) {
+                boolean pressed = false;
+                if(c instanceof AbstractButton) {
+                    ButtonModel model = ((AbstractButton)c).getModel();
+                    pressed = model.isPressed();
+                }
+                if(pressed) {
+                    horizontalColor = Color.RED;
+                    verticalColor = Color.GREEN;
+                }
+                else {
+                    horizontalColor = Color.GREEN;
+                    verticalColor = Color.RED;
+                }
+            }
+            else {
+                horizontalColor = Color.LIGHT_GRAY;
+                verticalColor = Color.LIGHT_GRAY;
+            }
+            g.setColor(horizontalColor);
+            
+            g.translate(x, y);
+            
+            // Top
+            g.fillRect(0, 0, width, insets.top);
+            
+            // Bottom
+            g.fillRect(0, height-insets.bottom, width, insets.bottom);
+            
+            g.setColor(verticalColor);
+            
+            // Left
+            g.fillRect(0, insets.top, insets.left, height-insets.top-insets.bottom);
+            
+            // Right
+            g.fillRect(width-insets.right, insets.top, insets.right, height-insets.top-insets.bottom);
+            
+            g.translate(-x, -y);
+        }
+        /**
+         * @param args
+         */
+        public static void main(String[] args) {
+            // TODO Auto-generated method stub
+
+            Runnable runner = new Runnable() {
+                public void run() {
+                    JFrame frame = new JFrame("My Border");
+                    frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+                    
+                    Border border = new RedGreenBorder();
+                    
+                    JButton helloButton = new JButton("Hello");
+                    helloButton.setBorder(border);
+                    
+                    JButton braveButton = new JButton("Brave New");
+                    braveButton.setBorder(border);
+                    braveButton.setEnabled(false);
+                    
+                    JButton wordButton =  new JButton("World");
+                    wordButton.setBorder(border);
+                    
+                    frame.add(helloButton, BorderLayout.NORTH);
+                    frame.add(braveButton, BorderLayout.CENTER);
+                    frame.add(wordButton, BorderLayout.SOUTH);
+                    
+                    frame.setSize(300, 100);
+                    frame.setVisible(true);
+                }
+            };
+            
+            EventQueue.invokeLater(runner);
+        }
+
+    }
+
+Summary
+-------
+
+在本章中，我们了解了Border接口及其预定义实现的使用。同时我们了解了如何使用由BorderFactory类所提供的工厂设计模式来创建预定义的边框。最后，我们了解了如何定义我们自己的边框以及为什么继承AbstractBorder是有益的。
+
+在第8章中，我们将会了解底层的组件，并且检测Swing中可用的类似于窗口的容器。

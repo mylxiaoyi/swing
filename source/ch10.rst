@@ -1,0 +1,943 @@
+布局管理器
+==========
+
+在第9章中，我们了解了Swing组件集合中的各种弹出窗口以及选择器类。在本章中，我们将会了解AWT与Swing布局管理器。
+
+然而由于本书关注于Swing组件集合，我们不能仅是简单的使用。我们需要理解AWT与Swing布局管理器。事实上，比起五个Swing布局管理器中的三个，我们更经常使用的是五个AWT布局管理器中的四个。AWT布局管理器是FlowLayout，BorderLayout，GridLayout，CardLayout以及GridBagLayout。Swing布局管理器是BoxLayout，OverlayLayout，ScrollPaneLayout，ViewportLayout以及SpringLayout。还有一个管理器就是JRootPane.RootLayout，我们在第8章中进行描述。
+
+除了布局管理器，我们还有了解一些助手类：GridBagLayout的限制类GridBagConstraints，BoxLayout与OverlayLayout管理器所用的SizeRequirements类，以及与SpringLayout管理器相关联的Spring与SpringLayout.Constraints类。
+
+布局管理器职责
+--------------
+
+每一个容器，例如JPanel或是Container，都有一个布局管理器。布局管理器定位组件，无论平台或屏幕尺寸。
+
+布局管理器避免了我们自己计算组件位置的需要，这几乎是一个不可完成的任务，因为每一个组件所需要的尺寸依据我们的程序所部署的平台以及当前的观感而不同。甚至对于一个简单的布局，确定组件尺寸并计算绝对位置所需要代码也要几百行，特别是如果我们关注于当用户调整窗口尺寸时所发生的情况，则所需要的代码会更多。布局管理器为我们处理这些事情。他会询问容器中的每一个组件需要多少空间，然后依据所用平台的组件尺寸，可用空间，以及布局管理器的规则在屏幕上尽最好可能来安排组件。
+
+为了确定组件需要多少空间，布局管理器调用组件的getMinimumSize()，getPreferredSize()以及getMaximumSize()方法。这些方法报告一个组件要正确显示所需要的最小，适当，以及最大空间。所以每一个组件必须了解其空间需求。然后布局管理器使用组件的空间需求来调整组件尺寸并在屏幕上进行安排。除了布局管理器的设置之外，我们的Java程序不需要担心平台依赖的位置。
+
+注意，布局管理器会忽略一些组件；并没有布局管理器显示所有内容的要求。例如，使用BorderLayout的Container也许会包含30或40个组件；然而，BorderLayout至多显示其中的五个。类似的，CardLayout也许会管理多个组件，但是每次只显示一个。
+
+除了忽略组件，布局管理器会对组件的最小，适当以及最大尺寸进行所需要的处理。他可以忽略其中任意或是所有的尺寸。布局管理器忽略适当的尺寸也是有道理的，毕竟，更好的方法就是“如果合适，就给我这个尺寸”。然而，布局管理器也可以忽略最小尺寸。有时，并没有合理的选择，因为也许容器并没有足够的空间以组件的最小尺寸来显示。如何处理这种情况则留给布局管理者的判断力。
+
+LayoutManager接口
+-----------------
+
+LayoutManager接口定义了布局Container内的Component对象的管理器的职责。正如在前面所解释的，决定Container中每一个组件的位置与尺寸是布局管理器的职责。我们不要直接调用LayoutManager接口中的方法；对于大部分来说，布局管理器在幕后完成他们的工作。一旦我们创建了LayoutManager对象并且通知容器来使用（通过调用setLayout(manager)），我们就完成了相应的工作。系统会在需要的时候调用布局管理器的相应方法。类似于任意的接口，LayoutManager指定了布局管理器必须实现的方法，但是没有约束LayoutManager如何来完成这些工作。
+
+如果我们要编写一个新的布局管理器，那么LayoutManager接口本身是最重要的。我们先来描述这个接口是因为他是所有的布局管理器所基于的基础。我们也会描述LayoutManager2接口，他会为某些布局管理器使用。
+
+探讨LayoutManager接口
+~~~~~~~~~~~~~~~~~~~~~
+
+LayoutManager接口由五个方法组成：
+
+.. code:: java
+
+    public interface LayoutManager {
+      public void addLayoutComponent(String name, Component comp);
+      public void layoutContainer(Container parent);
+      public Dimension minimumLayoutSize(Container parent);
+      public Dimension preferredLayoutSize(Container parent);
+      public void removeLayoutComponent(Component comp);
+    }
+
+如果我们要创建我们自己的类来实现LayoutManager，我们必须定义所有的五个方法。正如我们将要看到的，一些方法并不需要做任何事情，但是我们必须包含一个具有相应签名的桩。
+
+addLayoutComponent()方法只有当我们通过调用add(String,
+Component)或是add(Component,
+Object)方法添加组件时才会被调用，而不是普通的add(Component)方法。对于add(Component,
+Object)方法，Object必须是String类型，或者是其他不被调用的。
+
+探讨LayoutManager2接口
+~~~~~~~~~~~~~~~~~~~~~~
+
+对于要求每一个组件来实现其布局管理器限制的布局管理器，可以使用LayoutManager2接口。使用LayoutManager2的布局管理器包括BorderLayout，CardLayout，以及GridBagLayout等。
+
+LayoutManager2具有五个方法：
+
+.. code:: java
+
+    public interface LayoutManager2 {
+      public void addLayoutComponent(Component comp, Object constraints);
+      public float getLayoutAlignmentX(Container target);
+      public float getLayoutAlignmentY(Container target);
+      public void invalidateLayout(Container target);
+      public Dimension maximumLayoutSize(Container target);
+    }
+
+addLayoutComponent()方法会在我们向添加到布局中的组件赋予限制时调用。实际上，这意味着我们通过调用add(Component
+component, Objectconstraints)或是add(String name, Component
+component)方法向容器添加组件，而不是通过add(Component
+component)方法。最终由布局管理器决定什么与限制有关。例如，GridBagLayout使用约束来将一个GridBagConstraints对象关联到所添加的组件，而BorderLayout使用约束将位置（类似于BorderLayout.CENTER）关联到组件。
+
+FlowLayout类
+------------
+
+FlowLayout是JPanel的默认布局管理器。FlowLayout以Component的getComponentOrientation()方法所定义的顺序，按行向容器添加组件，在美国以及西欧通常是由左到右。当在一行中不能适应更多的组件时，他开始新的一行，类似于开启文字环绕的字处理器。当容器调整大小时，其中的组件会依据容器的新尺寸重新定位。在FlowLayout管理的容器中的组件会给予其合适的尺寸。如果没有足够的空间，我们就不会看到所有的组件，如图10-1所示。
+
+.. figure:: images/Swing_10_1.png
+   :alt: Swing_10_1.png
+
+   Swing\_10\_1.png
+有三个方法用于创建FlowLayout布局管理器：
+
+.. code:: java
+
+    public FlowLayout()
+    public FlowLayout(int alignment)
+    public FlowLayout(int alignment, int hgap, int vgap)
+
+如果没有指定alignment，FlowLayout管理的容器中的组件会位于中间。否则，通过下列的常量来控制设置：
+
+-  CENTER
+-  LEADING
+-  LEFT
+-  RIGHT
+-  TRAILING
+
+对于通常的由左到右的方向，LEADING与LEFT是相同的，同样TRAILING与RIGHT也是相同的。对于类似Hebrew的语言则正相反。图10-2显示了几个不同对齐的效果。
+
+.. figure:: images/Swing_10_2.png
+   :alt: Swing_10_2.png
+
+   Swing\_10\_2.png
+我们可以以像素为组件之间的水平（hgap）与垂直（vgap）间隔。间隔默认为五像素，除非我们特别指定。如果我们希望组件放置在另一个组件之上，我们也可以指定负间隔。
+
+BorderLayout类
+--------------
+
+BorderLayout是JFrame，JWindow，JDialog，JInternalFrame以及JApplet内容面板的默认布局管理器。他提供了一种更为灵活的方法来将组件沿窗体边放置。图10-3显示了一个通常的BorderLayout。
+
+.. figure:: images/Swing_10_3.png
+   :alt: Swing_10_3.png
+
+   Swing\_10\_3.png
+当使用BorderLayout时，我们为组件添加约束来表明要将组件放在五个位置中的哪一个。如果我们没有指定约束，组件会被添加到中间位置。将多个组件添加到同一个区域只会显示最后一个组件，尽管由技术上来说，其他的组件仍然位于容器内；他们只是没有显示。
+
+有两个构造函数可以用来创建BorderLayout布局管理器：
+
+.. code:: java
+
+    public BorderLayout()
+    public BorderLayout(int hgap, int vgap)
+
+与FlowLayout不同，BorderLayout的默认间隔为零像素，意味着组件会紧临着其他组件放置。
+
+当向BorderLayout管理的容器添加组件时所用的约束是BorderLayout类的常量：
+
+-  AFTER\_LAST\_LINE
+-  AFTER\_LINE\_ENDS
+-  BEFORE\_FIRST\_LINE
+-  BEFORE\_LINE\_BEGINS
+-  CENTER
+-  EAST
+-  LINE\_END
+-  LINE\_START
+-  NORTH
+-  PAGE\_END
+-  PAGE\_START
+-  SOUTH
+-  WEST
+
+因为只有五个区域可以添加组件，我们只期望五个常量。与FlowLayout类似，其他的常量用来处理当组件方向相反时的正确放置，或者是水平或者是垂直。对于通常的由左至右，由上到下的方向，通常的值集合如下：
+
+-  AFTER\_LAST\_LINE, PAGE\_END, SOUTH
+-  AFTER\_LINE\_ENDS, LINE\_END, EAST
+-  BEFORE\_FIRST\_LINE, PAGE\_START\_NORTH
+-  BEFORE\_LINE\_BEGINS, LINE\_START, WEST
+-  CENTER
+
+使用BEFORE与AFTER常量，而不使用NORTH, SOUTH,
+EAST与WEST常量是推荐做法，尽管所有这些常量都被支持。
+
+我们并不需要指定容器的所有五个区域。北边区域的组件会占据容器顶部的完整宽度。南边的组件同样会占据容器底部的完整宽度。北边与南边区域的高度是所添加组件的合适高度。东边与西边区域的宽度是所包含组件的宽度，而高度则是容器在满足了北边与南边区域的高度需求后剩下的高度。其余的空间指定给中间区域的组件。
+
+将多个组件添加到BorderLayout管理的容器的一个区域的方法就是首先将其添加到不同的容器，然后将他们添加到BorderLayout管理的容器中。例如，如果我们希望将一个标签与文本区域放在Borderlayout管理的容器的北边区域，首先将他们放在另一个BorderLayout管理的容器的西边与中间区域，如下所示：
+
+.. code:: java
+
+    JPanel outerPanel = new JPanel(new BorderLayout());
+    JPanel topPanel = new JPanel(new BorderLayout());
+    JLabel label = new JLabel("Name:");
+    JTextField text = new JTextField();
+    topPanel.add(label, BorderLayout.BEFORE_LINE_BEGINS);
+    topPanel.add(text, BorderLayout.CENTER);
+    outerPanel.add(topPanel, BorderLayout.BEFORE_FIRST_LINE);
+
+GridLayout类
+------------
+
+GridLayout布局管理器是按行与列排列对象的理想选择，其中布局中的每一个单元具有相同的尺寸。组件的添加顺序是由左至右，由上到下。调用setLayout(new
+GridLayout(3,4))会将当前容器的布局管理器修改为具有三行四列的GridLayout，如图10-4所示。
+
+.. figure:: images/Swing_10_4.png
+   :alt: Swing_10_4.png
+
+   Swing\_10\_4.png
+有三个构造函数可以用来创建GridLayout布局管理器：
+
+.. code:: java
+
+    public GridLayout()
+    public GridLayout(int rows, int columns)
+    public GridLayout(int rows, int columns, int hgap, int vgap)
+
+通常，我们可以指定GridLayout管理的容器的网格尺寸。然而，我们可以将行或列的数目设置为零，而布局就会在零设置的方向上无限增长。
+
+注意，如果GridLayout构造函数的行与列都被指定为零，则会抛出运行异常IllegalArgumentException。
+
+实际绘制的行与列的数目要依据容器内的组件数目而定。GridLayout会首先尝试观察所要求的行与列的数目。如果所要求的行数不为零，则列数通过（#组件数+行数-1）/行数来确定。如果我们的要求是零行，则所使用的行数由类似的公式确定：（#组件数+列数-1）/列数。表10-1演示了这种计算。表格中的最后一项特别有趣：如果我们请求一个3x3的网格，但是在布局中只放置4个组件，最终我们实际得到的是一个2x2的网格。如果我们不想要这种惊奇，我们要依据计划添加显示的实际对象数目来确定GridLayout尺寸。
+
+.. figure:: images/Swing_table_10_1.png
+   :alt: Swing_table_10_1.png
+
+   Swing\_table\_10\_1.png
+GridBagLayout类
+---------------
+
+GridBagLayout是布局管理器中最复杂与最灵活的。尽管他看起来像是GridLayout的子类，然而他却是完全不同的一个类。对于GridLayout，元素在矩形网格内排列，并且容器中的每一个元素的尺寸相同。对于GridBagLayout，元素具有不同的尺寸，并且可以位于多行或是多列。
+
+GridBagLayout只有一个无参数的构造函数：
+
+.. code:: java
+
+    public GridBagLayout()
+
+每一个元素的位置与行为都是通过GridBagConstraints类来指定的。通过正确的约束元素，我们可以指定一个元素所占用的行数与列数，此元素会在额外的屏幕状态可用时增长，以及其他的各种约束。实际的网格尺寸是依据位于GridBagLayout以及GridBagConstraints中的组件数目而定的。例如，图10-5演示了具有七个组件，排为3x3网格的GridBagLayout。
+
+.. figure:: images/Swing_10_5.png
+   :alt: Swing_10_5.png
+
+   Swing\_10\_5.png
+注意，使用GridBagLayout的最大屏幕容量为512行x512列。这是通过布局管理器中受保护的MAXGRIDSIZE常量来指定的。
+
+用来创建图10-5的代码显示在列表10-1中。
+
+.. code:: java
+
+    package swingstudy.ch10;
+
+    import java.awt.Component;
+    import java.awt.Container;
+    import java.awt.EventQueue;
+    import java.awt.GridBagConstraints;
+    import java.awt.GridBagLayout;
+    import java.awt.Insets;
+
+    import javax.swing.JButton;
+    import javax.swing.JFrame;
+
+    public class GridBagButtons {
+
+        private static final Insets insets = new Insets(0,0,0,0);
+        
+        /**
+         * @param args
+         */
+        public static void main(final String[] args) {
+            // TODO Auto-generated method stub
+
+            Runnable runner = new Runnable() {
+                public void run() {
+                    final JFrame frame = new JFrame("GridBagLayout");
+                    frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+                    frame.setLayout(new GridBagLayout());
+                    
+                    JButton button;
+                    
+                    // row one - three buttons
+                    button = new JButton("One");
+                    addComponent(frame, button, 0, 0, 1, 1, GridBagConstraints.CENTER, GridBagConstraints.BOTH);
+                    button = new JButton("Two");
+                    addComponent(frame, button, 1, 0, 1, 1, GridBagConstraints.CENTER, GridBagConstraints.BOTH);
+                    button = new JButton("Three");
+                    addComponent(frame, button, 2, 0, 1, 1, GridBagConstraints.CENTER, GridBagConstraints.BOTH);
+                    
+                    // row two - two buttons
+                    button = new JButton("Four");
+                    addComponent(frame, button, 0, 1, 2, 1, GridBagConstraints.CENTER, GridBagConstraints.BOTH);
+                    button = new JButton("Five");
+                    addComponent(frame, button, 2, 1, 1, 2, GridBagConstraints.CENTER, GridBagConstraints.BOTH);
+                    
+                    // row three - two buttons
+                    button = new JButton("Six");
+                    addComponent(frame, button, 0, 2, 1, 1, GridBagConstraints.CENTER, GridBagConstraints.BOTH);
+                    button = new JButton("Seven");
+                    addComponent(frame, button, 1, 2, 1, 1, GridBagConstraints.CENTER, GridBagConstraints.BOTH);
+                    
+                    frame.setSize(500, 200);
+                    frame.setVisible(true);
+                }
+            };
+            
+            EventQueue.invokeLater(runner);
+        }
+        
+        private static void addComponent(Container container, Component component, int gridx, int gridy,
+                int gridwidth, int gridheight, int anchor, int fill) {
+            GridBagConstraints gbc = new GridBagConstraints(gridx, gridy, gridwidth, gridheight, 1.0, 1.0, anchor, fill, insets, 0, 0);
+            container.add(component, gbc);
+        }
+
+    }
+
+列表10-1中的大部分工作都是通过助手方法addComponent()来完成的，他为添加到容器中的组件创建了约束集合。
+
+GridBagLayout的行与列
+~~~~~~~~~~~~~~~~~~~~~
+
+为了帮助我们理解GridBagLayout中的组件的网格，图10-6显示了布局管理器如何计数网格单元。布局中左上角的单元位置为（0，0）。这样对于按钮1，2，3，6与7的位置就不觉得奇怪了。这些按钮中的每一个占据布局3x3网络听
+一个区域。按钮4占据一个2x1的区域；其位置为（0，1），所以占据的网格单元还要加上（1，1）。类似的，按钮5占据1x2区域，因而占据（2，1）与（2，2）单元。布局的总尺寸是由位于其中的组件及其约束来决定的。
+
+.. figure:: images/Swing_10_6.png
+   :alt: Swing_10_6.png
+
+   Swing\_10\_6.png
+GridBagConstraints类
+~~~~~~~~~~~~~~~~~~~~
+
+布局管理器的神奇之处是由传递给添加到容器的每一个组件的不同GridBagConstraints对象来控制的。每一个都指定如何显示一个特定的组件。与大多数其他的布局管理器具有内建的处理显示的方法不同，GridBagLayout是一个空白。关联到组件的约束通知布局管理器如何构建其显示。
+
+每一个添加到GridBagLayout容器中的组件都应有一个与其相关联的GridBagConstraints对象。当对象首先被添加到布局时，会为其指定一个默认的约束集合（如表10-2）。调用container.add(Component,
+GridBagConstraints)或是gridBagLayout.setConstraints(GridBagConstraints)会为组件应用新的约束集合。
+
+GridBagConstraints具有两个构造函数：
+
+.. code:: java
+
+    public GridBagConstraints()
+    public GridBagConstraints(int gridx, int gridy, int gridwidth, int gridheight,
+      double weightx, double weighty, int anchor, int fill, Insets insets, int ipadx,
+      int ipady)
+
+使用GridBagConstraints无参数构造函数会应用表10-2中的默认设置。我们可以保持单个的设置不变并且只设置单个域。所有的属性都是公开的，没有gettter方法。尽管我们可以盲目的将所有的约束传递给GridBagConstraints构造函数，但是最好是单独描述不同的域。
+
+**组件停靠**
+
+anchor变量指定了如果组件比可用的空间小时组件偏移的方向。默认情况下为CENTER。绝对值可以为NORTH,
+SOUTH, EAST, WEST, NORTHEAST, NORTHWEST,
+SOUTHEAST以及SOUTHWEST。相对值可以为PAGE\_START, PAGE\_END, LINE\_START,
+LINE\_END, FIRST\_LINE\_START, FIRST\_LINE\_END,
+LAST\_LINE\_START以及LAST\_LINE\_END。
+
+**组件调整尺寸**
+
+fill值控制组件的尺寸调整策略。如果fill值为NONE（默认情况），布局管理器会尝试为组件指定最优的尺寸。如果fill为VERTICAL，如果有可用的空间则在高度上调整。如果fill为HORIZONTAL，则在宽度上调整。如果fill为BOTH，布局管理器就会利用两个方向上的可用空间。图10-7演示了VERTICAL，HORIZONTAL以及NONE值（通过修改列表10-1中的GridBagConstraints.BOTH设置来生成）。
+
+|Swing\_10\_7.png| |Swing\_10\_7\_1.png|
+
+**网格定位**
+
+gridx与gridy变量指定了这个组件将要被放置的网格位置。（0，0）指定了屏幕原点的单元。gridwidth与gridheight变量指定了组件所占用的行数（gridwidth）以及列数（gridheight）。表10-3显示了前面图10-5中所示示例的gridx,
+gridy, gridwidth以及gridheight。
+
+.. figure:: images/Swing_table_10_3.png
+   :alt: Swing_table_10_3.png
+
+   Swing\_table\_10\_3.png
+指定位置时并不是必须设置gridx与gridy。如果我们将这些域设置为RELATIVE（默认情况），系统会为我们计算位置。依据Javadoc注释，如果gridx为RELATIVE，则组件显示在最后一个添加到布局中的组件的右边。如果gridy为RELATIVE，组件会出现最后添加到布局中的组件的下边。然而，这是一种会给人造成误解的简单。如果我们是沿一行或一列添加组件，则RELATIVE工作得最好。在这种情况下，有四种可能的位置：
+
+-  如果gridx与gridy都是RELATIVE，则组件会被放置在一行。
+-  如果gridx是RELATIVE而gridy是常量，组件会被放置在一行，位于前一个组件的右边。
+-  如果grix是常量而gridy为RELATIVE，则组件会被放置在一列，位于前一个组件的下边。
+-  当设置其他域RELATIVE时变化gridx与gridy会开始新的一行显示，将组件作为新行的第一个元素。
+
+如果gridwidth或是gridheight被设置为REMAINDER，组件将是行或是列中占用剩余空间的最后一个元素。例如，对于表10-3中最右边列的组件，gridwidth值可以为REMAINDER。类似的，对于位于底部行中的组件gridheight也可以设置为REMAINDER。
+
+gridwidth与gridheight的值也可以是RELATIVE，这会强制组件成为行或是列中相邻最后一个组件的组件。我们回头看一下图10-5，如要按钮六的gridwidht为RELATIVE，则按钮七不会显示，因为按钮五是行中的最后一项，而按钮六已经紧邻最后一个了。如果按钮五的gridheight为RELATIVE，则布局管理器会保留其下面的空间，从而按钮可以紧邻列中的最后一项。
+
+**填充**
+
+insets值以像素指定了组件周围的外部填充（组件与单元格边或是分派给他的单元格之间的空间）。Insets对象可以为组件的顶部，底部，左边或是右边指定不同的填充。
+
+ipadx与ipady指定了组件的内部填充。ipadx指定到组件右边与左边的额外空间（所以最小宽度增加了2xipadx像素）。ipady指定了组件上部与下部的额外空间（所以最小宽度增加了2xipady像素）。insets（外部填充）与ipadx/ipady（内部填充）之间的区别会令人疑惑。insets并没有为组件本身添加空间；他们是组件的外部。ipadx与ipady改变了组件的最小尺寸，所以他们向组件本身添加了空间。
+
+**weight**
+
+weightx与weighty描述了如何分布容器内的额外空间。他使得我们可以在用户调整容器尺寸或是容器略大时控制组件如何增长（或缩小）。
+
+如果weightx为0.0，则该组件不会获得该行上的额外可用空间。如果一行中的一个或是多个组件具有一个正的weightx，则额外空间会在这些组件之间按比例分配。例如，如果一个组件的weightx值为1.0，而其他的组件全部为0.0，则该组件会获得全部的额外空间。如果一行中的四个组件每一个的weightx的值都为1.0，而其他组件的weightx的值为0.0，则四个组件中的每一个会获得额外空间的四分之一。weighty的行为与weightx类似，但是作用在另一个方向上。因为weightx与weighty控制一行或一列中额外空间的分配，为一个组件进行设置也许会影响其他组件的位置。
+
+CardLayout类
+------------
+
+CardLayout布局管理器与其他的布局管理器十分不同。其他的布局管理器尝试一次显示容器中的所有组件，而CardLayout一次只显示一个组件。这个组件可以是一个组件或是一个容器，而后者会让我们看到布局在基于嵌入容器的布局管理器之上的多个组件。
+
+现在可以使用JTabbedPane组件了（会在下一章描述），CardLayout很少使用。
+
+BoxLayout类
+-----------
+
+Swing的BoxLayout管理允许我们在我们自己的容器中在一个水平行或一个垂直列中布局组件。除了在我们自己的容器中使用BoxLayout，Box类（在下一章描述）提供了一个使用BoxLayout作为其默认布局管理器的容器。
+
+相对于FlowLayout或GridLayout，使用BoxLayout的好处在于BoxLayout会考虑到每一个组件的x与y对齐属性及其最大尺寸。比起GridBagLayout，BoxLayout的使用要容易得多。图10-8显示了使用BoxLayout的样子。而在前面的GridBagLayout使用中，我们需要配置必须的布局约束来使得GridBagLayout达到类似的效果。
+
+.. figure:: images/Swing_10_8.png
+   :alt: Swing_10_8.png
+
+   Swing\_10\_8.png
+创建BoxLayout
+~~~~~~~~~~~~~
+
+BoxLayout只有一个构造函数：
+
+public BoxLayout(Container target, int axis)
+
+构造函数需要两个参数。第一个参数是布局管理器实例要关联到的容器，而第二个是布局方向。可用的方法有：用于由左到至右布局的BoxLayout.X\_AXIS与由上到下布局的BoxLayout.Y\_AXIS。
+
+注意，尝试将坐标设置为其他的值会抛出AWTError。如果布局管理器关联的容器并不是传递给构造函数的容器，则在布局管理器尝试布局其他的容器时抛出AWTError。
+
+一旦我们创建了BoxLayout实例，我们可以将这个布局管理器关联到容器，类似于我们使用其他的布局管理器。
+
+.. code:: java
+
+    JPanel panel = new JPanel();
+    LayoutManager layout = new BoxLayout (panel, BoxLayout.X_AXIS);
+    panel.setLayout(layout);
+
+与所有其他的系统提供的布局管理器不同，BoxLayout与容器是双向绑定在一起的，由管理器到容器同时也由容器到管理。
+
+提示，我们在第11章将要描述的Box类可以使得我们一步创建容器并设置其布局管理器。
+
+布局组件
+~~~~~~~~
+
+一旦我们将容器的布局管理器设置为BoxLayout，我们就完成了直接使用布局管理器所需要做的全部工作。向容器添加组件可以通过add(Component
+component)或是add(Component component, int
+index)方法来实现。尽管BoxLayout实现了LayoutManager2接口，意味着约束的使用，但是当前并没有使用。所以，并不是必须使用add(Component
+component, Object constraints)。
+
+当需要布局容器时，BoxLayout会完成其他。BoxLayout管理会尝试满足容器中组件的最小与最大尺寸以及x坐标与y坐标对齐。对齐值的范围由0.0f到1.0f。（对齐设置是浮点常量，而不是双精度，所以需要使用f。）
+
+默认情况下，所有的Component子类都有一个Component.CENTER\_ALIGNMENT的x坐标对齐以及Component.CENTER\_ALIGNMENT的y坐标对齐。然而，所有的AbstractButton子类与JLabel都有一个默认的Component.LEFT\_ALIGNMENT的x坐标对齐。表10-4显示了Component中可用的组件属性常量，这些属性可以通过setAlignmentX(float
+newValue)或是setAlignmentY(float
+newValue)方法进行设置。不同的对齐工作方式相同，除非是在不同的方向上。在水平对齐的情况下，这类似于左对齐，中间对齐或右对齐调整段落的情况。
+
+.. figure:: images/Swing_table_10_4.png
+   :alt: Swing_table_10_4.png
+
+   Swing\_table\_10\_4.png
+**使用相同的对齐布局组件**
+
+BoxLayout管理器依据被管理的容器内的组件的对齐而进行不同的处理。如果所有的对齐都相同，则最大尺寸小于容器尺寸的组件会依据对齐设置进行对齐。例如，如果我们有一个使用垂直BoxLayout的宽区域，而在其内是小按钮，则水平对齐将会左对齐，中间对齐或是右对齐调整按钮。图10-9显示了调整的样子。
+
+.. figure:: images/Swing_10_9.png
+   :alt: Swing_10_9.png
+
+   Swing\_10\_9.png
+在这里演示的关键点在于如果所有的组件共享相同的对齐设置，则被管理的容器内的所有组件的实际对齐就是组件对齐设置。
+
+列表10-2显示在生成图10-9的源码。
+
+.. code:: java
+
+    package swingstudy.ch10;
+
+    import java.awt.Component;
+    import java.awt.Container;
+    import java.awt.EventQueue;
+    import java.awt.FlowLayout;
+
+    import javax.swing.BorderFactory;
+    import javax.swing.BoxLayout;
+    import javax.swing.JButton;
+    import javax.swing.JFrame;
+    import javax.swing.JPanel;
+
+    public class YAxisAlignX {
+
+        private static Container makeIt(String title, float alignment) {
+            String labels[] = {"--", "----", "------", "--------"};
+            
+            JPanel container = new JPanel();
+            container.setBorder(BorderFactory.createTitledBorder(title));
+            BoxLayout layout = new BoxLayout(container, BoxLayout.Y_AXIS);
+            container.setLayout(layout);
+            
+            for(int i=0, n=labels.length; i<n; i++) {
+                JButton button = new JButton(labels[i]);
+                button.setAlignmentX(alignment);
+                container.add(button);
+            }
+            return container;
+        }
+        /**
+         * @param args
+         */
+        public static void main(String[] args) {
+            // TODO Auto-generated method stub
+
+            Runnable runner = new Runnable() {
+                public void run() {
+                    JFrame frame = new JFrame("Alignment Example");
+                    frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+                    
+                    Container panel1 = makeIt("Left", Component.LEFT_ALIGNMENT);
+                    Container panel2 = makeIt("Center", Component.CENTER_ALIGNMENT);
+                    Container panel3 = makeIt("Right", Component.RIGHT_ALIGNMENT);
+                    
+                    frame.setLayout(new FlowLayout());
+                    frame.add(panel1);
+                    frame.add(panel2);
+                    frame.add(panel3);
+                    
+                    frame.pack();
+                    frame.setVisible(true);
+                }
+            };
+            
+            EventQueue.invokeLater(runner);
+        }
+
+    }
+
+当所有组件具有相同的垂直对齐时，x坐标的BoxLayout的作用类似。组件将会显示在容器的顶部，中部或是底，而不是左对齐，中间对齐或是右对齐调整。图10-10显示了这种外观。
+
+.. figure:: images/Swing_10_10.png
+   :alt: Swing_10_10.png
+
+   Swing\_10\_10.png
+显示在图10-10中的示例源码只需要对列表10-2的代码进行小量的修改即可。列表10-3提供了完整的代码。
+
+.. code:: java
+
+    package swingstudy.ch10;
+
+    import java.awt.Component;
+    import java.awt.Container;
+    import java.awt.EventQueue;
+    import java.awt.GridLayout;
+
+    import javax.swing.BorderFactory;
+    import javax.swing.BoxLayout;
+    import javax.swing.JButton;
+    import javax.swing.JFrame;
+    import javax.swing.JPanel;
+
+    public class XAxisAlignY {
+
+        private static Container makeIt(String title, float alignment) {
+            String labels[] = {"-", "-", "-"};
+            
+            JPanel container = new JPanel();
+            container.setBorder(BorderFactory.createTitledBorder(title));
+            BoxLayout layout = new BoxLayout(container, BoxLayout.X_AXIS);
+            container.setLayout(layout);
+            
+            for(int i=0, n=labels.length; i<n; i++) {
+                JButton button = new JButton(labels[i]);
+                button.setAlignmentY(alignment);
+                container.add(button);
+            }
+            return container;
+        }
+        /**
+         * @param args
+         */
+        public static void main(String[] args) {
+            // TODO Auto-generated method stub
+
+            Runnable runner = new Runnable() {
+                public void run() {
+                    JFrame frame = new JFrame("Alignment Example");
+                    frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+                    
+                    Container panel1 = makeIt("Top", Component.TOP_ALIGNMENT);
+                    Container panel2 = makeIt("Center", Component.CENTER_ALIGNMENT);
+                    Container panel3 = makeIt("Bottom", Component.BOTTOM_ALIGNMENT);
+                    
+                    frame.setLayout(new GridLayout(1,3));
+                    frame.add(panel1);
+                    frame.add(panel2);
+                    frame.add(panel3);
+                    
+                    frame.setSize(423, 171);
+                    frame.setVisible(true);
+                }
+            };
+            EventQueue.invokeLater(runner);
+        }
+
+    }
+
+**使用不同的对齐布局组件**
+
+使用具有相同对齐的小组件是相对简单的。然而，如果BoxLayout管理的容器中的组件具有不同的对齐，事情就会变得更为复杂。另外，组件并不是必须按着我们所希望的样子进行显示。对于垂直box，组件的显示按如下方式显示：
+
+-  如果组件的x对齐设置为Component.LEFT\_ALIGNMENT，组件的左边将与容器的中间对齐。
+-  如果组件的x对齐设置为Component.RIGHT\_ALIGNMENT，组件的右将会与容器的中间对齐。
+-  如果组件的x对齐设置为Component.CENTER\_ALIGNMENT,组件将会位于容器的中间。
+-  其他的设置值会使得组件被设置相对于容器中间的变化位置上（依据值而不同）。
+
+为了帮助我们理解这种混合的对齐行为，图10-11显示了两个BoxLayout容器。左边的容器具有两个组件，一个为左对齐（标识为0.0的按钮），而另一个为右对齐（标识为1.0的按钮）。在这里我们可以看到右边组件的左边与左边组件的右边相对齐。右边的容器显示了在0.0与1.0对齐设置之间的额外组件放置。每一个按钮的标签表示了其对齐设置。
+
+.. figure:: images/Swing_10_11.png
+   :alt: Swing_10_11.png
+
+   Swing\_10\_11.png
+对于水平box，y对齐相对于x坐标上的组件顶部与底部的工作方式类似。
+
+.. figure:: images/Swing_10_12.png
+   :alt: Swing_10_12.png
+
+   Swing\_10\_12.png
+**布局大组件**
+
+到目前为止的示例中，组件的尺寸总是小于可用空间的大小。这些示例演示了Swing组件与原始AWT组件之间的细微区别。Swing组件的默认最大尺寸为组件的最优尺寸。对于AWT组件，默认的最大尺寸为具有Short.MAX\_VALUE宽与高的维度。如果前面的例子使用了AWT
+Button组件而不是Swing的JButton组件，我们就会看到不同的结果。如果我们手动将组件的最大尺寸属性设置为比BoxLayout的屏幕还要宽或高的值，我们也会看到不同的结果。使用AWT组件会使得事情的演示更为容易。
+
+图10-9显示了三个y坐标BoxLayout，容器中的组件共享相同的水平对齐，而每个按钮的最大尺寸是有约束的。如果组件的最大尺寸没有约束，或者是比容器略大，我们就会看到图10-13的结果，其中y坐标BoxLayout容器中有四个具有相同水平对齐的Button组件。注意，组件并没有左对齐，中间对齐或是右对齐，组件会增长以适应可用的空间。
+
+.. figure:: images/Swing_10_13.png
+   :alt: Swing_10_13.png
+
+   Swing\_10\_13.png
+如果组件具有不同的对齐以及无限制的最大尺寸，我们就会得到另一种行为。对齐设置不为最小（0，0f）或是最大（1.0f）的组件将会增长以适应整个空间。如果同时指定了最小与最大对齐设置，这两个组件的中间边将会在中间对齐，如图10-14所示。
+
+.. figure:: images/Swing_10_14.png
+   :alt: Swing_10_14.png
+
+   Swing\_10\_14.png
+然而，如果只有一个组件的边设置为（0.0或1.0），并且位于一个具有其他对齐设置的容器中，则具有边设置的组件将背离容器中间增长。图10-15显示了这种行为。x坐标BoxLayout容器在不同的水平对齐的情况下作用类似。
+
+.. figure:: images/Swing_10_15.png
+   :alt: Swing_10_15.png
+
+   Swing\_10\_15.png
+OverlayLayout类
+---------------
+
+正如其名字所暗示的，OverlayLayout类用于位于其他组件之上的布局管理。当使用add(Component
+component)时，我们将组件添加到由OverlayLayout管理器管理的容器中的顺序决定了组件层次。相反，如果我们使用add(Component
+component, int
+index)，我们可以以任意顺序添加组件。尽管OverlayLayout实现了LayoutManager2接口，类似于BoxLayout，OverlayLayout并没有使用任何约束。
+
+确定组件的二维位置需要布局管理器检测所包含组件的x与y对齐属性。只要组件的x与y对齐属性定义了一个所有组件都可以共享的点，称之为布局管理器的坐标点，那么组件就可以进行放置。如果我们在相应的方向上将对齐值乘以组件的尺寸，我们就可以获得组件的坐标点的所有部分。
+
+在为每一个组件确定了坐标点以后，OverylayLayout管理器计算容器内这个共享点的位置。为了计算这个位置，布局管理器平均组件的不同对齐属性，然后将每一个设置乘以容器的宽度或高度。这个位置就是布局管理器放置坐标点的位置，然后组件可以被放置在这个点上。
+
+例如，假定我们有三个按钮：一个100x100的黑色按钮，其上是一个50x50的灰色按钮，其上是一个25x25的白色按钮。如果每一个按钮的x与y对齐是0.0f，则三个组件的共享坐标点是他们的左上角，而组件位于容器的左上角。如图10-16所示。
+
+如果每个按钮的x与y对齐为1.0f，三个组件的坐标点是他们的右下解，而组件位于容器的右下角。如图10-17所示。
+
+.. figure:: images/Swing_10_16.png
+   :alt: Swing_10_16.png
+
+   Swing\_10\_16.png
+.. figure:: images/Swing_10_17.png
+   :alt: Swing_10_17.png
+
+   Swing\_10\_17.png
+如果每个按钮的x与y对齐为0.5f，三个组件的坐标点为他们的中间，而且组件位于容器中间。如图10-18所示。
+
+.. figure:: images/Swing_10_18.png
+   :alt: Swing_10_18.png
+
+   Swing\_10\_18.png
+所有的组件具有相同的对齐要相对容易理解，但是如果组件具有不同的对齐时会怎么样呢？例如，如果小按钮的x与y对齐为0.0f，而中型按钮的x与y对齐为0.5f，大按钮的x与y对齐为1.0f，那么这些组件如何显示呢？那么首先，布局管理器要计算坐标点。基于每个按钮的特定对齐，坐标点将是小按钮的左上角。容器内的坐标点将会对齐值的平均乘以容器的维度。两个方向上的0，0.5与1的平均将坐标点放在容器的中间。然后由这个位置进行组件的放置与布局，如图10-19所示。
+
+.. figure:: images/Swing_10_19.png
+   :alt: Swing_10_19.png
+
+   Swing\_10\_19.png
+当我们设置重叠组件时，要保证组件容器的optimizedDrawingEnabled属性设置为false。这可以保证属性重绘与事件传播。
+
+要尝试OverlayLayout管理器，可以使用列表10-4中的源码。他提供了可选中的按钮来演示变化对齐值的效果。初始时，程序会有将所有组件放在中间。
+
+.. code:: java
+
+
+    package swingstudy.ch10;
+
+    import java.awt.BorderLayout;
+    import java.awt.Color;
+    import java.awt.Dimension;
+    import java.awt.EventQueue;
+    import java.awt.LayoutManager;
+    import java.awt.event.ActionEvent;
+    import java.awt.event.ActionListener;
+
+    import javax.swing.BorderFactory;
+    import javax.swing.JButton;
+    import javax.swing.JComponent;
+    import javax.swing.JFrame;
+    import javax.swing.JPanel;
+    import javax.swing.OverlayLayout;
+
+    public class OverlaySample {
+
+        public static final String SET_MINIMUM = "Minimum";
+        public static final String SET_MAXIMUM = "Maximum";
+        public static final String SET_CENTRAL = "Central";
+        public static final String SET_MIXED = "Mixed";
+
+        static JButton smallButton = new JButton();
+        static JButton mediumButton = new JButton();
+        static JButton largeButton = new JButton();
+
+        public static void setupButtons(String command) {
+            if (SET_MINIMUM.equals(command)) {
+                smallButton.setAlignmentX(0.0f);
+                smallButton.setAlignmentY(0.0f);
+                mediumButton.setAlignmentX(0.0f);
+                mediumButton.setAlignmentY(0.0f);
+                largeButton.setAlignmentX(0.0f);
+                largeButton.setAlignmentY(0.0f);
+            } else if (SET_MAXIMUM.equals(command)) {
+                smallButton.setAlignmentX(1.0f);
+                smallButton.setAlignmentY(1.0f);
+                mediumButton.setAlignmentX(1.0f);
+                mediumButton.setAlignmentY(1.0f);
+                largeButton.setAlignmentX(1.0f);
+                largeButton.setAlignmentY(1.0f);
+            } else if (SET_CENTRAL.equals(command)) {
+                smallButton.setAlignmentX(0.5f);
+                smallButton.setAlignmentY(0.5f);
+                mediumButton.setAlignmentX(0.5f);
+                mediumButton.setAlignmentY(0.5f);
+                largeButton.setAlignmentX(0.5f);
+                largeButton.setAlignmentY(0.5f);
+            } else if (SET_MIXED.equals(command)) {
+                smallButton.setAlignmentX(0.0f);
+                smallButton.setAlignmentY(0.0f);
+                mediumButton.setAlignmentX(0.5f);
+                mediumButton.setAlignmentY(0.5f);
+                largeButton.setAlignmentX(1.0f);
+                largeButton.setAlignmentY(1.0f);
+            } else {
+                throw new IllegalArgumentException("Illegal Command: " + command);
+            }
+            // redraw panel
+            ((JPanel) largeButton.getParent()).revalidate();
+        }
+
+        /**
+         * @param args
+         */
+        public static void main(String[] args) {
+            // TODO Auto-generated method stub
+
+            final ActionListener generalActionListener = new ActionListener() {
+                public void actionPerformed(ActionEvent event) {
+                    JComponent comp = (JComponent) event.getSource();
+                    System.out.println(event.getActionCommand() + " : "
+                            + comp.getBounds());
+                }
+            };
+
+            final ActionListener sizingActionListener = new ActionListener() {
+                public void actionPerformed(ActionEvent event) {
+                    setupButtons(event.getActionCommand());
+                }
+            };
+
+            Runnable runner = new Runnable() {
+                public void run() {
+                    JFrame frame = new JFrame("Overlay Example");
+                    frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+                    
+                    JPanel panel = new JPanel() {
+                        public boolean isOptimizedDrawingEnabled() {
+                            return false;
+                        }
+                    };
+                    LayoutManager overlay = new OverlayLayout(panel);
+                    panel.setLayout(overlay);
+                    
+                    Object settings[][] = {
+                            {"Small", new Dimension(25,25), Color.white},
+                            {"Medium", new Dimension(50,50), Color.gray},
+                            {"Large", new Dimension(100,100), Color.black}
+                    };
+                    
+                    JButton buttons[] = {smallButton, mediumButton, largeButton};
+                    
+                    for(int i=0, n=settings.length; i<n; i++) {
+                        JButton button = buttons[i];
+                        button.addActionListener(generalActionListener);
+                        button.setActionCommand((String)settings[i][0]);
+                        button.setMaximumSize((Dimension)settings[i][1]);
+                        button.setBackground((Color)settings[i][2]);
+                        panel.add(button);
+                    }
+                    setupButtons(SET_CENTRAL);
+                    
+                    JPanel actionPanel = new JPanel();
+                    actionPanel.setBorder(BorderFactory.createTitledBorder("Change Alignment"));
+                    String actionSettings[] = {SET_MINIMUM, SET_MAXIMUM, SET_CENTRAL, SET_MIXED};
+                    
+                    for(int i=0, n=actionSettings.length; i<n; i++) {
+                        JButton button = new JButton(actionSettings[i]);
+                        button.addActionListener(sizingActionListener);
+                        actionPanel.add(button);
+                    }
+                    
+                    frame.add(panel, BorderLayout.CENTER);
+                    frame.add(actionPanel, BorderLayout.SOUTH);
+                    
+                    frame.setSize(400, 300);
+                    frame.setVisible(true);
+                }
+            };
+            
+            EventQueue.invokeLater(runner);
+        }
+
+    }
+
+SizeRequirements类
+------------------
+
+BoxLayout与OverlayLayout管理器依赖于SizeRequirements类来决定所包含组件的确切位置。SizeRequirements类包含各种静态方法来协助将组件放在管理器中所需要的计算。布局管理器使用这个类来计算他们组件的x坐标与宽度以及y坐标与高度。每一对值都是单独计算的。如果相关联的布局管理器需要放置的所有属性集合，布局管理器会单独请求SizeRequirements类。
+
+ScrollPanelLayout类
+-------------------
+
+JScrollPane类，将会在第11章描述的一个容器类，使用ScrollPanelLayout管理器。试图在JScrollPane之外使用布局管理器是不可能的，因为布局管理器会检测与布局管理器相关联的容器对象是否是一个JScrollPane实例。查看第11章可以获得关于这个布局管理器的完整描述。
+
+ViewportLayout类
+----------------
+
+ViewportLayout管理器为JViewport类所使用，JViewport类是我们将会在第11章描述的一个容器类。JViewport同时也可以使用ScrollPaneLayout/JScrollPane组合中。类似于ScrollPaneLayout，ViewportLayout管理器是与其组件紧密结合在一起的，在这种情况下是JViewport类，并且不可以在组件之外使用，除非是在子类中。另外，JViewport类很少用在JScrollPane之外。ViewportLayout管理器及其容器JViewport类，将会在第11章讨论。
+
+SpringLayout类
+--------------
+
+最新添加到Java布局管理器前端的就是SpringLayout管理器，这是在J2SE
+1.4版本中添加的。这个布局管理器可以允许我们将"springs"关联到组件，从而他们可以相对于其他的组件布局。例如，使用SrpingLayout，我们可以将一个按钮与右边框相关联，而不论用户如何调整屏幕尺寸。
+
+SpringLayout管理器依赖于SpringLayout.Constraints进行组件约束。这类似于作为GridBagLayout管理器补充的GridBagConstraints类。添加到容器中的每一个组件都具有相关联的SpringLayout.Constraints。在这一点两种约束类型具有相似性。
+
+我们通常并不需要添加带有约束的组件。相反，我们可以添加组件，然后单独关联约束。并没有什么可以阻止我们向组件添加约束，但是SpringLayout.Constraints并不是一个简单类。他是一个Spring对象集合，每一个Spring对象都是组件的不同约束。我们需要将每一个Spring约束单独添加到SpringLayout.Constraints。我们可以通过在每一个组件的边设置特定的约束来实现这一操作。使用SpringLayout的四个常量EAST,
+WEST,
+NORTH与SOUTH，我们可以调用SpringLayout.Constraints的setConstraints(String
+edge, Spring spring)方法，其中String是四个常量之一。
+
+例如，如果我们希望将一个组件添加到容器的左上方，我们可以设置一个组件尺寸的两个Spring，将其组合在一起，然后通过组合的set方法将组件以容器，如下面的代码所示：
+
+.. code:: java
+
+    Component left = ...;
+    SpringLayout layout = new SpringLayout();
+    JPanel panel = new JPanel(layout);
+    Spring xPad = Spring.constant(5);
+    Spring yPad = Spring.constant(25);
+    SpringLayout.Constraints constraint = new SpringLayout.Constraints();
+    constraint.setConstraint(SpringLayout.WEST, xPad);
+    constraint.setConstraint(SpringLayout.NORTH, yPad);
+    frame.add(left, constraint);
+
+这看起来并不是太复杂，但是当我们需要添加下一个组件，前一个组件的右边或是下边时，事情就会变得更为困难。我们不能仅是将组件添加额外的n个像素。我们必须实际的向前一个组件的边添加填充。要确定前一个组件的边，我们可以使用getConstraint()查询布局管理器，并传递我们所希望的边与组件，例如在layout.getConstraint(SpringLayout.EAST,
+left)来获得前一个组件右边的位置。由这个位置起，我们可以添加必须的填充，并将其关联到其他组件的边，如下面的代码所示：
+
+.. code:: java
+
+    Component right = ...;
+    Spring rightSideOfLeft = layout.getConstraint(SpringLayout.EAST, left);
+    Spring pad = Spring.constant(20);
+    Spring leftEdgeOfRight = Spring.sum(rightSideOfLeft, pad);
+    constraint = new SpringLayout.Constraints();
+    constraint.setConstraint(SpringLayout.WEST, leftEdgeOfRight);
+    constraint.setConstraint(SpringLayout.NORTH, yPad);
+    frame.add(right, constraint);
+
+上面的方法可以工作得很好，但是随着组件数的增加，上面的方法就会变得十分繁琐。要减少其中的步骤，我们可以添加没有约束的组件，然后单独添加，通过SpringLayout的putConstraint()方法连接组件。
+
+.. code:: java
+
+    public void putConstraint(String e1, Component c1, int pad, String e2,
+      Component c2)
+    public void putConstraint(String e1, Component c1, Spring s, String e2,
+      Component c2)
+
+这样，我们不需要查询边并亲自添加填充，putConstraint()调用可以为我们组合这些任务。为了演示，下面的代码片段为右边的组件添加了相同的组件约束，但是所用的是putConstraint()方法而是直接使用SpringLayout.Constraints：
+
+.. code:: java
+
+    Component left = ...;
+    Component right = ...;
+    SpringLayout layout = new SpringLayout();
+    JPanel panel = new JPanel(layout);
+    panel.add(left);
+    panel.add(right);
+    layout.putConstraint(SpringLayout.WEST, left, 5, SpringLayout.WEST, panel);
+    layout.putConstraint(SpringLayout.NORTH, left, 25, SpringLayout.NORTH, panal);
+    layout.putConstraint(SpringLayout.NORTH, right, 25, SpringLayout.NORTH, panel);
+    layout.putConstraint(SpringLayout.WEST, right, 20, SpringLayout.EAST, left);
+
+为了有助于我们理解SpringLayout的使用，Sun有一个名为The Bean
+Builder的工作，https://bean-builder.dev.java.nt/。这个工具最初是要用于使用JavaBean组件的工作，但是也可以用于SpringLayout。图10-20显示了通过Java
+WebStart启动时的样子。
+
+.. figure:: images/Swing_10_20.png
+   :alt: Swing_10_20.png
+
+   Swing\_10\_20.png
+每一个组件边的周围有一个四个盒子的集合，分别用于NORTH, SOURTH,
+EAST与WEST。我们可以由一个盒子拖动箭头并将其连接到其他盒子。这个工具有一些复杂，可以允许我们为spring指定间隔距离，但是在屏幕设计时，屏幕看起来有一些像图20-21。所创建的每一个箭头都被映射到putConstraint()方法的一个特定调用。
+
+.. figure:: images/Swing_10_21.png
+   :alt: Swing_10_21.png
+
+   Swing\_10\_21.png
+列表10-5提供了生成图10-21的源码。注意，我们必须直接使用JFrame的内容面板，因为putConstraint()需要这个容器，而是窗体本身。
+
+.. code:: java
+
+
+    package swingstudy.ch10;
+
+    import java.awt.Component;
+    import java.awt.Container;
+    import java.awt.EventQueue;
+
+    import javax.swing.JFrame;
+    import javax.swing.JLabel;
+    import javax.swing.JTextField;
+    import javax.swing.SpringLayout;
+
+    public class SpringSample {
+
+        /**
+         * @param args
+         */
+        public static void main(String[] args) {
+            // TODO Auto-generated method stub
+
+            Runnable runner = new Runnable() {
+                public void run() {
+                    JFrame frame = new JFrame("SpringLayout");
+                    frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+                    Container contentPane = frame.getContentPane();
+                    
+                    SpringLayout layout = new SpringLayout();
+                    contentPane.setLayout(layout);
+                    
+                    Component left = new JLabel("Left");
+                    Component right = new JTextField(15);
+                    
+                    contentPane.add(left);
+                    contentPane.add(right);
+                    
+                    layout.putConstraint(SpringLayout.WEST, left, 10, SpringLayout.WEST, contentPane);
+                    layout.putConstraint(SpringLayout.NORTH, left, 25, SpringLayout.NORTH, contentPane);
+                    layout.putConstraint(SpringLayout.NORTH, right, 25, SpringLayout.NORTH, contentPane);
+                    layout.putConstraint(SpringLayout.WEST, right, 20, SpringLayout.EAST, left);
+                    
+                    frame.setSize(300, 100);
+                    frame.setVisible(true);
+                }
+            };
+            
+            EventQueue.invokeLater(runner);
+        }
+
+    }
+
+小结
+----
+
+本章介绍了AWT的预定义布局管理器FlowLayout，BorderLayout，GridLayout，GridBagLayout与CardLayout，以及Swing的预定义布局管理器BoxLayout，OverlayLayout，ScrollPaneLayout，ViewportLayout与SpringLayout。我们了解了当我们使用一个布局管理器时，例如BoxLayout或OverlayLayout，各种对齐设置如何影响容器内的组件。另外，我们还了解了SizeRequirements类，这是BoxLayout与OverlayLayout所用的类。
+
+在第11章，我们将会了解使用ScrollPaneLayout与ViewportLayout管理器的JScrollPane与JViewport容器，以及其他一些高级Swing容器类。

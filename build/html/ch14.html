@@ -1,0 +1,495 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Spinner Model Controls &mdash; The Definitive Guide to Java Swing Third Edtion 0.01 documentation</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.01',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="The Definitive Guide to Java Swing Third Edtion 0.01 documentation" href="index.html" />
+    <link rel="next" title="基本文本组件" href="ch15.html" />
+    <link rel="prev" title="List Model Controls" href="ch13.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="ch15.html" title="基本文本组件"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="ch13.html" title="List Model Controls"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">The Definitive Guide to Java Swing Third Edtion 0.01 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="spinner-model-controls">
+<h1>Spinner Model Controls<a class="headerlink" href="#spinner-model-controls" title="Permalink to this headline">¶</a></h1>
+<p>在前一章中，我们了解了如何使用基本的列表组件：JList与JComboBox。在本章中，我们将会开始探讨JDK
+1.4版本所引入的JSpinner组件。</p>
+<div class="section" id="jspinner">
+<h2>JSpinner类<a class="headerlink" href="#jspinner" title="Permalink to this headline">¶</a></h2>
+<p>JSpinner的作用类似于JList或是JComboBox组件与JFormattedTextField的结合。在JList与JComboBox控件中，用户可以由一个预定义的值集合中选择输入。JSpinner允许这种选择类型。组件的另一半是JFormattedTextField。如何显示或是输入值并不由列表单元渲染器来控制，类似于JList；相反，我们获取JFormattedTextField用于输入并且在旁边有一对箭头用于在文本域可用的不同值之间进行浏览。</p>
+<p>图14-1显示了用于不同的输入类型的微调控件的样子。图14-1的顶部是一个以法国星期显示提供给SpinnerListModel的JSpinner。在中部，我们具有一个依赖SpinnerDateModel类的JSpinner。在底部是一个带有SpinnerNumberModel的JSpinner使用示例。正如我们在本章稍后将会了解到的，每一个都以其自己的方式进行工作。</p>
+<div class="figure">
+<img alt="Swing_14_1.png" src="_images/Swing_14_1.png" />
+<p class="caption">Swing_14_1.png</p>
+</div>
+<p>当创建并操作JSpinner组件时会涉及到许多类，首先就是JSpinner类本身。所涉及到的两个基本类集合是包含用于控件可选条目集合的SpinnerModel接口，以及用于捕获所有选择的JSpinnner.DefaultEditor实现。幸运的是，所涉及到的其他许多类在幕后工作，所以，例如，一旦我们在SpinnerNumberModel中提供一个数字范围并且与其模型相叛逆，我们的工作实质上就完成了。</p>
+<div class="section" id="id1">
+<h3>创建JSpinner组件<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h3>
+<p>JSpinner类包含两个用于初始化组件的构造函数：</p>
+<div class="code java highlight-python"><pre>public JSpinner()
+JSpinner spinner = new JSpinner();
+public JSpinner(SpinnerModel model)
+SpinnerModel model = new SpinnerListModel(args);
+JSpinner spinner = new JSpinner(model);</pre>
+</div>
+<p>我们可以由无数据模型开始，并使用JSpinner的方法在稍后进行关联。或者是我们可以由一个完全的数据模型开始，数据模型是SpinnerModel接口的实现，其中有三个主要类：SpinnerDateModel，SpinnerListModel与SpinnerNumberModel，及其抽象父类AbstractSpinnerModel。如果我们没有指定一个模型，则使用SpinnerNumberModel。尽管组件的渲染器与编辑器是JFormattedTextField，编辑基本是通过一系列的JSpinner内联类来完成的：DateEditor，ListEditor与NumberFormat，而其支持类则位于父类DefaultEditor中。</p>
+</div>
+<div class="section" id="id2">
+<h3>JSpinner属性<a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h3>
+<p>除了创建JSpinner对象以外，我们当然也可以通过表14-1中所列出的属性对其进行重新配置。</p>
+<div class="figure">
+<img alt="Swing_table_14_1.png" src="_images/Swing_table_14_1.png" />
+<p class="caption">Swing_table_14_1.png</p>
+</div>
+<p>value属性使得我们可以修改组件的当前设置。nextValue与previosValue属性使得我们可以在不同方向的model的条目中进行选择，而无需修改程序本身的选择。</p>
+</div>
+<div class="section" id="chnagelistenerjspinner">
+<h3>使用ChnageListener监听JSpinner事件<a class="headerlink" href="#chnagelistenerjspinner" title="Permalink to this headline">¶</a></h3>
+<p>JSpinner只直接支持一种事件监听器：ChangeListener。在其他情况下，当为相关组件调用commitEdit()方法时，监听器会得到通知，告诉我们微调器的值发生了变化。为了进行演示，列表14-1向生成图14-1的源程序关联了一个自定义的ChangeListener。</p>
+<div class="code java highlight-python"><pre>package swingstudy.ch13;
+
+import java.awt.BorderLayout;
+import java.awt.EventQueue;
+import java.text.DateFormatSymbols;
+import java.util.Locale;
+
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JSpinner;
+import javax.swing.SpinnerDateModel;
+import javax.swing.SpinnerListModel;
+import javax.swing.SpinnerModel;
+import javax.swing.SpinnerNumberModel;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
+
+public class SpinnerSample {
+
+    /**
+     * @param args
+     */
+    public static void main(String[] args) {
+        // TODO Auto-generated method stub
+
+        Runnable runner = new Runnable() {
+            public void run() {
+                JFrame frame = new JFrame("JSpinner Sample");
+                frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+
+                DateFormatSymbols symbols = new DateFormatSymbols(Locale.FRENCH);
+                ChangeListener listener = new ChangeListener() {
+                    public void stateChanged(ChangeEvent e) {
+                        System.out.println("Source: "+e.getSource());
+                    }
+                };
+
+                String days[] = symbols.getWeekdays();
+                SpinnerModel model1 = new SpinnerListModel(days);
+                JSpinner spinner1 = new JSpinner(model1);
+                spinner1.addChangeListener(listener);
+                JLabel label1 = new JLabel("French Days/List");
+                JPanel panel1 = new JPanel(new BorderLayout());
+                panel1.add(label1, BorderLayout.WEST);
+                panel1.add(spinner1, BorderLayout.CENTER);
+                frame.add(panel1, BorderLayout.NORTH);
+
+                SpinnerModel model2 = new SpinnerDateModel();
+                JSpinner spinner2 = new JSpinner(model2);
+                spinner2.addChangeListener(listener);
+                JLabel label2 = new JLabel("Dates/Date");
+                JPanel panel2 = new JPanel(new BorderLayout());
+                panel2.add(label2, BorderLayout.WEST);
+                panel2.add(spinner2, BorderLayout.CENTER);
+                frame.add(panel2, BorderLayout.CENTER);
+
+                SpinnerModel model3 = new SpinnerNumberModel();
+                JSpinner spinner3 = new JSpinner(model3);
+                spinner3.addChangeListener(listener);
+                JLabel label3 = new JLabel("Numbers");
+                JPanel panel3 = new JPanel(new BorderLayout());
+                panel3.add(label3, BorderLayout.WEST);
+                panel3.add(spinner3, BorderLayout.CENTER);
+                frame.add(panel3, BorderLayout.SOUTH);
+
+                frame.setSize(200, 90);
+                frame.setVisible(true);
+            }
+        };
+        EventQueue.invokeLater(runner);
+    }
+
+}</pre>
+</div>
+<p>运行这个程序演示了监听器的使用。</p>
+</div>
+<div class="section" id="id3">
+<h3>自定义JSpinner观感<a class="headerlink" href="#id3" title="Permalink to this headline">¶</a></h3>
+<p>类似于所有的Swing组件，JSpinner控件在每一个系统定义的观感类型下都会有不同的外观，如图14-2所示。组件的基本外观看起来像一个文本域；不同在于箭头的绘制。</p>
+<div class="figure">
+<img alt="Swing_14_2.png" src="_images/Swing_14_2.png" />
+<p class="caption">Swing_14_2.png</p>
+</div>
+<p>表14-2中列出了JSpinner的11个UIResource属性集合。这个属性局限于绘制文本域与箭头。</p>
+<div class="figure">
+<img alt="Swing_table_14_2.png" src="_images/Swing_table_14_2.png" />
+<p class="caption">Swing_table_14_2.png</p>
+</div>
+</div>
+</div>
+<div class="section" id="spinnermodel">
+<h2>SpinnerModel接口<a class="headerlink" href="#spinnermodel" title="Permalink to this headline">¶</a></h2>
+<p>到目前为止，我们已经了解了如何与主JSpinner类交互。SpinnerModel接口是组件的数据模型。SpinnerModel的定义如下：</p>
+<div class="code java highlight-python"><pre>public interface SpinnerModel {
+  // Properties
+  public Object getValue();
+  public void setValue(Object);
+  public Object getNextValue();
+  public Object getPreviousValue();
+  // Listeners
+  public void addChangeListener(ChangeListener);
+  public void removeChangeListener(ChangeListener);
+}</pre>
+</div>
+<p>SpinnerMOdel的六个方法直接映射到JSpinner的相应方法。JSpinner方法只是将这些方法调用转向模型的方法，尽管在监听器方法的情况下，事件源是我们关联监听器的地方。</p>
+</div>
+<div class="section" id="abstractspinnermodel">
+<h2>AbstractSpinnerModel类<a class="headerlink" href="#abstractspinnermodel" title="Permalink to this headline">¶</a></h2>
+<p>SpinnerModel接口的基本实现是AbstractSpinnerModel类。他提供了监听器列表的管理与通知。子类必须实现其他的四个与值相关的接口方法。SpinnerModel接口的实现有：SpinnerDateModel，SpinnerListModel与SpinnerNumberModel。</p>
+<div class="section" id="spinnerdatemodel">
+<h3>SpinnerDateModel类<a class="headerlink" href="#spinnerdatemodel" title="Permalink to this headline">¶</a></h3>
+<p>正如其名字所暗示的，SpinnerModel提供了日期的选择。这个类有两个构造函数：一个在默认情况下选择所有的日期，而另一个允许我们限制范围。</p>
+<div class="code java highlight-python"><pre>public SpinnerDateModel()
+SpinnerModel model = new SpinnerDateModel();
+JSpinner spinner = new JSpinner(model);
+public SpinnerDateModel(Date value, Comparable start, Comparable end,
+  int calendarField)
+Calendar cal = Calendar.getInstance();
+Date now = cal.getTime();
+cal.add(Calendar.YEAR, -50);
+Date startDate = cal.getTime();
+cal.add(Calendar.YEAR, 100);
+Date endDate = cal.getTime();
+SpinnerModel model =
+  new SpinnerDateModel(now, startDate, endDate, Calendar.YEAR);
+JSpinner spinner = new JSpinner(model);</pre>
+</div>
+<p>如果我们没有指定任何参数，则没有起始点与结束点。这里所显示的示例使用参数来提供100年的范围。最后一个域应是Calendar类的一个常量：</p>
+<p>•Calendar.AM_PM</p>
+<p>•Calendar.DAY_OF_MONTH</p>
+<p>•Calendar.DAY_OF_WEEK</p>
+<p>•Calendar.DAY_OF_WEEK_IN_MONTH</p>
+<p>•Calendar.DAY_OF_YEAR</p>
+<p>•Calendar.ERA</p>
+<p>•Calendar.HOUR</p>
+<p>•Calendar.HOUR_OF_DAY</p>
+<p>•Calendar.MILLISECOND</p>
+<p>•Calendar.MINUTE</p>
+<p>•Calendar.MONTH</p>
+<p>•Calendar.SECOND</p>
+<p>•Calendar.WEEK_OF_MONTH</p>
+<p>•Calendar.WEEK_OF_YEAR</p>
+<ul class="simple">
+<li>Calendar.YEAR</li>
+</ul>
+<p>注意，SpinnerModel不包含任何与时区相关的Calendar常量。我们不可以通过SpinnerDateModel在JSpinner内进行滚动。</p>
+<p>表14-3列出了SpinnerModel接口的三个属性以四个SpinnerDateModel的特定属性。</p>
+<div class="figure">
+<img alt="Swing_table_14_3.png" src="_images/Swing_table_14_3.png" />
+<p class="caption">Swing_table_14_3.png</p>
+</div>
+<p>通常情况下，我们将会使用的唯一新属性是用于获取最终的日期，尽管他所做的是以合适的数据类型包装getValue()的方法的结果。如果我们为构造函数提供了一个日期范围，在当前值为边界条件时，前一个或是后一个值将为null。</p>
+</div>
+<div class="section" id="spinnerlistmodel">
+<h3>SpinnerListModel类<a class="headerlink" href="#spinnerlistmodel" title="Permalink to this headline">¶</a></h3>
+<p>SpinnerListModel提供了由条目列表中，或者是至少是他们的字符串表示中进行选择。这个类有三个构造函数：</p>
+<div class="code java highlight-python"><pre>public SpinnerListModel()
+SpinnerModel model = new SpinnerListModel();
+JSpinner spinner = new JSpinner(model);
+public SpinnerListModel(List&lt;?&gt; values)
+List&lt;String&gt; list = args;
+SpinnerModel model = new SpinnerListModel(list);
+JSpinner spinner = new JSpinner(model);
+public SpinnerListModel(Object[] values)
+SpinnerModel model = new SpinnerListModel(args);
+JSpinner spinner = new JSpinner(model);</pre>
+</div>
+<p>当没有提供参数时，模型只包含一个元素：字符串empty。List版本具有一个到列表的引用。他并没有拷贝这个列表。如果我们修改这个列表，我们就修改了模型中的元素。数组版本创建了一个不可以添加的私有的List实例的内联类。对于List与数组版本，初始时选中的是第一个元素。如果其中一个为空，则会抛出IllegalArgumentException。</p>
+<p>如表14-4所示，在接口之外所添加的唯一属性就是获取或是设置列表。</p>
+<div class="figure">
+<img alt="Swing_table_14_4.png" src="_images/Swing_table_14_4.png" />
+<p class="caption">Swing_table_14_4.png</p>
+</div>
+</div>
+<div class="section" id="spinnernumbermodel">
+<h3>SpinnerNumberModel类<a class="headerlink" href="#spinnernumbermodel" title="Permalink to this headline">¶</a></h3>
+<p>SpinnerNumberModel提供了由一个无限制或是有限制的值范围内进行数字选择。所选择的数字可以是Number的任意子类，包括Integer与Double。这个类具有四个构造函数，而前三个都是最后一个的简化版。</p>
+<div class="code java highlight-python"><pre>public SpinnerNumberModel()
+SpinnerModel model = new SpinnerNumberModel();
+JSpinner spinner = new JSpinner(model);
+public SpinnerNumberModel(double value, double minimum, double maximum,
+  double stepSize)
+SpinnerModel model = new SpinnerNumberModel(50, 0, 100, .25);
+JSpinner spinner = new JSpinner(model);
+public SpinnerNumberModel(int value, int minimum, int maximum, int stepSize)
+SpinnerModel model = new SpinnerNumberModel(50, 0, 100, 1);
+JSpinner spinner = new JSpinner(model);
+public SpinnerNumberModel(Number value, Comparable minimum, Comparable maximum,
+  Number stepSize)
+Number value = new Integer(50);
+Number min = new Integer(0);
+Number max = new Integer(100);
+Number step = new Integer(1);
+SpinnerModel model = new SpinnerNumberModel(value, min, max, step);
+JSpinner spinner = new JSpinner(model);</pre>
+</div>
+<p>如果最小值或是最大值为null，则这个范围就是无限制的。对于无参数的版本，初始值为0而步进值为1。步进尺寸是字面值，所以如果我们将这个步进值设置为.333，则并不完美。</p>
+<p>表14-5显示了SpinnerNumberModel的属性。所添加的属性与构造函数所提供的相同。</p>
+<div class="figure">
+<img alt="Swing_table_14_5.png" src="_images/Swing_table_14_5.png" />
+<p class="caption">Swing_table_14_5.png</p>
+</div>
+</div>
+<div class="section" id="id4">
+<h3>自定义模型<a class="headerlink" href="#id4" title="Permalink to this headline">¶</a></h3>
+<p>通常情况下，JSpinner的可用模型就足够了，所以我们并不需要派生。然而，所提供的模型并不能总是满足我们的需求。例如，我们也许希望使用一个包装了SpinnerListModel的自定义模型，而不希望停在第一个或是最后一个元素上，他向另一个方向环绕。列表14-2显示了一个这样的实现。</p>
+<div class="code java highlight-python"><pre>package swingstudy.ch13;
+
+import java.util.List;
+
+import javax.swing.SpinnerListModel;
+
+public class RolloverSpinnerListModel extends SpinnerListModel {
+
+    public RolloverSpinnerListModel(List&lt;?&gt; values) {
+        super(values);
+    }
+
+    public RolloverSpinnerListModel(Object[] values) {
+        super(values);
+    }
+
+    public Object getNextValue() {
+        Object returnValue = super.getNextValue();
+        if(returnValue == null) {
+            returnValue = getList().get(0);
+        }
+        return returnValue;
+    }
+
+    public Object getPreviousValue() {
+        Object returnValue = super.getPreviousValue();
+        if(returnValue == null) {
+            List list = getList();
+            returnValue = list.get(list.size()-1);
+        }
+        return returnValue;
+    }
+}</pre>
+</div>
+</div>
+</div>
+<div class="section" id="id5">
+<h2>JSpinner编辑器<a class="headerlink" href="#id5" title="Permalink to this headline">¶</a></h2>
+<p>对于每一个JSpinner可用的模型，都有一个附属支持的JSpinner内联类可用。在其中模型允许我们控制对于组件哪些可以选择，微调编辑器允许我们控制如何显示与编辑每一个可选中的值。</p>
+<div class="section" id="jspinner-defaulteditor">
+<h3>JSpinner.DefaultEditor类<a class="headerlink" href="#jspinner-defaulteditor" title="Permalink to this headline">¶</a></h3>
+<p>JSpinner的setEditor()方法允许我们使得任意的JComponent作为JSpiner的编辑顺。虽然我们一定可以做到，但是更为通常的情况是，我们将会使用一个JSpinner.DefaultEditor的一个子类。他提供了当我们使用基于JFormattedTextField的简单编辑器时所需要的基本功能。他只有一个构造函数：</p>
+<div class="code java highlight-python"><pre>public JSpinner.DefaultEditor(JSpinner spinner)
+JSpinner spinner = new JSpinner();
+JComponent editor = JSpinner.DefaultEditor(spinner);
+spinner.setEditor(editor);</pre>
+</div>
+<p>如表14-6所示，编辑器有两个属性。</p>
+<div class="figure">
+<img alt="Swing_table_14_6.png" src="_images/Swing_table_14_6.png" />
+<p class="caption">Swing_table_14_6.png</p>
+</div>
+<p>不知道我们正在使用的是哪一种模型类型，我们在这个级别上也许会做的就是修改JFormattedTextField的一些显示特点。然而更通常的情况是，我们将会修改模型编辑器的自定义方面。</p>
+</div>
+<div class="section" id="jspinner-dateeditor">
+<h3>JSpinner.DateEditor类<a class="headerlink" href="#jspinner-dateeditor" title="Permalink to this headline">¶</a></h3>
+<p>DateEditor允许我们使用java.text包的SimpleDateFormat类的各种方面来自定义日期显示。查看SimpleDateFormat的Javadoc可以了解可用的格式模型的完整列表。如果我们不喜欢默认的显示输出，我们可以通过向第二个构造函数传递一个新的格式来修改。</p>
+<div class="code java highlight-python"><pre>public JSpinner.DateEditor(JSpinner spinner)
+SpinnerModel model = new SpinnerDateModel();
+JSpinner spinner = new JSpinner(model);
+JComponent editor = JSpinner.DateEditor(spinner);
+spinner.setEditor(editor);
+public JSpinner.DateEditor(JSpinner spinner, String dateFormatPattern)
+SpinnerModel model = new SpinnerDateModel();
+JSpinner spinner = new JSpinner(model);
+JComponent editor = JSpinner.DateEditor(spinner, "MMMM yyyy");
+spinner.setEditor(editor);</pre>
+</div>
+<p>默认格式为M/d/yy h:mm a，或者对于2004年的圣诞节的某一时刻为12/25/04
+12:34 PM。后一个示例将显示December 2004.</p>
+<p>表14-7显示了编辑器的两个属性。</p>
+<div class="figure">
+<img alt="Swing_table_14_7.png" src="_images/Swing_table_14_7.png" />
+<p class="caption">Swing_table_14_7.png</p>
+</div>
+</div>
+<div class="section" id="jspinner-listeditor">
+<h3>JSpinner.ListEditor类<a class="headerlink" href="#jspinner-listeditor" title="Permalink to this headline">¶</a></h3>
+<p>当使用SpinnerListModel时，ListEditor并没有提供特殊的格式化支持。相反，他提供了类型支持。因为模型的所有条目都已知，编辑器尝试匹配用户已经输入的以这些条目中的一个开始的条目。他只有一个构造函数，但是我们绝不应访问这个函数。</p>
+<div class="code java highlight-python"><pre>public JSpinner.ListEditor(JSpinner spinner)</pre>
+</div>
+<p>如表14-8所示，ListEditor只有一个属性。</p>
+<div class="figure">
+<img alt="Swing_table_14_8.png" src="_images/Swing_table_14_8.png" />
+<p class="caption">Swing_table_14_8.png</p>
+</div>
+</div>
+<div class="section" id="jspinner-numbereditor">
+<h3>JSpinner.NumberEditor类<a class="headerlink" href="#jspinner-numbereditor" title="Permalink to this headline">¶</a></h3>
+<p>NumberEditor的工作方式类似于DateEditor，允许我们输入字符串来自定义显示格式。与使用SimpleDateFormat不同，NumberEditor与java.text包中的DecimalFormat类相关联。类似于DateEditor，他有两个构造函数：</p>
+<div class="code java highlight-python"><pre>public JSpinner.NumberEditor(JSpinner spinner)
+SpinnerModel model = new SpinnerNumberModel(50, 0, 100, .25);
+JSpinner spinner = new JSpinner(model);
+JComponent editor = JSpinner.NumberEditor(spinner);
+spinner.setEditor(editor);
+public JSpinner.NumberEditor(JSpinner spinner, String decimalFormatPattern)
+SpinnerModel model = new SpinnerNumberModel(50, 0, 100, .25);
+JSpinner spinner = new JSpinner(model);
+JComponent editor = JSpinner.NumberEditor(spinner, "#,##0.###");
+spinner.setEditor(editor);</pre>
+</div>
+<p>第二个构造函数的使用显示了默认格式化字符串。如果数字足够大，则编辑器会尝试显示逗号，如果值是一个完整的数字，则他不会显示十进制。</p>
+<p>如表14-9所示，编辑器有两个属性。</p>
+<div class="figure">
+<img alt="Swing_table_14_9.png" src="_images/Swing_table_14_9.png" />
+<p class="caption">Swing_table_14_9.png</p>
+</div>
+</div>
+</div>
+<div class="section" id="id6">
+<h2>小结<a class="headerlink" href="#id6" title="Permalink to this headline">¶</a></h2>
+<p>在本章中，我们了解了Swing的JSpinner组件。当我们的选项集合限制为确定的值集合或是值范围，JSpinner允许我们通过在不同的选项之间进行微调来选择值。我们了解了如何提供选项集合：使用SpinnerDateModel与DateEditor选择日期集合，使用SpinnerListModel与ListEditor或是使用SpinnerNumberModel与NumberEditor。</p>
+<p>第15章停止探讨由一个值范围内选择并且继承探讨用户在不同的文本组件中输入完整的内容。</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Spinner Model Controls</a><ul>
+<li><a class="reference internal" href="#jspinner">JSpinner类</a><ul>
+<li><a class="reference internal" href="#id1">创建JSpinner组件</a></li>
+<li><a class="reference internal" href="#id2">JSpinner属性</a></li>
+<li><a class="reference internal" href="#chnagelistenerjspinner">使用ChnageListener监听JSpinner事件</a></li>
+<li><a class="reference internal" href="#id3">自定义JSpinner观感</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#spinnermodel">SpinnerModel接口</a></li>
+<li><a class="reference internal" href="#abstractspinnermodel">AbstractSpinnerModel类</a><ul>
+<li><a class="reference internal" href="#spinnerdatemodel">SpinnerDateModel类</a></li>
+<li><a class="reference internal" href="#spinnerlistmodel">SpinnerListModel类</a></li>
+<li><a class="reference internal" href="#spinnernumbermodel">SpinnerNumberModel类</a></li>
+<li><a class="reference internal" href="#id4">自定义模型</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#id5">JSpinner编辑器</a><ul>
+<li><a class="reference internal" href="#jspinner-defaulteditor">JSpinner.DefaultEditor类</a></li>
+<li><a class="reference internal" href="#jspinner-dateeditor">JSpinner.DateEditor类</a></li>
+<li><a class="reference internal" href="#jspinner-listeditor">JSpinner.ListEditor类</a></li>
+<li><a class="reference internal" href="#jspinner-numbereditor">JSpinner.NumberEditor类</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#id6">小结</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="ch13.html"
+                        title="previous chapter">List Model Controls</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="ch15.html"
+                        title="next chapter">基本文本组件</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/ch14.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="ch15.html" title="基本文本组件"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="ch13.html" title="List Model Controls"
+             >previous</a> |</li>
+        <li><a href="index.html">The Definitive Guide to Java Swing Third Edtion 0.01 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2014, mylxiaoyi.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2b3.
+    </div>
+  </body>
+</html>

@@ -1,0 +1,2448 @@
+基本文本组件
+============
+
+第14章探讨了Swing组件集合的JSpinner所提供的动态输入选择控件。在本章中，我们将会了解Swing基本文本组件的基本功能。更为高级的文本组件将会下一章中进行探讨。
+
+Swing组件集合包含五个文本组件。他们共享一个共同的父类，JTextComponent，其中定义了所有的文本组件的更同行为。
+
+JTextComponent的直接子类是JTextField，JTextArea以及JEditorPane。JTextField用于单行的单属性文本（也就是单一的字体与单一的颜色）。JTextField有一个子类，JPasswordField，用于JTextField用作密码输入的情况。JTextArea用于单一属性文本的多行输入。JEditorPane是可以支持多属性输入编辑的通用编辑器。其子类JTextPane是输入普通文本格式而定制的。在这两个类中，除了文本，输入还可以图片与组件。
+
+Swing文本组件概述
+-----------------
+
+类似于所有其他的Swing组件，文本组件生活在MVC的世界中。显示在图15-1中的组件，类的层次结构图，是各种可用的UI委托。UI委托模型的其余部分是文本视图，他基于View类，我们会在第16章进行进一步的讨论。
+
+注意，所有的JTextComponent子类位于javax.swing包中。除了事件相关的部分，本章中所讨论的支持接口与类都位于javax.swing.text包（或是子包）中。Swing特定的，文本相关的事件部分位于javax.swing.event包中，其余的位于java.awt.event与java.beans中。
+
+每一个组件的模型都是Document接口的实现，他有五个扩展（或是实现）。单属性组件使用PlainDocument类作为其数据模型，而多属性组件使用DefaultStyledDocument作为其模型。所有这些类派生自AbstractDocument类，在其中定义了他们共同的Document接口实现。DefaultStyleDocument类也实现了StyledDocument接口，他是Document用于支持多属性内容的扩展。另一个Document实现，HTMLDocument，用于JEditorPane的内容类型为text/html的情况。为了限制到这些文档的输入，我们可以使用DocumentFilter类。
+
+.. figure:: images/Swing_15_1.png
+   :alt: Swing_15_1.png
+
+   Swing\_15\_1.png
+本章中以及第16章中将要讨论的许多其他具有共同的文本组件特性。类似于许多其他的Swing组件，我们可以自定义组件的观感而无需创建新的UI委托。对于文本组件，Highlighter，Caret以及NavigationFilter接口分别描述了文本如何高亮显示，在哪里插入文本以及如何限制鼠标位置，从而使得我们可以自定义文本组件的外观以及输入行为。另外，InputMap/ActionMap类定义了击键与文本动作之间的绑定，从而允许我们非常容易的修改文本组件的行为。
+
+其他的组件模型部分被设计用于事件处理。我们并没有被限制使用KeyListener/KeyEvent或是TextEvent/TextListener绑定来处理输入验证。Swing组件同时使用DocumentEvent/DocumentListener组合（以及第2章所描述的InputVerifier）。这种组合提供了一种更为灵活的输入验证方式，特别是在Swing文本组件的MVC环境中。额外的事件处理是通过在第2章所介绍的AbstractAction功能扩展来实现的。这就是用于将键盘绑定与Action实现相关联的TextAction类，我们将会在第16章中进行详细的讨论。文本框架中的许多部分是通过所谓的EditorKit连接在一起的，我们也会在第16章中进行讨论。
+
+注意，由于Swing文本组件类之间的相互连接，我们将会在本章中与第16章中的大量引用关联。我们可以自由的在两章之间进行跳转并且接下来阅读某一功能的详细讨论。
+
+JTextComponent类
+----------------
+
+JTextComponent类是用作所有文本视图的组件的父类。他描述了所有文本组件所共享的共同行为。在这些共同行为中包括用于选中支持的Highlight，用于在内容中浏览的Caret，通过action属性（Action实现数组）支持的命令集合，通过KeyMap或是InputMap/ActionMap组合支持的键盘绑定集合，一个Scrollable接口实现，从而每一个特定的文本组件都可以放在JScrollPane中，以及存储在组件中的文本。如果所有的这些听起来需要大量的管理，不要担心。本章将会为我们给出指导。
+
+JTextComponent属性
+~~~~~~~~~~~~~~~~~~
+
+表15-1显示了JTextComponent的27个属性。这些属性覆盖我们所期望的文本组件功能。
+
+.. figure:: images/Swing_table_15_1_1.png
+   :alt: Swing_table_15_1_1.png
+
+   Swing\_table\_15\_1\_1.png
+.. figure:: images/Swing_table_15_1_2.png
+   :alt: Swing_table_15_1_2.png
+
+   Swing\_table\_15\_1\_2.png
+.. figure:: images/Swing_table_15_1_3.png
+   :alt: Swing_table_15_1_3.png
+
+   Swing\_table\_15\_1\_3.png
+这些属性被分为八个基本类别：
+
+-  数据模型：document属性用于所有文本组件的数据模型。text属性用于将这个数据模型看作一个String。
+-  颜色：caretColor,disabledTextColor,
+   selectedTextColor与selectionColor属性，以及继承的foreground与background属性指定了渲染光标，禁止文本，所选文本，所选文本的背景，常规文本以及常规文本的背景等颜色。
+-  Caret：caret，caretPosition与navigationFilter属性用于在文档中浏览。
+-  Highlighter：highlighter,selectionStart与selectionEnd属性负责高亮显示文档中的selectedText部分。
+-  Margin：margin属性用于指定文本内容距离文本组件的边界多远显示。
+-  事件：actions与keymap属性描述了文本组件支持哪些功能。对于actions属性的Action[]情况，功能是我们为了事件处理可以关联到组件的一系列ActionListener实现。例如，不必创建一个ActionListener来执行剪切、复制与粘贴操作，我们会发现actions属性中的相应的Action并将其关联到组件。keymap的作用类似，但是他是将Action关联到特定的键。例如，他包含一个按键映射条目用于处理当PageUp键被按下时如何响应。caretListsener属性允许我们发现观察文本组件的CaretListener对象集合。dragEnabled设置描述了组件是否支持在组件中拖放文本。（要了解Swing中的拖放支持信息，可以查看第19章。）
+-  滚动接口：属性preferredScrollableViewportSize,
+   scrollableTracksViewportHeight,与scrollableTracksViewportWidth是相应的Scrollable接口方法的实现。
+-  状态：editable与focusTraversable属性描述了文本组件的各种状态。editable允许我们文本组件设置为只读。对于只读的focusTraversable属性，当他们被使能时文本组件位于信息循环中（也就是我们可以使用Tab键遍历）。focusAccelerator用于相邻的JLabel在其labelFor属性设置文本组件的情况，允许我们使用JLabel的可视化热键将焦点移动到文本组件。componentOrientation设置描述了组件的文本如何绘制。将这一特性于类似Hebrew那样由右到左的语言并不是必须，但却是绘制字符的最好方法。JTextComponent由JComponent继承了opaque属性。当opaque属性被设置为false时，文本组件后面的区域内容会被看穿，如果需要，可以允许我们具有一个图片背景。图15-2显示了这一效果。
+
+列表15-1是用于生成图15-2的源码。如果我们取消setOpaque(false)一行，则背景不会显现。
+
+.. code:: java
+
+
+    package swingstudy.ch13;
+
+    import java.awt.BorderLayout;
+    import java.awt.EventQueue;
+    import java.awt.Graphics;
+    import java.awt.Image;
+
+    import javax.swing.GrayFilter;
+    import javax.swing.ImageIcon;
+    import javax.swing.JFrame;
+    import javax.swing.JScrollPane;
+    import javax.swing.JTextArea;
+
+
+    public class BackgroundSample {
+
+        /**
+         * @param args
+         */
+        public static void main(String[] args) {
+            // TODO Auto-generated method stub
+
+            Runnable runner = new Runnable() {
+                public void run() {
+                    JFrame frame = new JFrame("Background Example");
+                    frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+                    
+                    final ImageIcon imageIcon = new ImageIcon("draft.gif");
+                    JTextArea textArea =  new JTextArea() {
+                        Image image = imageIcon.getImage();
+                        Image grayImage = GrayFilter.createDisabledImage(image);
+                        {
+                            setOpaque(false);   // instance initializer
+                        }
+                            public void paint(Graphics g) {
+                                g.drawImage(grayImage, 0, 0, this);
+                                super.paint(g);
+                            }
+                    };
+                    JScrollPane scrollPane = new JScrollPane(textArea);
+                    frame.add(scrollPane, BorderLayout.CENTER);
+                    frame.setSize(255, 2550);
+                    frame.setVisible(true);
+                }
+            };
+            EventQueue.invokeLater(runner);
+        }
+
+    }
+
+JTextComponent操作
+~~~~~~~~~~~~~~~~~~
+
+JTextComponent为文本控件上所执行的许多操作定义了基本的框架。
+
+-  I/O：public void read(Reader in, Object description)与public void
+   write(Writer
+   out)方法（都抛出IOException）允许我们简单的读取或是写入文本组件内容。
+-  剪切板访问：public void cut(), public void copy()与public void
+   paste()方法提供了到系统剪切板的直接访问。
+-  位置：public void moveCaretPosition(int
+   position)方法允许我们定位caret。位置表示标明由文本组件开始处到caret之前的字符数的一维定位。
+-  选中：public void replaceSelection(String content), public void
+   selectAll()与public void select(int selectionStart, int
+   selectionEnd)方法允许我们组件中的内容部分与替换所选择的内容。
+-  Conversion：public Rectange modelToView(int position) throws
+   BadLocationException与public int viewToModel(Point
+   point)方法允许我们（或者更可能的是系统）将JTextComponent内的一个位置映射到特定文本UI委托的内容表示中的映射。
+
+现在我们已经概述了JTextComponent类，现在是了解其不同的子类的时候了。首先是JTextField，他将会被用来演示刚才所列出的操作。
+
+JTextField类
+------------
+
+JTextField组件是用于单行输入的文本组件。JTextField的数据模型是Document接口的PlainDocument实现。PlainDocument模型将输入限制为单属性文本，意味着他必须是单一字体与单一颜色。
+
+当在JTextField输入Enter键时，他自动通知所Actionlistener实现。
+
+创建JTextField
+~~~~~~~~~~~~~~
+
+JTextField组件有五个构造函数：
+
+.. code:: java
+
+    public JTextField()
+    JTextField textField = new JTextField();
+    public JTextField(String text)
+    JTextField textField = new JTextField("Initial Text");
+    public JTextField(int columnWidth)
+    JTextField textField = new JTextField(14);
+    public JTextField(String text, int columnWidth)
+    JTextField textField = new JTextField("Initial Text", 14);
+    public JTextField(Document model, String text, int columnWidth)
+    JTextField textField = new JTextField(aModel, null, 14);
+
+默认情况下，我们会获得一个空的文本域，零列宽，带有默认模型的JTextFiled。我们可以指定JTextField的初始文本以及我们希望组件有多宽。宽度被以当前字体适应组件的m字符数。在可以输入的字符数上并没有限制。如果我们在构造函数中指定Document数据模型，也许我们将会希望指定了一个null初始数据参数。否则，当前文档的内容会被文本域的初始文本所替换。
+
+使用JLabel热键
+~~~~~~~~~~~~~~
+
+在第4章热键的讨论中，我们了解到各种按钮类可以有一个按钮组件被选中的键盘快捷键。特殊的热键字符通常以下划线来进行可视化标识。如果用户按下热键字符，以平台特定的热键激活键，例如对于Windows与Unix的Alt，按钮就会被激活/选中。我们可以借助JLabel为JTextField以及其他的文本组件提供类似的功能。
+
+我们可以为标签设置热键显示，但是当热键被按下时并没有选中标签，而是会使得相关联的组件获得输入焦点。显示热键是通过public
+void
+setDisplayedMnemonic(character)方法来设置的，其中character可是一个int或是char。当修改热键设置时使用KeyEvent常量可以简化初始化操作。
+
+下面的源代码显示了如何连接一个特定的JLabel与JTextField。
+
+.. code:: java
+
+    JLabel label = new JLabel("Name: ");
+    label.setDisplayedMnemonic(KeyEvent.VK_N);
+    JTextField textField = new JTextField();
+    label.setLabelFor(textField);
+
+除了调用setDisplayedMnemonic()方法以外，我们必须同时调用JLabel的public
+void setLabelFor(Component
+component)方法。这会配置当特定的热键值被按下时，JLable会将输入焦点移动文本域。
+
+图15-3显示了示例程序的样子。完整的程序源码显示在列表15-2中。
+
+.. figure:: images/Swing_15_2.png
+   :alt: Swing_15_2.png
+
+   Swing\_15\_2.png
+.. code:: java
+
+
+    package swingstudy.ch15;
+
+    import java.awt.BorderLayout;
+    import java.awt.EventQueue;
+    import java.awt.event.KeyEvent;
+
+    import javax.swing.JButton;
+    import javax.swing.JFrame;
+    import javax.swing.JLabel;
+    import javax.swing.JPanel;
+    import javax.swing.JTextField;
+
+    public class LabelSample {
+
+        /**
+         * @param args
+         */
+        public static void main(String[] args) {
+            // TODO Auto-generated method stub
+
+            Runnable runner = new Runnable() {
+                public void run() {
+                    JFrame frame =  new JFrame("Label Focus Example");
+                    frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+                    JPanel panel = new JPanel(new BorderLayout());
+                    JLabel label = new JLabel("Name: ");
+                    label.setDisplayedMnemonic(KeyEvent.VK_N);
+                    JTextField textField = new JTextField();
+                    label.setLabelFor(textField);
+                    panel.add(label, BorderLayout.WEST);
+                    panel.add(textField, BorderLayout.CENTER);
+                    frame.add(panel, BorderLayout.NORTH);
+                    frame.add(new JButton("Somewhere Else"), BorderLayout.SOUTH);
+                    frame.setSize(250, 150);
+                    frame.setVisible(true);
+                }
+            };
+            EventQueue.invokeLater(runner);
+        }
+
+    }
+
+JTextField属性
+~~~~~~~~~~~~~~
+
+表15-2列出了JTextField的14个属性。
+
+.. figure:: images/Swing_table_15_2.png
+   :alt: Swing_table_15_2.png
+
+   Swing\_table\_15\_2.png
+在horizontalVisibility与scrollOffset属性之间有一个简单的关联。用于JTextField的horizontalVisibility属性的BoundedRangeModel表示显示文本域内容所需要的宽度。如果没有足够的空间来显示内容，scrollOffset设置反映已经滚动到距离左边文本多远处。当用户在JTextField的文本中浏览时，scrollOffset值会被自动更新。例如，图15-4中的文本包含26个字母以及10个数字：
+ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890。并不是所有的字符都能适应文本域；所以，字符A到J已经滚动偏离左边。
+
+.. figure:: images/Swing_15_4.png
+   :alt: Swing_15_4.png
+
+   Swing\_15\_4.png
+通过修改scrollOffset设置，我们可以控制文本域的哪一个部分是可见的。要保证文本域内容开始处是可见的，将scrollOffset设置为零。要使得内容的结束处是可见的，我们需要向horizontalVisibility属性查询BoundedRangeModel的extent是什么，来确定范围的宽度，然后将scrollOffset设置为extent设置，如下所示：
+
+.. code:: java
+
+    BoundedRangeModel model = textField.getHorizontalVisibility();
+    int extent = model.getExtent();
+    textField.setScrollOffset(extent);
+
+通过修改horizontalAlignment属性设置，我们可以将一个JTextField的内容右对齐，左对齐或是居中对齐。默认情况下，文本对齐是左对齐。public
+void setHorizontalAlignment(int
+alignment)方法需要一个参数：JTextField.LEFT，JTextField.CENTER，JTextField.RIGHT，JTextField.LEADING（默认），或是JTextField.TRAILING来指定内容对齐。图15-5显示了对齐设置如何影响内容。
+
+.. figure:: images/Swing_15_5.png
+   :alt: Swing_15_5.png
+
+   Swing\_15\_5.png
+注意，我们可以将由JTextComponent继承来的document属性设置为Document接口的任意实现。如果我们为JTextField使用StyledDocument，UI委托就会忽略所有的格式属性。我们会在第16章中讨论StyledDocument接口。
+
+JTextField中的JTextComponent操作
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+我们是否在寻找一种简单的方法来载入或是保存文本组件中的内容呢？Swing文本组件提供了这种方法。另外，Swing文本组件对访问系统剪切板用于剪切，复制与粘贴操作的内建支持。这些操作对于所有的JTextComponent子类都是可用的。在这里特别为JTextField显示这些操作，因为为了真正的演示他们需要特定的实现。我们可以使用JPasswordField，JTextArea，JEditorPane与JTextPane执行相同的任务。
+
+**载入与保存内容**
+
+使用JTextComponent的public void read(Reader in, Object
+description)与public void write(Writer
+out)方法（两个方法都抛出IOException），我们可以简单的由任意的文本组件载入与保存内容。使用read()方法，description参数被添加为Document数据模型的一个属性。这可以使得我们保存关于数据来自于哪里的信息。下面的示例演示了如何读取文件名的内容并且存放在textComponent中。文件名自动保存为描述。
+
+.. code:: java
+
+    FileReader reader = null;
+    try {
+      reader = new FileReader(filename);
+      textComponent.read(reader, filename);
+    }  catch (IOException exception) {
+      System.err.println("Load oops");
+    }  finally {
+      if (reader != null) {
+        try {
+          reader.close();
+        } catch (IOException exception) {
+          System.err.println("Error closing reader");
+          exception.printStackTrace();
+        }
+      }
+    }
+
+如果我们稍后希望由数据模型获取描述，在这种情况下恰好为文件中，我们只需要简单的查询，如下所示：
+
+.. code:: java
+
+    Document document = textComponent.getDocument();
+    String filename = (String)document.getProperty(Document.StreamDescriptionProperty);
+
+Document属性只是简单的另一个键/值查询表。在这个特定的情况下键为类常量Document.StreamDescriptionProperty。如果我们不希望存储描述，我们可以传递null作为read()方法的descritption参数。（Document接口将会在本章稍后进行详细讨论。）
+
+在我们将一个文件读取到文本组件之前，我们需要创建要读取的文件。这可以在Java程序之外完成，或者是我们可以使用JTextComponent的write()方法来创建文件。下面的代码演示了如何使用write()方法来写入内容。为了简单起见，他并没有处理由Document中获取的文件名，因为这可以不初始化设置。
+
+.. code:: java
+
+    FileWriter writer = null;
+    try {
+      writer = new FileWriter(filename);
+      textComponent.write(writer);
+    }  catch (IOException exception) {
+      System.err.println("Save oops");
+    }  finally {
+      if (writer != null) {
+        try {
+          writer.close();
+        } catch (IOException exception) {
+          System.err.println("Error closing writer");
+          exception.printStackTrace();
+        }
+      }
+    }
+
+图15-6为示了使用了载入与保存功能，并通过按钮来实现这些选项（尽管载入与保存选项在File菜单中更常见）的示例程序。Clear按钮清除文本域中的内容。
+
+.. figure:: images/Swing_15_6.png
+   :alt: Swing_15_6.png
+
+   Swing\_15\_6.png
+列表15-3中的源码将所有这些代码段组合在一起来演示载入与保存流。
+
+.. code:: java
+
+
+    package swingstudy.ch15;
+
+    import java.awt.BorderLayout;
+    import java.awt.EventQueue;
+    import java.awt.event.ActionEvent;
+    import java.io.FileReader;
+    import java.io.FileWriter;
+    import java.io.IOException;
+
+    import javax.swing.AbstractAction;
+    import javax.swing.Action;
+    import javax.swing.JButton;
+    import javax.swing.JFrame;
+    import javax.swing.JPanel;
+    import javax.swing.JTextField;
+    import javax.swing.text.JTextComponent;
+
+    public class LoadSave {
+
+        /**
+         * @param args
+         */
+        public static void main(String[] args) {
+            // TODO Auto-generated method stub
+
+            Runnable runner = new Runnable() {
+                public void run() {
+                    final String filename = "text.out";
+                    JFrame frame = new JFrame("Loading/Saving Example");
+                    frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+                    
+                    final JTextField textField = new JTextField();
+                    frame.add(textField, BorderLayout.NORTH);
+                    
+                    JPanel panel = new JPanel();
+                    
+                    // Setup actions
+                    Action loadAction = new AbstractAction() {
+                        {
+                            putValue(Action.NAME, "Load");
+                        }
+                        public void actionPerformed(ActionEvent e) {
+                            doLoadCommand(textField, filename);
+                        }
+                    };
+                    JButton loadButton = new JButton(loadAction);
+                    panel.add(loadButton);
+                    
+                    Action saveAction = new AbstractAction() {
+                        {
+                            putValue(Action.NAME, "Save");
+                        }
+                        public void actionPerformed(ActionEvent e) {
+                            doSaveCommand(textField, filename);
+                        }
+                    };
+                    JButton saveButton = new JButton(saveAction);
+                    panel.add(saveButton);
+                    
+                    Action clearAction = new AbstractAction() {
+                        {
+                            putValue(Action.NAME, "Clear");
+                        }
+                        public void actionPerformed(ActionEvent e) {
+                            textField.setText("");
+                        }
+                    };
+                    JButton clearButton = new JButton(clearAction);
+                    panel.add(clearButton);
+                    
+                    frame.add(panel, BorderLayout.SOUTH);
+                    
+                    frame.setSize(250, 150);
+                    frame.setVisible(true);
+                }
+            };
+            EventQueue.invokeLater(runner);
+        }
+        
+        public static void doSaveCommand(JTextComponent textComponent, String filename) {
+            FileWriter writer = null;
+            try {
+                writer = new FileWriter(filename);
+                textComponent.write(writer);
+            }
+            catch (IOException exception) {
+                System.err.println("Save oops");
+                exception.printStackTrace();
+            }
+            finally {
+                if(writer != null) {
+                    try {
+                        writer.close();
+                    }
+                    catch(IOException exception) {
+                        System.err.println("Error closing writer");
+                        exception.printStackTrace();
+                    }
+                }
+            }
+        }
+        
+        public static void doLoadCommand(JTextComponent textComponent, String filename) {
+            FileReader reader = null;
+            try {
+                reader = new FileReader(filename);
+                textComponent.read(reader, filename);
+            }
+            catch(IOException exception) {
+                System.err.println("Load oops");
+                exception.printStackTrace();
+            }
+            finally {
+                if(reader != null) {
+                    try {
+                        reader.close();
+                    }
+                    catch(IOException exception) {
+                        System.err.println("Error closing reader");
+                        exception.printStackTrace();
+                    }
+                }
+            }
+        }
+
+    }
+
+注意，默认情况下，文件读取与写入只处理普通文本。如果一个文本组件的内容是格式化的，格式化属性并不会被保存。EditorKit类可以自定义这种载入与保存的行为。我们将会在第16章探讨这个类。
+
+**访问剪切板**
+
+要使用系统剪切板用于剪切、复制与粘贴操作，我们并不需要手动编写一个Transferable剪切板对象。相反，我们只需要调用JTextComponent类的三个方法中的一个：public
+void cut(), public void copy()或是public void paste()。
+
+我们可以由与按钮或是菜单项相相关联的ActionListener实现中直接调用这些方法，如下所示：
+
+.. code:: java
+
+    ActionListener cutListener = new ActionListener() {
+      public void actionPerformed(ActionEvent actionEvent) {
+        aTextComponent.cut();
+      }
+    };
+
+然而有一种不需要我们手动创建ActionListener实现的简单方法。这种方法是通过向文本组件查询已存在的剪切操作。如果我们看一下表15-1中的JTextComponent属性集合，我们就会注意到一个名为actions的属性，他是一个Action对象数组。这个属性包含一个我们可以直接将其作为ActionListener关联到任意按钮或是菜单项的预定义的Action实现集合。一旦我们获取当前文本组件的actions，我们就可以在数组中遍历直到我们到相应的实现。因为动作是被命名的，我们只需要知道名字的文本字符串。DefaultEditorKit类具有大约40个键作为公共常量。下面是获取剪切动作的示例：
+
+.. code:: java
+
+    Action actions[] = textField.getActions();
+    Action cutAction = TextUtilities.findAction(actions, DefaultEditorKit.cutAction);
+
+文本组件集合中的所有动作都是TextAction类型的，他是AbstractAction类的一个扩展。关于TextAction我们需要了解的一件事就是他作用在最后一个获得焦点的文本组件上。（TextAction类以及DefaultEditorKit类将会在第16章中进行详细的讨论。）所以，尽管前面的代码片段获取了一个文本域中的剪切操作，相同的剪切动作也同样适用于同一屏幕上的其他文本组件。当特定的cutAction被激活时，最的一个获得输入焦点的文本组件的内容将会被剪切。
+
+为了有助于我们理解这一行为，图15-7显示了一个屏幕，其中在顶部是一个JTextField，中间是一个JTextArea，而底部是用于剪切，复制与粘贴操作的按钮（尽管这些操作通常是通过编辑菜单获得的）。如果我们运行这个程序，我们就会注意到剪切，复制与粘贴操作作用在最后一个获得输入焦点的文本组件上。
+
+列表15-4是用于查找actions属性数组中的Action并且使用剪切，复制与粘贴操作完整示例的源码。
+
+.. code:: java
+
+    package swingstudy.ch15;
+
+    import java.awt.BorderLayout;
+    import java.awt.EventQueue;
+
+    import javax.swing.Action;
+    import javax.swing.JButton;
+    import javax.swing.JFrame;
+    import javax.swing.JPanel;
+    import javax.swing.JScrollPane;
+    import javax.swing.JTextArea;
+    import javax.swing.JTextField;
+    import javax.swing.text.DefaultEditorKit;
+
+    public class CutPasteSample {
+
+        /**
+         * @param args
+         */
+        public static void main(String[] args) {
+            // TODO Auto-generated method stub
+
+            Runnable runner = new Runnable() {
+                public void run() {
+                    JFrame frame = new JFrame("Cupt/Paste Example");
+                    frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+                    
+                    JTextField textField = new JTextField();
+                    JTextArea textArea = new JTextArea();
+                    JScrollPane scrollPane = new JScrollPane(textArea);
+                    
+                    frame.add(textField, BorderLayout.NORTH);
+                    frame.add(scrollPane, BorderLayout.CENTER);
+                    
+                    Action actions[] = textField.getActions();
+                    
+                    Action cutAction = TextUtilities.findAction(actions, DefaultEditorKit.cutAction);
+                    Action copyAction = TextUtilities.findAction(actions, DefaultEditorKit.copyAction);
+                    Action pasteAction = TextUtilities.findAction(actions, DefaultEditorKit.pasteAction);
+                    
+                    JPanel panel = new JPanel();
+                    frame.add(panel, BorderLayout.SOUTH);
+                    
+                    JButton cutButton = new JButton(cutAction);
+                    cutButton.setText("Cut");
+                    panel.add(cutButton);
+                    
+                    JButton copyButton = new JButton(copyAction);
+                    copyButton.setText("Copy");
+                    panel.add(copyButton);
+                    
+                    JButton pasteButton = new JButton(pasteAction);
+                    pasteButton.setText("Paste");
+                    panel.add(pasteButton);
+                    
+                    frame.setSize(250, 250);
+                    frame.setVisible(true);
+                }
+            };
+            
+            EventQueue.invokeLater(runner);
+        }
+
+    }
+
+列表15-4中的示例使用列表15-5中所示的TextUtilities支持类。并没有直接的方法来确定一个特定按键的一个特定动作是否存在于acions属性数组中。相反，我们必须手动进行查找。public
+static Action findAction(Action actions[], String
+key)方法为我们进行相应的查找。
+
+.. code:: java
+
+    package swingstudy.ch15;
+
+    import java.util.Hashtable;
+
+    import javax.swing.Action;
+
+    public final class TextUtilities {
+
+        private TextUtilities() {
+            
+        }
+        
+        public static Action findAction(Action actions[], String key) {
+            Hashtable<Object, Action> commands = new Hashtable<Object, Action>();
+            for(int i=0; i<actions.length; i++) {
+                Action action = actions[i];
+                commands.put(action.getValue(Action.NAME), action);
+            }
+            return commands.get(key);
+        }
+    }
+
+注意，出于安全的原因，JPasswordField类的cut()与copy()方法并没有将当前的内容放在系统剪切板中。然而我们仍然可以使用paste()方法将剪切板中的内容粘贴到JPasswordField中。
+
+Document接口
+~~~~~~~~~~~~
+
+Document接口定义了不同的文本组件的数据模型。这个接口的实现用来存储实际的内容以及标记内容的信息（粗体，斜体或是颜色）。尽管所有的内容都将是文本，然而文本组件显示内容的方式会导致非文本的输出，例如HTML渲染器。
+
+数据模型是与文本组件分开存储的。所以，如果我们对监视文本组件的内容感兴趣，我们必须监视Document本身，而不是文本组件。如果修改到达文本组件，这就太迟了，模型已经发生了改变。要监听变化，向模型关联一个DocumentListener。然而，限制输入更可能的方式是提供一个自定义的模型或是向AbstractDocument关联一个DocumentFilter。我们也可以向文本组件关联一个InputVerifier。然而，直到输入焦点将离开组件时他才会起作用。
+
+注意，除了通过Document接口访问文本内容以外，还定义了一个框架用于支持undo/redo功能。我们将会在第21章中探讨这一框架。
+
+现在我们来了解一下标记Document的片段。首先我们来看一下基本的接口定义：
+
+.. code:: java
+
+    public interface Document {
+      // Constants
+      public final static String StreamDescriptionProperty;
+      public final static String TitleProperty;
+      // Listeners
+      public void addDocumentListener(DocumentListener listener);
+      public void removeDocumentListener(DocumentListener listener);
+      public void addUndoableEditListener(UndoableEditListener listener);
+      public void removeUndoableEditListener(UndoableEditListener listener);
+      // Properties
+      public Element getDefaultRootElement();
+      public Position getEndPosition();
+      public int getLength();
+      public Element[ ] getRootElements();
+      public Position getStartPosition();
+      // Other methods
+      public Position createPosition(int offset) throws BadLocationException;
+      public Object getProperty(Object key);
+      public String getText(int offset, int length) throws BadLocationException;
+      public void getText(int offset, int length, Segment txt)
+        throws BadLocationException;
+      public void insertString(int offset, String str, AttributeSet a)
+        throws BadLocationException;
+      public void putProperty(Object key, Object value);
+      public void remove(int offset, int len) throws BadLocationException;
+      public void render(Runnable r);
+    }
+
+Document中的内容是通过一系列的元素来描述的，其中每一个元素实现了Element接口。在每一个元素中，我们可以存储属性，从而可以将选中的内容修改为粗体，斜体或是颜色化。元素不存储内容；他们仅存储属性。所以，一个Document可以不同的Element集合进行不同的渲染。
+
+下面的代码是一个带有标题与内容列表的基本的HTML文档。
+
+.. code:: html4strict
+
+    <html>
+    <head>
+    <title>Cards</title>
+    </head>
+    <body>
+    <h1>Suits:</h1>
+    <ul>
+        <li>Clubs</li>
+        <li>Diamonds</li>
+        <li>Hearts</li>
+        <li>Spades</li>
+    </ul>
+    </body>
+    </html>
+
+仔细查看一下这个HTML文档中的元素结构，我们可以得到图15-8所示的层次结构。
+
+.. figure:: images/Swing_15_8.png
+   :alt: Swing_15_8.png
+
+   Swing\_15\_8.png
+尽管这个特定的文档并不真实，但是多个元素的层次结构是可能的。每一个存储不同的属性，因为一个特定的文本组件会具有另一个内容渲染。相对应的，不同的格式化页表可以用来渲染相同的HTML标记。
+
+**AbstractDocument类**
+
+AbstractDocument类提供了Document接口的基本实现。他定义了监听器列表的管理，提供了一个读写锁机制来保证内容不会被破坏，并且提供了一个Dictionary用于存储文档属性。
+
+表15-3列出了AbstractDocument类的11个属性，其中5个是由Document接口本身定义的。
+
+.. figure:: images/Swing_table_15_3.png
+   :alt: Swing_table_15_3.png
+
+   Swing\_table\_15\_3.png
+对于属性中的大部分，我们不会直接访问这些属性，也许除了documentFilter。在documentProperties属性的情况下，我们通过public
+Object getProperty(Object key)与public void putProperty(Object key,
+Object
+value)方法获取与设置单个属性。对于length属性，在大多数情况下，我们可以简单的查询文本组件中的文本，然后使用textComponent.getText().length()方法获取其长度。
+
+bidiRootElement属性用于双向根元素，他也许位于一定的Unicode字符集中。我们通常只需要使用defaultRootElement。然而，两者都很少被访问。
+
+**PlainDocument类**
+
+PlainDocument类是AbstractDocument类的一个特定实现。他并不为内容存储任何字符级的属性。相反，元素描述内容在哪里以及内容开始处的每一行。
+
+列表15-6中的程序在一个PlainDocument中遍历Element树。
+
+.. code:: java
+
+    package swingstudy.ch15;
+
+    import java.awt.BorderLayout;
+    import java.awt.EventQueue;
+    import java.awt.event.ActionEvent;
+    import java.awt.event.ActionListener;
+
+    import javax.swing.JButton;
+    import javax.swing.JFrame;
+    import javax.swing.JScrollPane;
+    import javax.swing.JTextArea;
+    import javax.swing.text.Document;
+    import javax.swing.text.Element;
+    import javax.swing.text.ElementIterator;
+
+    public class ElementSample {
+
+        /**
+         * @param args
+         */
+        public static void main(String[] args) {
+            // TODO Auto-generated method stub
+
+            Runnable runner = new Runnable() {
+                public void run() {
+                    JFrame frame = new JFrame("Element Example");
+                    frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+                    
+                    final JTextArea textArea = new JTextArea();
+                    JScrollPane scrollPane = new JScrollPane(textArea);
+                    
+                    JButton button =  new JButton("Show Elements");
+                    ActionListener actionListener =  new ActionListener() {
+                        public void actionPerformed(ActionEvent event) {
+                            Document document = textArea.getDocument();
+                            ElementIterator iterator = new ElementIterator(document);
+                            Element element = iterator.first();
+                            while(element != null) {
+                                System.out.println(element.getStartOffset());
+                                element = iterator.next();
+                            }
+                        }
+                    };
+                    button.addActionListener(actionListener);
+                    
+                    frame.add(scrollPane, BorderLayout.CENTER);
+                    frame.add(button, BorderLayout.SOUTH);
+                    
+                    frame.setSize(250, 250);
+                    frame.setVisible(true);
+                }
+            };
+            EventQueue.invokeLater(runner);
+        }
+
+    }
+
+假定JTextArea的内容如下：
+
+Hello, World
+
+Welcome Home
+
+Adios
+
+程序将会报告Element对象开始于0，0，13与26。第一个0表示内容的开始处；第二个表示第一行的开始处。
+
+我们将会在第16章中了解到关于Element的更多内容。
+
+**过滤文档模型**
+
+在AWT世界中，如果我们要限制文本域的输入－例如限制为字母数字字符或是某一个范围的值－我们关联KeyListener并处理我们不希望出现在组件中的按键。使用Swing文本组件，我们可以创建一个新的Document实现并且自定义在Document中接受些什么，或者是关联一个DocumentFilter并由他来过滤输入。
+
+虽然我们可以创建一个Document的自定义子类，但是更为面向对象的方法是创建一个过滤器，因为我们不希望修改Document；我们只是希望限制模型的输入。然后我们可以通过调用AbstractDocument的setDocumentFilter()方法来将新创建的过滤器关联到文档。过滤器适用于PlainDocument与StyledDocument子类。
+
+DocumentFilter是一个类，而不是接口，所以我们必须创建一个该类的子类来过滤文本组件的文档的输入。如果我们创建一个DocumentFilter的子类，重写下面三个方法可以使得我们自定义输入：
+
+• public void insertString(DocumentFilter.FilterBypass fb, int offset,
+String string, AttributeSet attributes):
+当一个文本字符串被插入到文档中时调用。 • public void
+remove(DocumentFilter.FilterBypass fb, int offset, int length):
+当某些内容被选中时调用。 • public void
+replace(DocumentFilter.FilterBypass fb, int offset, int length, String
+text, AttributeSet attrs): 当某些内容被插入到当前被选中的文本中时调用。
+
+要限制输入，只需要覆盖每一个方法并且检测新内容是否合法。如果内容不合法，则拒绝。
+
+例如，创建一个DocumentFilter子类来限制数字范围，我们需要覆盖insertString()，remove()与replace()方法。因为我们要保证输入是数字并且位于是一个合法的范围中，我们需要验证输入并且确定他是否可以接受。如果可以接受，那么我们可以通过调用DocumentFilter的insertString()，remove()或是replace()方法来修改文档模型。当输入不可接受时，我们抛出一个BadLocationException。抛出这个异常保证输入方法模型理解用户的输入不合法。这通常会触发系统发出声响。列表15-7显示了一个限制整数范围的文档过滤器。
+
+.. code:: java
+
+
+    package swingstudy.ch15;
+
+    import javax.swing.text.AttributeSet;
+    import javax.swing.text.BadLocationException;
+    import javax.swing.text.Document;
+    import javax.swing.text.DocumentFilter;
+
+    public class IntegerRangeDocumentFilter extends DocumentFilter {
+
+        int minimum, maximum;
+        int currentValue = 0;
+        
+        public IntegerRangeDocumentFilter(int minimum, int maximum) {
+            this.minimum = minimum;
+            this.maximum = maximum;
+        }
+        
+        public void insertString(DocumentFilter.FilterBypass fb, int offset, String string, AttributeSet attr) throws BadLocationException {
+            if(string == null) {
+                return;
+            }
+            else {
+                String newValue;
+                Document doc = fb.getDocument();
+                int length = doc.getLength();
+                if(length == 0) {
+                    newValue = string;
+                }
+                else {
+                    String currentContent = doc.getText(0, length);
+                    StringBuffer currentBuffer = new StringBuffer(currentContent);
+                    currentBuffer.insert(offset, string);
+                    newValue = currentBuffer.toString();
+                }
+                currentValue = checkInput(newValue, offset);
+                fb.insertString(offset, string, attr);
+            }
+        }
+        
+        public void remove(DocumentFilter.FilterBypass fb, int offset, int length)
+            throws BadLocationException {
+            Document doc = fb.getDocument();
+            int currentLength = doc.getLength();
+            String currentContent = doc.getText(0, currentLength);
+            String before = currentContent.substring(0, offset);
+            String after = currentContent.substring(length+offset, currentLength);
+            String newValue = before+after;
+            currentValue = checkInput(newValue, offset);
+            fb.remove(offset, length);
+        }
+        
+        public void replace(DocumentFilter.FilterBypass fb, int offset, int length, String text, AttributeSet attrs)
+            throws BadLocationException {
+            Document doc = fb.getDocument();
+            int currentLength = doc.getLength();
+            String currentContent = doc.getText(0, currentLength);
+            String before = currentContent.substring(0, offset);
+            String after = currentContent.substring(length+offset, currentLength);
+            String newValue = before+(text==null?"":text)+after;
+            currentValue = checkInput(newValue, offset);
+            fb.replace(offset, length, text, attrs);
+        }
+        
+        public int checkInput(String proposedValue, int offset)
+            throws BadLocationException {
+            int newValue = 0;
+            if(proposedValue.length()>0) {
+                try {
+                    newValue = Integer.parseInt(proposedValue);
+                }
+                catch(NumberFormatException e) {
+                    throw new BadLocationException(proposedValue, offset);
+                }
+            }
+            if((minimum<=newValue) && (newValue<=maximum)) {
+                return newValue;
+            }
+            else {
+                throw new BadLocationException(proposedValue, offset);
+            }
+        }
+    }
+
+图15-9显示了使用中的数字范围过滤器。
+
+.. figure:: images/Swing_15_9.png
+   :alt: Swing_15_9.png
+
+   Swing\_15\_9.png
+列表15-8显示了使用新的IntegerRangeDocumentFilter的示例程序。
+
+.. code:: java
+
+
+    package swingstudy.ch15;
+
+    import java.awt.EventQueue;
+    import java.awt.GridLayout;
+
+    import javax.swing.JFrame;
+    import javax.swing.JLabel;
+    import javax.swing.JTextField;
+    import javax.swing.text.AbstractDocument;
+    import javax.swing.text.Document;
+    import javax.swing.text.DocumentFilter;
+
+    public class RangeSample {
+
+        /**
+         * @param args
+         */
+        public static void main(String[] args) {
+            // TODO Auto-generated method stub
+
+            Runnable runner = new Runnable() {
+                public void run() {
+                    JFrame frame =  new JFrame("Range Example");
+                    frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+                    frame.setLayout(new GridLayout(3,2));
+                    
+                    frame.add(new JLabel("Range: 0-255"));
+                    JTextField textFieldOne = new JTextField();
+                    Document textDocOne = textFieldOne.getDocument();
+                    DocumentFilter filterOne = new IntegerRangeDocumentFilter(0, 255);
+                    ((AbstractDocument)textDocOne).setDocumentFilter(filterOne);
+                    frame.add(textFieldOne);
+                    
+                    frame.add(new JLabel("Range: -100-100"));
+                    JTextField textFieldTwo = new JTextField();
+                    Document textDocTwo = textFieldTwo.getDocument();
+                    DocumentFilter filterTwo = new IntegerRangeDocumentFilter(-100,100);
+                    ((AbstractDocument)textDocTwo).setDocumentFilter(filterTwo);
+                    frame.add(textFieldTwo);
+                    
+                    frame.add(new JLabel("Range: 1000-2000"));
+                    JTextField textFieldThree = new JTextField();
+                    Document textDocThree = textFieldThree.getDocument();
+                    DocumentFilter filterThree = new IntegerRangeDocumentFilter(1000, 2000);
+                    ((AbstractDocument)textDocThree).setDocumentFilter(filterThree);
+                    frame.add(textFieldThree);
+                    
+                    frame.setSize(250, 150);
+                    frame.setVisible(true);
+                }
+            };
+            EventQueue.invokeLater(runner);
+        }
+
+    }
+
+如果我们尝试这个程序，我们就会注意到一些有趣的问题。第一个文本域，范围为0到255，可以正常工作。只要内容是在这个范围之内，我们就可以随时输入或是删除字符。
+
+在第二个文本域中，合法的范围为-100到+100。尽管我们可以在这个文本域中输入任意的201个数字，但是如果我们希望一个负数，我们需要输入一个数字，例如3，左箭头，再输入负号。因为文本域会使用每一个键验证输入，负号本身是不合法的。我们需要在自定义的DocumentFilter的checkInput()方法将负号作为合法的输入接受，或者是强制用户以一种后退的方式输入负数。
+
+第三个文本域展示了一种更为麻烦的情况。输入的合法范围为1000－2000。当我们按下每一个键来输入数字时，例如1500，他会被拒绝。我们不能构建1500的输入，因为1，5与0是非法输入。相反，要在这个文本域中输入数字，我们必须在其他位置输入这个数字，将其放入系统剪切板中，然后使用Ctrl-V将其粘贴到文本域中作为文本域的最终值。我们不能使用Backspace来修正错误，因为三位数是非法的。
+
+虽然列表15-7中的IntegerRangeDocumentFilter类表示了一个对于任意的整数范围可用的DocumentFilter，他适用于由零开始的整数范围。如果我们并不介意看到文本域中的临时非法输入，也许更好的方法是仅关联一个InputVerifier在离开文本域的时候处理验证。
+
+DocumentListener与DocumentEvent接口
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+如果我们对文本组件的内容何时发生变化感兴趣，我们可以向组件的Document模型关联一个DocumentListener接口的实现。
+
+.. code:: java
+
+    public interface DocumentListener implements EventListener {
+      public void changedUpdate(DocumentEvent documentEvent);
+      public void insertUpdate(DocumentEvent documentEvent);
+      public void removeUpdate(DocumentEvent documentEvent);
+    }
+
+通过上面的三个接口方法，我们可以确定内容是否被添加（insertUpdate()），移除（removeUpdate()）或是格式化修改（changedUpdate()）。注意，后者是属性变化而不是内容变化。
+
+接口方法将会接收一个DocumentEvent的实例，从中我们可以确定在哪里发生了变化以及变化的类型，如下所示：
+
+.. code:: java
+
+    public interface DocumentEvent {
+      public Document getDocument();
+      public int getLength();
+      public int getOffset();
+      public DocumentEvent.EventType getType();
+      public DocumentEvent.ElementChange getChange(Element element);
+    }
+
+事件的offset属性是变化的起始处。事件的length属性报告发生变化的长度。事件的类型可以由被调用的三个DocumentListener方法中的一个导出。另外，DocumentEvent.EventType类有三个常量－CHANGE,INSERT与REMOVE－所以我们可以直接由type属性直接确定所发生的事件类型。
+
+DocumentEvent的getChange()方法需要一个Element来返回DocumentEvent.ElementChange。我们通常使用Document的默认根元素，如下面的示例所示。
+
+.. code:: java
+
+    Document documentSource = documentEvent.getDocument();
+    Element rootElement = documentSource.getDefaultRootElement();
+    DocumentEvent.ElementChange change = documentEvent.getChange(rootElement);
+
+一旦我们具有DocumentEvent.ElementChange实例，如果我们需要该级别的信息，我们可以确定添加与移除的元素。
+
+.. code:: java
+
+    public interface DocumentEvent.ElementChange {
+      public Element[ ] getChildrenAdded();
+      public Element[ ] getChildrenRemoved();
+      public Element getElement();
+      public int getIndex();
+    }
+
+Caret与Highlighter接口
+~~~~~~~~~~~~~~~~~~~~~~
+
+现在我们已经理解了文本组件的数据模型方面，我们可以了解通过Caret与Highlighter接口进行选中渲染的相关知识了。记住这些是文本组件的属性，而不是数据模型的属性。
+
+Caret接口描述通常被作为光标引用的内容：在文档中我们可以插入文本的位置。Highlighter接口提供了如何绘制选中文本的基础。这两个接口，他们相关的接口以及他们的实现都很少被修改。文本组件简单的通过DefaultCaret与DefaultHighlighter类使用他们的默认实现。
+
+尽管我们并不会修改一个文本组件的caret与highlighter的行为，但是我们应该了解有许多内部相关的类协同工作。对于Highlighter接口，预定义的实现被称之为DefaultHighlighter，他扩展了另一个名为LayeredHighlighter的实现。Highlighter同时管理一个Highlighter.Highlight对象的集合来指定被高亮的部分。
+
+DefaultHighlighter创建一个DefaultHighlighter.HighlightPainter来绘制文本的高亮部分。HighlightPainter是Highlighter.HighlightPainter接口的实现，并且扩展了LayeredHighlighter.LayerPainter类。要绘制的每一个部分通过Highlighter.Highlight进行描述，其中Highlighter管理集合。实际的HighlightPainter是通过DefaultCaret实现来创建的。
+
+Highlighter接口描述如何绘制文本组件中被选中的文本。如果我们不喜欢颜色，我们可以简单的将TextField.selectionBackground
+UI属性设置修改为另一个不同的颜色。
+
+.. code:: java
+
+    public interface Highlighter {
+      // Properties
+      public Highlighter.Highlight[ ] getHighlights();
+      // Other methods
+      public Object addHighlight(int p0, int p1, Highlighter.HighlightPainter p)
+        throws BadLocationException;
+      public void changeHighlight(Object tag, int p0, int p1)
+        throws BadLocationException;
+      public void deinstall(JTextComponent component);
+      public void install(JTextComponent component) 
+      public void paint(Graphics g);
+      public void removeAllHighlights();
+      public void removeHighlight(Object tag);
+    }
+
+Caret接口描述当前的光标以及一些选中的属性。在Highlighter与Caret接口之间，后者是我们实际使用的，尽管并没有必要对其进行派生。
+
+.. code:: java
+
+    public interface Caret {
+      // Properties
+      public int getBlinkRate();
+      public void setBlinkRate(int newValue);
+      public int getDot();
+      public void setDot(int newValue);
+      public Point getMagicCaretPosition();
+      public void setMagicCaretPosition(Point newValue);
+      public int getMark();
+      public boolean isSelectionVisible();
+      public void setSelectionVisible(boolean newValue);
+      public boolean isVisible();
+      public void setVisible(boolean newValue);
+      // Listeners
+      public void addChangeListener(ChangeListener l);
+      public void removeChangeListener(ChangeListener l);
+      // Other methods
+      public void deinstall(JTextComponent c);
+      public void install(JTextComponent c);
+      public void moveDot(int dot);
+      public void paint(Graphics g);
+    }
+
+表15-4列出了Caret的六个属性。
+
+.. figure:: images/Swing_table_15_4.png
+   :alt: Swing_table_15_4.png
+
+   Swing\_table\_15\_4.png
+blinkRate是caret闪烁之间的毫秒延迟。dot属性是文本组件中当前光标的当前位置。要将光标移动另一个位置从而某些文本可以被高亮显示，添加moveDot(int
+newPosition)方法调用。这会将mark属性设置旧的dot位置并且设置新的dot设置为新位置。
+
+magicCaretPosition属性处理不同长度行的向上移动与向下移动。例如，假定在我们的屏幕上有下面三个文本行：
+
+Friz Freleng
+
+Mel Blanc
+
+What's up Doc?
+
+现在假定光标位于第一行的n与g之间。如果我们按下向下键两次，我们希望光标位于相同的水平位置，而不是较短的第二处的结束处。保存这个信息的就是magicCursorPosition属性，从而光标停在第三行的D与o之间。如果没有保存位置信息，光标将会停留在最后一行的p与空格之间。
+
+使用caret的十分有用的实例就是响应按键来确定当前的屏幕位置。这样，我们就可以在当前的光标位置弹出一个菜单。这就是类似于JBuilder中的Code
+Insights或是Visual
+Studio中的IntelliSense，在其中通过弹出一个方法菜单来帮助我们完成方法调用。指定模型中的当前光标位置，使用JTextComponent（可以抛出BadLocationException）的public
+Rectangle modelToView(int
+position)方法将其映射到视图中的位置。然后使用作为位置返回的Rectangle弹出菜单，如图15-10所示。
+
+.. figure:: images/Swing_15_10.png
+   :alt: Swing_15_10.png
+
+   Swing\_15\_10.png
+列表15-9中的程序会在文本域中句点被按下的位置显示一个JPopupMenu。
+
+.. code:: java
+
+
+    package swingstudy.ch15;
+
+    import java.awt.BorderLayout;
+    import java.awt.EventQueue;
+    import java.awt.Rectangle;
+    import java.awt.event.ActionEvent;
+    import java.awt.event.ActionListener;
+    import java.awt.event.KeyEvent;
+
+    import javax.swing.JComponent;
+    import javax.swing.JFrame;
+    import javax.swing.JMenuItem;
+    import javax.swing.JPopupMenu;
+    import javax.swing.JTextField;
+    import javax.swing.KeyStroke;
+    import javax.swing.text.BadLocationException;
+
+    public class PopupSample {
+
+        /**
+         * @param args
+         */
+        public static void main(String[] args) {
+            // TODO Auto-generated method stub
+
+            Runnable runner = new Runnable() {
+                public void run() {
+                    JFrame frame = new JFrame("Popup Example");
+                    frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+                    
+                    final JPopupMenu popup = new JPopupMenu();
+                    JMenuItem menuItem1 = new JMenuItem("Option 1");
+                    popup.add(menuItem1);
+                    
+                    JMenuItem menuItem2 = new JMenuItem("Option 2");
+                    popup.add(menuItem2);
+                    
+                    final JTextField textField = new JTextField();
+                    frame.add(textField, BorderLayout.NORTH);
+                    
+                    ActionListener actionListener = new ActionListener() {
+                        public void actionPerformed(ActionEvent event) {
+                            try {
+                                int dotPosition = textField.getCaretPosition();
+                                Rectangle popupLocation = textField.modelToView(dotPosition);
+                                popup.show(textField, popupLocation.x, popupLocation.y);
+                            }
+                            catch(BadLocationException badLocationException) {
+                                System.err.println("Oops");
+                            }
+                        }
+                    };
+                    KeyStroke keystroke = KeyStroke.getKeyStroke(KeyEvent.VK_PERIOD, 0, false);
+                    textField.registerKeyboardAction(actionListener, keystroke, JComponent.WHEN_FOCUSED);
+                    
+                    frame.setSize(250, 150);
+                    frame.setVisible(true);
+                }
+            };
+            EventQueue.invokeLater(runner);
+        }
+
+    }
+
+CaretListener接口与CareEvent类
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+我们可以使用两种方法监听光标的移动：将ChangeListener关联到Caret或是将CaretListener关联到JTextComponent。尽管两种方法作用相同，直接JTextComponent则是更为简单的方法。
+
+在CaretListener的情况下，接口只定义了一个方法：
+
+.. code:: java
+
+    public interface CaretListener implements EventListener {
+      public void caretUpdate (CaretEvent caretEvent);
+    }
+
+当监听器得到通知时，CaretEvent被发送，他会报告新位置并标记位置。
+
+.. code:: java
+
+    public abstract class CaretEvent extends EventObject {
+      public CaretEvent(Object source);
+      public abstract int getDot();
+      public abstract int getMark();
+    }
+
+为了进行演示，图15-11显示了一个将CaretListener关联到内联JTextArea的程序。当CaretEvent发生时，当前光标值会发送到顶部文本域，而当前标记设置会被发送到按钮。在这个示例中，光标位置在第二行的起始处，而标记则是在结束处。
+
+.. figure:: images/Swing_15_11.png
+   :alt: Swing_15_11.png
+
+   Swing\_15\_11.png
+列表15-10显示了与图15-11中的示例相关联的源码。
+
+.. code:: java
+
+
+    package swingstudy.ch15;
+
+    import java.awt.BorderLayout;
+    import java.awt.EventQueue;
+
+    import javax.swing.JFrame;
+    import javax.swing.JLabel;
+    import javax.swing.JPanel;
+    import javax.swing.JScrollPane;
+    import javax.swing.JTextArea;
+    import javax.swing.JTextField;
+    import javax.swing.event.CaretEvent;
+    import javax.swing.event.CaretListener;
+
+    public class CaretSample {
+
+        /**
+         * @param args
+         */
+        public static void main(String[] args) {
+            // TODO Auto-generated method stub
+
+            Runnable runner = new Runnable() {
+                public void run() {
+                    JFrame frame = new JFrame("Caret Example");
+                    frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+                    
+                    JTextArea textArea = new JTextArea();
+                    JScrollPane scrollPane = new JScrollPane(textArea);
+                    frame.add(scrollPane, BorderLayout.CENTER);
+                    
+                    final JTextField dot = new JTextField();
+                    dot.setEditable(false);
+                    JPanel dotPanel = new JPanel(new BorderLayout());
+                    dotPanel.add(new JLabel("Dot: "), BorderLayout.WEST);
+                    dotPanel.add(dot, BorderLayout.CENTER);
+                    frame.add(dotPanel, BorderLayout.NORTH);
+                    
+                    final JTextField mark = new JTextField();
+                    mark.setEditable(false);
+                    JPanel markPanel = new JPanel(new BorderLayout());
+                    markPanel.add(new JLabel("Mark: "), BorderLayout.WEST);
+                    markPanel.add(mark, BorderLayout.CENTER);
+                    frame.add(markPanel, BorderLayout.SOUTH);
+                    
+                    CaretListener listener = new CaretListener() {
+                        public void caretUpdate(CaretEvent event) {
+                            dot.setText(Integer.toString(event.getDot()));
+                            mark.setText(Integer.toString(event.getMark()));
+                        }
+                    };
+                    
+                    textArea.addCaretListener(listener);
+                    
+                    frame.setSize(250, 150);
+                    frame.setVisible(true);
+                }
+            };
+            EventQueue.invokeLater(runner);
+        }
+
+    }
+
+NavigationFilter类
+~~~~~~~~~~~~~~~~~~
+
+类似于将DocumentFilter关联到Document来限制文本组件的输入一样，我们可以将NavigationFilter关联到JTextComponent来限制光标可以达到哪里。这个类有三个方法：
+
+.. code:: java
+
+    public void setDot(NavigationFilter.FilterBypass fb, int dot, Position.Bias bias)
+    public void moveDot(NavigationFilter.FilterBypass fb, int dot, Position.Bias bias)
+    public int getNextVisualPositionFrom(JTextComponent text, int pos, 
+      Position.Bias bias, int direction, Position.Bias[] biasRet) 
+
+要限制移动，通常我们要重写前两个方法，而保留后一个方法。例如，列表15-11显示的程序在JTextArea的起始处有一个保留区域（也就是报告标题）。如果我们尝试设置或是将光标移动到保留区域，过滤器会拒绝修改并将光标移动到区域之后。
+
+.. code:: java
+
+
+    package swingstudy.ch15;
+
+    import java.awt.BorderLayout;
+    import java.awt.EventQueue;
+
+    import javax.swing.JFrame;
+    import javax.swing.JScrollPane;
+    import javax.swing.JTextArea;
+    import javax.swing.text.NavigationFilter;
+    import javax.swing.text.Position;
+
+    public class NavigationSample {
+
+        private static final String START_STRING = "Start\n";
+        private static final int START_STRING_LENGTH = START_STRING.length();
+        
+        /**
+         * @param args
+         */
+        public static void main(String[] args) {
+            // TODO Auto-generated method stub
+
+            Runnable runner = new Runnable() {
+                public void run() {
+                    JFrame frame = new JFrame("Navigation Example");
+                    frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+                    
+                    JTextArea textArea = new JTextArea(START_STRING);
+                    textArea.setCaretPosition(START_STRING_LENGTH);
+                    JScrollPane scrolPane = new JScrollPane(textArea);
+                    frame.add(scrolPane, BorderLayout.CENTER);
+                    
+                    NavigationFilter filter = new NavigationFilter() {
+                        public void setDot(NavigationFilter.FilterBypass fb, int dot, Position.Bias bias) {
+                            if(dot<START_STRING_LENGTH) {
+                                fb.setDot(START_STRING_LENGTH, bias);
+                            }
+                            else {
+                                fb.setDot(dot, bias);
+                            }
+                        }
+                        public void moveDot(NavigationFilter.FilterBypass fb, int dot, Position.Bias bias) {
+                            if(dot<START_STRING_LENGTH) {
+                                fb.setDot(START_STRING_LENGTH, bias);
+                            }
+                            else {
+                                fb.setDot(dot, bias);
+                            }
+                        }
+                    };
+                    textArea.setNavigationFilter(filter);
+                    
+                    frame.setSize(250, 150);
+                    frame.setVisible(true);
+                }
+            };
+            EventQueue.invokeLater(runner);
+        }
+
+    }
+
+图15-2显示了在文本组件中输入一些信息之后的屏幕。
+
+.. figure:: images/Swing_15_12.png
+   :alt: Swing_15_12.png
+
+   Swing\_15\_12.png
+Keymap接口
+~~~~~~~~~~
+
+以MVC的角度来看，文本组件的keymap属性是控制器部分。他通过Keymap接口将KeyStroke对象映射到单个的动作。（KeyStroke类在第2章中进行了讨论。）当我们使用registerKeyboardAction()方法向JTextComponent注册KeyStroke时，如本章前面的列表15-9中的PopupSample程序所示，文本组件在Keymap中存储由KeyStroke到Action的映射。例如，回退键被映射到删除前一个字符。如果我们要添加另一个绑定，我们只需要注册另一个按键。
+
+注意，事实上，Keymap只是ActionMap/InputMap对的前端。JTextComponent依据某些内部作用间接使用ActionMap/InputMap类。
+
+我们也可以直接向Keymap中添加按键动作。这可以使得我们在多个文本组件之间共享同一个按键映射，只要他们共享相同的扩展行为。
+
+.. code:: java
+
+    public interface Keymap {
+      // Properties
+      public Action[ ] getBoundActions();
+      public KeyStroke[ ] getBoundKeyStrokes();
+      public Action getDefaultAction();
+      public void setDefaultAction(Action action);
+      public String getName();
+      public Keymap getResolveParent();
+      public void setResolveParent(Keymap parent);
+      // Other methods
+      public void addActionForKeyStroke(KeyStroke keystroke, Action action);
+      public Action getAction(KeyStroke keystroke);
+      public KeyStroke[ ] getKeyStrokesForAction(Action action);
+      public boolean isLocallyDefined(KeyStroke keystroke);
+      public void removeBindings();
+      public void removeKeyStrokeBinding(KeyStroke keystroke);
+    }
+
+对于某些程序，我们也许希望由按键映射中移动按键。例如，JTextField在键盘映射中有一个用于Enter键的实体，从而所注册的ActionListener对象都会得到通知。如果JTextField位于设计有默认按钮的屏幕上，按下Enter并不会选中预期的默认按钮。去掉这种默认行为仅是简单的请求由Keymap中移除KeyStroke，如下所示：
+
+.. code:: java
+
+    Keymap keymap = textField.getKeymap();
+    KeyStroke keystroke = KeyStroke.getKeyStroke(KeyEvent.VK_ENTER, 0, false);
+    keymap.removeKeyStrokeBinding(keystroke);
+
+然后，当我们在文本域中按下Enter时，默认按钮就会被激活，如图15-13所示。
+
+.. figure:: images/Swing_15_13.png
+   :alt: Swing_15_13.png
+
+   Swing\_15\_13.png
+图15-13的示例程序源码显示在列表15-12中。
+
+.. code:: java
+
+
+    package swingstudy.ch15;
+
+    import java.awt.BorderLayout;
+    import java.awt.EventQueue;
+    import java.awt.event.ActionEvent;
+    import java.awt.event.ActionListener;
+    import java.awt.event.KeyEvent;
+
+    import javax.swing.JButton;
+    import javax.swing.JFrame;
+    import javax.swing.JPanel;
+    import javax.swing.JTextField;
+    import javax.swing.KeyStroke;
+    import javax.swing.text.Keymap;
+
+    public class DefaultSample {
+
+        /**
+         * @param args
+         */
+        public static void main(String[] args) {
+            // TODO Auto-generated method stub
+
+            Runnable runner = new Runnable() {
+                public void run() {
+                    JFrame frame = new JFrame("Default Example");
+                    frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+                    
+                    JTextField textField = new JTextField();
+                    frame.add(textField, BorderLayout.NORTH);
+                    
+                    ActionListener actionListener = new ActionListener() {
+                        public void actionPerformed(ActionEvent event) {
+                            System.out.println(event.getActionCommand()+" selected");
+                        }
+                    };
+                    
+                    JPanel panel = new JPanel();
+                    JButton defaultButton = new JButton("Default Button");
+                    defaultButton.addActionListener(actionListener);
+                    panel.add(defaultButton);
+                    
+                    JButton otherButton =  new JButton("Other Button");
+                    otherButton.addActionListener(actionListener);
+                    panel.add(otherButton);
+                    
+                    frame.add(panel, BorderLayout.SOUTH);
+                    
+                    Keymap keymap = textField.getKeymap();
+                    KeyStroke keystroke = KeyStroke.getKeyStroke(KeyEvent.VK_ENTER, 0, false);
+                    keymap.removeKeyStrokeBinding(keystroke);
+                    
+                    frame.getRootPane().setDefaultButton(defaultButton);
+                    
+                    frame.setSize(250, 150);
+                    frame.setVisible(true);
+                }
+            };
+            EventQueue.invokeLater(runner);
+        }
+
+    }
+
+JTextComponent.KeyBinding类
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+JTextComponent类借且于JTextComponent.KeyBinding类来存储特定的按键绑定。当前的观感定义了文本组件按键绑定的默认集合，例如我们所熟悉的在Microsoft
+Windows平台上Ctrl-X用于剪切，Ctrl-C用于复制以及Ctrl-V用于粘贴。
+
+处理JTextField事件
+~~~~~~~~~~~~~~~~~~
+
+处理Swing文本组件中的事件完全不同于处理AWT文本组件中的事件。尽管我们仍然可以关联一个ActionListener来监听用户在文本域中输入Enter键的情况，关联KeyListener或是TextListsener不再有用。
+
+要验证输入，关联InputVerifier要好于关联FocusListener。然而，输入验证最好是留给Document来实现或是当用户提交表单时实现。
+
+**使用ActionListener来监听JTextField事件**
+
+当用户在文本域中按下Enter后，JTextField会通知所注册的ActionListener对象。组件会向ActionListener对象发送一个ActionEvent。ActionEvent的部分是一个动作命令。默认情况下，事件的动作命令是组件的当前内容。对于Swing的JTextField，我们也可以将动作命令设置为不同于内容的某些东西。JTextField有一个actionCommand属性。当这个属性被设置为null时（默认设置），ActionEvent的动作命令会使用组件的内容。然而，如果我们为JTextField设置actionCommand属性，那么actionCommand就会成为ActionEvent的组成部分。
+
+下面的代码显示了这种区域。有两个文本域。当在第一个文本域中按下Enter时，会使得所注册的ActionListener得到通知，并输出“Yo”。当在第二个文本域中按下Enter时，则内容会被输出。
+
+.. code:: java
+
+    JTextField nameTextField = new JTextField();
+    JTextField cityTextField = new JTextField();
+    ActionListener actionListener = new ActionListener() {
+      public void actionPerformed(ActionEvent actionEvent) {
+        System.out.println("Command: " + actionEvent.getActionCommand());
+      }
+    };
+    nameTextField.setActionCommand("Yo");
+    nameTextField.addActionListener(actionListener);
+    cityTextField.addActionListener(actionListener);
+
+**使用KeyListener监听JTextField事件**
+
+对于Swing文本组件，我们通常并不使用KeyListener来监听键盘事件－至少不用来验证输入。运行下面的程序可以演示我们仍然可以确定一个按键何时被按下或释放，而不仅是何时输入。
+
+.. code:: java
+
+    KeyListener keyListener = new KeyListener() {
+      public void keyPressed(KeyEvent keyEvent) {
+        printIt("Pressed", keyEvent);
+      }
+      public void keyReleased(KeyEvent keyEvent) {
+        printIt("Released", keyEvent);
+      }
+      public void keyTyped(KeyEvent keyEvent) {
+        printIt("Typed", keyEvent);
+      }
+      private void printIt(String title, KeyEvent keyEvent) {
+        int keyCode = keyEvent.getKeyCode();
+        String keyText = KeyEvent.getKeyText(keyCode);
+        System.out.println(title + " : " + keyText);
+      }
+    };
+    nameTextField.addKeyListener(keyListener);
+    cityTextField.addKeyListener(keyListener);
+
+**使用InputVerifer监听JTextField事件**
+
+实现InputVerifier接口可以使得我们进行JTextField的域级别验证。在焦点移除一个文本组件之前，验证会运行。如果输入不合法，验证器就会拒绝修改并将焦点保持在指定的组件中。
+
+在下面的示例中，如果我们尝试将输入焦点移除文本域之外，我们就会发现我们并不能办到，除非文本域的内容是空的，或者内容由字符串“Exit”组成。
+
+.. code:: java
+
+    InputVerifier verifier = new InputVerifier() {
+      public boolean verify(JComponent input) {
+        final JTextComponent source = (JTextComponent)input;
+        String text = source.getText();
+        if ((text.length() != 0) && !(text.equals("Exit"))) {
+          Runnable runnable = new Runnable() {
+            public void run() {
+              JOptionPane.showMessageDialog (source, "Can't leave.",
+                "Error Dialog", JOptionPane.ERROR_MESSAGE);
+            }
+          };
+          EventQueue.invokeLater(runnable);
+          return false;
+        }  else {
+          return true;
+        }
+      }
+    };
+    nameTextField.setInputVerifier(verifier);
+    cityTextField.setInputVerifier(verifier);
+
+**使用DocumentListener监听JTextField事件**
+
+要确定文本组件的内容何时发生变化，我们需要向数据模型关联一个监听器。在这种情况下，数据模型为Document，而监听器为DocumentListener。下面的示例仅是告诉我们模型何时以及如何发生变化。记住changedUpdate()用于属性变化。不要使用DocumentListener进行输入验证。
+
+.. code:: java
+
+    DocumentListener documentListener = new DocumentListener() {
+      public void changedUpdate(DocumentEvent documentEvent) {
+        printIt(documentEvent);
+      }
+      public void insertUpdate(DocumentEvent documentEvent) {
+        printIt(documentEvent);
+      }
+      public void removeUpdate(DocumentEvent documentEvent) {
+        printIt(documentEvent);
+      }
+      private void printIt(DocumentEvent documentEvent) {
+        DocumentEvent.EventType type = documentEvent.getType();
+        String typeString = null;
+        if (type.equals(DocumentEvent.EventType.CHANGE)) {
+          typeString = "Change";
+        }  else if (type.equals(DocumentEvent.EventType.INSERT)) {
+          typeString = "Insert";
+        }  else if (type.equals(DocumentEvent.EventType.REMOVE)) {
+          typeString = "Remove";
+        }
+        System.out.print("Type  :   " + typeString + " / ");
+        Document source = documentEvent.getDocument();
+        int length = source.getLength();
+        try {
+          System.out.println("Contents: " + source.getText(0, length));
+        }  catch (BadLocationException badLocationException) {
+          System.out.println("Contents: Unknown");
+        }
+      }
+    };
+    nameTextField.getDocument().addDocumentListener(documentListener);
+    cityTextField.getDocument().addDocumentListener(documentListener);
+
+**将所有内容组合在一起**
+
+现在我们已经分别了解了监听器的使用，让我们将这些内容组合在一个示例中。图15-14显示了最终的结果。记住要离开组件的魔法单词是“Exit”。
+
+.. figure:: images/Swing_15_14.png
+   :alt: Swing_15_14.png
+
+   Swing\_15\_14.png
+图15-14后面程序的源码显示在列表15-13中。
+
+.. code:: java
+
+
+    package swingstudy.ch15;
+
+    import java.awt.BorderLayout;
+    import java.awt.EventQueue;
+    import java.awt.event.ActionEvent;
+    import java.awt.event.ActionListener;
+    import java.awt.event.KeyEvent;
+    import java.awt.event.KeyListener;
+
+    import javax.swing.InputVerifier;
+    import javax.swing.JComponent;
+    import javax.swing.JFrame;
+    import javax.swing.JLabel;
+    import javax.swing.JOptionPane;
+    import javax.swing.JPanel;
+    import javax.swing.JTextField;
+    import javax.swing.event.DocumentEvent;
+    import javax.swing.event.DocumentListener;
+    import javax.swing.text.BadLocationException;
+    import javax.swing.text.Document;
+    import javax.swing.text.JTextComponent;
+
+    public class JTextFieldSample {
+
+        /**
+         * @param args
+         */
+        public static void main(String[] args) {
+            // TODO Auto-generated method stub
+
+            Runnable runner = new Runnable() {
+                public void run() {
+                    JFrame frame = new JFrame("TextField Listener Sample");
+                    frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+                    
+                    JPanel namePanel = new JPanel(new BorderLayout());
+                    JLabel nameLabel = new JLabel("Name: ");
+                    nameLabel.setDisplayedMnemonic(KeyEvent.VK_N);
+                    JTextField nameTextField = new JTextField();
+                    nameLabel.setLabelFor(nameTextField);
+                    namePanel.add(nameLabel, BorderLayout.WEST);
+                    namePanel.add(nameTextField, BorderLayout.CENTER);
+                    frame.add(namePanel, BorderLayout.NORTH);
+                    
+                    JPanel cityPanel = new JPanel(new BorderLayout());
+                    JLabel cityLabel = new JLabel("City: ");
+                    cityLabel.setDisplayedMnemonic(KeyEvent.VK_C);
+                    JTextField cityTextField = new JTextField();
+                    cityLabel.setLabelFor(cityTextField);
+                    cityPanel.add(cityLabel, BorderLayout.WEST);
+                    cityPanel.add(cityTextField, BorderLayout.CENTER);
+                    frame.add(cityPanel, BorderLayout.SOUTH);
+                    
+                    ActionListener actionListener = new ActionListener() {
+                        public void actionPerformed(ActionEvent event) {
+                            System.out.println("Command: "+event.getActionCommand());
+                        }
+                    };
+                    nameTextField.setActionCommand("Yo");
+                    nameTextField.addActionListener(actionListener);
+                    cityTextField.addActionListener(actionListener);
+                    
+                    KeyListener keyListener = new KeyListener() {
+                        public void keyPressed(KeyEvent event) {
+                            printIt("Pressed", event);
+                        }
+                        public void keyReleased(KeyEvent event) {
+                            printIt("Released", event);
+                        }
+                        public void keyTyped(KeyEvent event) {
+                            printIt("Typed", event);
+                        }
+                        private void printIt(String title, KeyEvent event) {
+                            int keyCode = event.getKeyCode();
+                            String keyText = event.getKeyText(keyCode);
+                            System.out.println(title+" : "+keyText+" / "+event.getKeyChar());
+                        }
+                    };
+                    
+                    nameTextField.addKeyListener(keyListener);
+                    cityTextField.addKeyListener(keyListener);
+                    
+                    InputVerifier verifier = new InputVerifier() {
+                        public boolean verify(JComponent input) {
+                            final JTextComponent source = (JTextComponent)input;
+                            String text = source.getText();
+                            if((text.length()!=0) && !(text.equals("Exit"))) {
+                                JOptionPane.showMessageDialog(source, "Can't leave.", "Error Dialog", JOptionPane.ERROR_MESSAGE);
+                                return false;
+                            }
+                            else {
+                                return true;
+                            }
+                        }
+                    };
+                    nameTextField.setInputVerifier(verifier);
+                    cityTextField.setInputVerifier(verifier);
+                    
+                    DocumentListener documentListener = new DocumentListener() {
+                        public void changedUpdate(DocumentEvent event) {
+                            printIt(event);
+                        }
+                        public void insertUpdate(DocumentEvent event) {
+                            printIt(event);
+                        }
+                        public void removeUpdate(DocumentEvent event) {
+                            printIt(event);
+                        }
+                        private void printIt(DocumentEvent event) {
+                            DocumentEvent.EventType type = event.getType();
+                            String typeString = null;
+                            if(type.equals(DocumentEvent.EventType.CHANGE)) {
+                                typeString = "Change";
+                            }
+                            else if(type.equals(DocumentEvent.EventType.INSERT)) {
+                                typeString = "Insert";
+                            }
+                            else if(type.equals(DocumentEvent.EventType.REMOVE)) {
+                                typeString = "Remove";
+                            }
+                            System.out.println("Type : "+typeString+" / ");
+                            Document source = event.getDocument();
+                            int length = source.getLength();
+                            
+                            try {
+                                System.out.println("Contents: "+source.getText(0, length));
+                            }
+                            catch(BadLocationException badLocationException) {
+                                System.out.println("Contents: Unknown");
+                            }
+                        }
+                    };
+                    nameTextField.getDocument().addDocumentListener(documentListener);
+                    cityTextField.getDocument().addDocumentListener(documentListener);
+                    
+                    frame.setSize(250, 100);
+                    frame.setVisible(true);
+                }
+            };
+            EventQueue.invokeLater(runner);
+        }
+
+    }
+
+自定义JTextField观感
+~~~~~~~~~~~~~~~~~~~~
+
+每一个可安装的Swing观感都提供了一个不同的JTextField外观以及默认的UIResource值集合。表15-5显示了JTextField的25
+UIResource相关的属性。
+
+.. figure:: images/Swing_table_15_5_1.png
+   :alt: Swing_table_15_5_1.png
+
+   Swing\_table\_15\_5\_1.png
+.. figure:: images/Swing_table_15_5_2.png
+   :alt: Swing_table_15_5_2.png
+
+   Swing\_table\_15\_5\_2.png
+图15-15显示了JTextField在预安装的观感类型集合Motif，Windows与Ocean下的外观。
+
+.. figure:: images/Swing_15_15.png
+   :alt: Swing_15_15.png
+
+   Swing\_15\_15.png
+JPasswordField类
+----------------
+
+JPasswordField组件被设计用来处理密码输入。密码文本域会显示一个特殊的输入掩码，而不会回显用户的输入。其作用类似于具有\*输入掩码的JTextField。我们不能取消掩码设置，也不能剪切或是复制密码组件的内容。其目的就是为了强强安全性。
+
+创建JPasswordField
+~~~~~~~~~~~~~~~~~~
+
+与JTextField相同，JPasswordField类有五个构造函数：
+
+.. code:: java
+
+    public JPasswordField()
+    JPasswordField passwordField = new JPasswordField();
+    public JPasswordField(String text)
+    JPasswordField passwordField = new JPasswordField("Initial Password");
+    public JPasswordField(int columnWidth)
+    JPasswordField passwordField = new JPasswordField(14);
+    public JPasswordField(String text, int columnWidth)
+    JPasswordField passwordField = new JPasswordField("Initial Password", 14);
+    public JPasswordField(Document model, String text, int columnWidth)
+    JPasswordField passwordField = new JPasswordField(aModel, "Initial Password", 14);
+
+使用无参数的构造函数，我们可以获得一个空的，零列宽的输入域，默认的初始化Document模型，以及\*回显字符。尽管我们可以在构造函数中指定初始化文本，但是通常我们所要做的是提示用户输入密码来验证用户的标识，而不是确定用户是否可以提交一个表单。所以，JPasswordField的本意是在启动时是空的。类似于JTextField，我们也可以指定初始宽度，假定JPasswordField所在的窗口的布局管理器将处理这种请求。
+
+我们也可以在构造函数中指定密码域的Document数据模型。当指定Document数据模型时，我们应该指定一个null初始化文本参数；否则，文档的当前内容就会被密码域的初始文本所替换。另外，我们不应尝试在JPasswordField中使用自定义的Document。因为组件在已输入多少字符之外并不会显示任何可视化的回馈，如果我们尝试将输入限制为数字数据，这会使用户感到迷惑。
+
+JPasswordField属性
+~~~~~~~~~~~~~~~~~~
+
+表15-6显示了JPasswordField的四个属性。
+
+.. figure:: images/Swing_table_15_6.png
+   :alt: Swing_table_15_6.png
+
+   Swing\_table\_15\_6.png
+设置echoChar属性可以使得我们使用默认星号字符以外的掩码字符。如查echoChar属性被设置为字符\\u0000(0)，public
+boolean echoCharIsSet()方法会返回false。在其他的情况下，方法会返回true。
+
+注意，JPasswordField有一个受保护的只读的text属性，我们应避免使用这个属性。相反，我们应使用password属性，因为他会返回一个char[]并在使用之后立即清除。一个String必须等待垃圾回收器来翻译。
+
+自定义JPasswordField观感
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+JPasswordField是JTextField的一个子类。在所有预定义的观感类型下，他与JTextField具有相同的外观（如图15-15所示）。一个不同就是当前的echoChar属性设置隐藏内容。如图15-16所示。顶部的文本组件是一个JTextField；而底部则是一个JPasswordField。
+
+.. figure:: images/Swing_15_16.png
+   :alt: Swing_15_16.png
+
+   Swing\_15\_16.png
+表15-7显示了JPasswordField的17个UIResource相关的属性。
+
+.. figure:: images/Swing_table_15_7_1.png
+   :alt: Swing_table_15_7_1.png
+
+   Swing\_table\_15\_7\_1.png
+.. figure:: images/Swing_table_15_7_2.png
+   :alt: Swing_table_15_7_2.png
+
+   Swing\_table\_15\_7\_2.png
+JFormattedTextField类
+---------------------
+
+JFormattedTextField提供了格式化文本输入的支持。当这个组件创建时，我们为输入定义了一个掩码。这个掩码可以是以下四种格式之一：一个java.text.Format对象，一个AbstractFormatter，一个AbstractFormatterFactory或是一个不同类型的实际值（例如3.141592）。
+
+依据我们希望用户输入的数据类型，系统为我们的使用提供了一些抽象格式器。例如，NumberFormatter可以用来输入数字，而DateFormatter可以用来输入整个日期。同时还有一个MaskFormatter用于描述具有编辑字行串的输入，例如用于美国社会保险号码的“XXX-XX-XXX”。如果我们希望不同的显示与编辑格式，我们可以使用AbstractFormatterFactory。我们将会在第16章中了解到关于格式器与格式器工厂的更多内容。
+
+创建JFormattedTextField
+~~~~~~~~~~~~~~~~~~~~~~~
+
+JFormattedTextField类有六个构造函数：
+
+.. code:: java
+
+    public JFormattedTextField()
+    JFormattedTextField formattedField = new JFormattedTextField();
+    public JFormattedTextField(Format format)
+    DateFormat format = new SimpleDateFormat("yyyy--MMMM--dd");
+    JFormattedTextField formattedField = new JFormattedTextField(format);
+    public JFormattedTextField(JFormattedTextField.AbstractFormatter formatter)
+    DateFormat displayFormat = new SimpleDateFormat("yyyy--MMMM--dd");
+    DateFormatter displayFormatter = new DateFormatter(displayFormat);
+    JFormattedTextField formattedField = new JFormattedTextField(displayFormatter);
+    public JFormattedTextField(JFormattedTextField.AbstractFormatterFactory factory)
+    DateFormat displayFormat = new SimpleDateFormat("yyyy--MMMM--dd");
+    DateFormatter displayFormatter = new DateFormatter(displayFormat);
+    DateFormat editFormat = new SimpleDateFormat("MM/dd/yy");
+    DateFormatter editFormatter = new DateFormatter(editFormat);
+    DefaultFormatterFactory factory = new DefaultFormatterFactory(
+      displayFormatter, displayFormatter, editFormatter);
+    JFormattedTextField formattedField = new JFormattedTextField(factory);
+    public JFormattedTextField(JFormattedTextField.AbstractFormatterFactory factory,
+      Object currentValue)
+    DateFormat displayFormat = new SimpleDateFormat("yyyy--MMMM--dd");
+    DateFormatter displayFormatter = new DateFormatter(displayFormat);
+    DateFormat editFormat = new SimpleDateFormat("MM/dd/yy");
+    DateFormatter editFormatter = new DateFormatter(editFormat);
+    DefaultFormatterFactory factory = new DefaultFormatterFactory(
+      displayFormatter, displayFormatter, editFormatter);
+    JFormattedTextField formattedField = new JFormattedTextField(factory, new Date());
+    public JFormattedTextField(Object value)
+    JFormattedTextField formattedField = new JFormattedTextField(new Date());
+
+无参数的构造函数需要我们在稍后进行配置。其他的构造函数允许我们配置内容将会接受什么以及如何接受。
+
+JFormattedTextField属性
+~~~~~~~~~~~~~~~~~~~~~~~
+
+表15-8显示了JFormattedTextField的八个属性。我们不必像使用JTextField时一样，通过text属性将JFormattedTextField的内容获取为一个String，而是可以通过value属性将其获取为一个Object。所以，如果我们的格式器用于一个Date对象，我们所获得的值可以转换为java.util.Date类型。
+
+.. figure:: images/Swing_table_15_8.png
+   :alt: Swing_table_15_8.png
+
+   Swing\_table\_15\_8.png
+列表15-14演示了具有自定义格式器与工厂的JFormattedTextField的用户。注意，当我们编辑底部的文本域时，显示格式与编辑格式是不同的。
+
+.. code:: java
+
+
+    /**
+     * 
+     */
+    package swingstudy.ch15;
+
+    import java.awt.BorderLayout;
+    import java.awt.EventQueue;
+    import java.awt.event.ActionEvent;
+    import java.awt.event.ActionListener;
+    import java.awt.event.KeyEvent;
+    import java.text.DateFormat;
+    import java.text.SimpleDateFormat;
+    import java.util.Date;
+
+    import javax.swing.JFormattedTextField;
+    import javax.swing.JFrame;
+    import javax.swing.JLabel;
+    import javax.swing.JPanel;
+    import javax.swing.text.DateFormatter;
+    import javax.swing.text.DefaultFormatterFactory;
+
+    /**
+     * @author mylxiaoyi
+     *
+     */
+    public class FormattedSample {
+
+        /**
+         * @param args
+         */
+        public static void main(String[] args) {
+            // TODO Auto-generated method stub
+
+            Runnable runner = new Runnable() {
+                public void run() {
+                    JFrame frame = new JFrame("Formatted Example");
+                    frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+                    
+                    JPanel datePanel = new JPanel(new BorderLayout());
+                    JLabel dateLabel =  new JLabel("Date: ");
+                    dateLabel.setDisplayedMnemonic(KeyEvent.VK_D);
+                    DateFormat format = new SimpleDateFormat("yyyy--MMMM--dd");
+                    JFormattedTextField dateTextField = new JFormattedTextField(format);
+                    dateLabel.setLabelFor(dateTextField);
+                    datePanel.add(dateLabel, BorderLayout.WEST);
+                    datePanel.add(dateTextField, BorderLayout.CENTER);
+                    frame.add(datePanel, BorderLayout.NORTH);
+                    
+                    JPanel date2Panel = new JPanel(new BorderLayout());
+                    JLabel date2Label = new JLabel("Date 2: ");
+                    date2Label.setDisplayedMnemonic(KeyEvent.VK_A);
+                    DateFormat displayFormat = new SimpleDateFormat("yyyy--MMMM--dd");
+                    DateFormatter displayFormatter = new DateFormatter(displayFormat);
+                    DateFormat editFormat = new SimpleDateFormat("MM/dd/yy");
+                    DateFormatter editFormatter = new DateFormatter(editFormat);
+                    DefaultFormatterFactory factory = new DefaultFormatterFactory(displayFormatter, displayFormatter, editFormatter);
+                    JFormattedTextField date2TextField = new JFormattedTextField(factory, new Date());
+                    date2Label.setLabelFor(date2TextField);
+                    date2Panel.add(date2Label, BorderLayout.WEST);
+                    date2Panel.add(date2TextField, BorderLayout.CENTER);
+                    frame.add(date2Panel, BorderLayout.SOUTH);
+                    
+                    ActionListener actionListener = new ActionListener() {
+                        public void actionPerformed(ActionEvent event) {
+                            JFormattedTextField source = (JFormattedTextField)event.getSource();
+                            Object value = source.getValue();
+                            System.out.println("Class: "+value.getClass());
+                            System.out.println("Value: "+value);
+                        }
+                    };
+                    dateTextField.addActionListener(actionListener);
+                    date2TextField.addActionListener(actionListener);
+                    
+                    frame.setSize(250, 100);
+                    frame.setVisible(true);
+                }
+            };
+            EventQueue.invokeLater(runner);
+        }
+
+    }
+
+自定义JFormattedTextField观感
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+类似于JPasswordField，JFormattedTextField也是JTextField的一个子类。在所有的预定义的观感类型下，同样与JTextField具有相同的外观（如图15-15）。要自定义其显示，我们可以修改JFormattedTextField的16个UIResource相关的属性集合中的任何一个，如表15-9所示。
+
+.. figure:: images/Swing_table_15_9.png
+   :alt: Swing_table_15_9.png
+
+   Swing\_table\_15\_9.png
+JTextArea类
+-----------
+
+JTextArea是用于多行输入的文本组件。类似于JTextField，JTextArea的数据模型是Document接口的PlainDocument实现。所以，JTextArea被限制为单属性文本。类似于其他的需要滚动的Swing组件，JTextArea本身不支持滚动。我们需要将JTextArea放在JScrollPane中来允许在JTextArea中进行滚动。
+
+创建JTextArea
+~~~~~~~~~~~~~
+
+JTextArea有六个构造函数：
+
+.. code:: java
+
+    public JTextArea()
+    JTextArea textArea = new JTextArea();
+    public JTextArea(Document document)
+    Document document = new PlainDocument();
+    JTextArea textArea = new JTextArea(document);
+    public JTextArea(String text)
+    JTextArea textArea = new JTextArea("...");
+    public JTextArea(int rows, int columns)
+    JTextArea textArea = new JTextArea(10, 40);
+    public JTextArea(String text, int rows, int columns)
+    JTextArea textArea = new JTextArea("...", 10, 40);
+    public JTextArea(Document document, String text, int rows, int columns)
+    JTextArea textArea = new JTextArea(document, null, 10, 40);
+
+除非特别指定，文本区域也可以存储零行与零列的内容。尽管这听起来像是一个严重的限制，我们只需要告诉文本区域来使得当前的LayoutManager处理我们的文本区域的尺寸。JTextArea的内容初始时是空的，除非使用起始文本字符串或是Document模型指定。
+
+注意，其他的JTextArea初始设置包括一个Tab为八个位置以及关闭文字换行。要了解关于Tab的更多内容，可以查看第16章中的TabStop与TabSet类。
+
+在创建了JTextArea之后，记得将JTextArea放在JScrollPane中。然后在屏幕上如果没有足够的空间，JScrollPane就会为我们管理滚动。
+
+.. code:: java
+
+    JTextArea textArea = new JTextArea();
+    JScrollPane scrollPane = new JScrollPane(textArea);
+    content.add(scrollPane);
+
+图15-17显示了在JScrollPane之内以及在JScrollPane之外的JTextArea的样子。不在JScrollPanel中的JTextArea，我们不能看到超出屏幕边界的文本。依照设计，将光标移动进区域并不会使得顶部的内容向上移动。
+
+.. figure:: images/Swing_15_17.png
+   :alt: Swing_15_17.png
+
+   Swing\_15\_17.png
+JTextArea属性
+~~~~~~~~~~~~~
+
+表15-10显示了JTextArea的12个属性。
+
+.. figure:: images/Swing_table_15_10.png
+   :alt: Swing_table_15_10.png
+
+   Swing\_table\_15\_10.png
+rows与columns属性直接来自于构造函数的参数。preferredScrollableViewportSize与scrollableTracksViewportWidth属性来自于用于滚动支持的Scrollable接口实现。font与preferredSize属性仅是自定义由JTextComponent继承的行为。
+
+更为有趣的属性是lineCount，tabSize以及lineWrap与wrapStyledWorld。lineCount属性可以使得我们确定文本域中有多少行。这对于调整尺寸十分有用。tabSize属性可以使得我们控制文本区域中tab位置。默认情况下，这个值为8.
+
+lineWrap与wrapStyleWord属性配合使用。默认情况下，较长行的换行是禁止的。如果我们允许换行（通过将lineWrap属性设置为true），较长行换行的时机依赖于wrapStyleWord属性设置。初始时，这个属性为false，意味着如果lineWrap属性为true，将会在字符边界处换行。如果lineWrap与wrapStyleWord都为true，那么一行中不会适的单词将会被换到下一行，类似于字处理器中的样子。所以，要获得大多数人所希望的单词换行的功能，我们应将JTextArea的两个属性都设置为true：
+
+.. code:: java
+
+    JTextArea textArea = new JTextArea("...");
+    textArea.setLineWrap(true);
+    textArea.setWrapStyleWord(true);
+    JScrollPane scrollPane = new JScrollPane(textArea);
+
+注意，Ctrl-Tab与Shift-Ctrl-Tab键的组合可以使得用户在JTextArea组件中变换焦点，而无需继承组件生成新类。
+
+处理JTextArea事件
+~~~~~~~~~~~~~~~~~
+
+JTextArea并没有特定的事件。我们可以使用由JTextComponent继承的监听器中的一个或是关联一个InputVerifier。
+
+有时，我们会在屏幕上放置一个JTextArea并在用户按下按钮之后获取其内容。而在另外一些时间，会涉及到更多的规划，此时我们希望在输入时监视输入，并且也许会进行相应的转换，例如:-)或是简单的笑脸。
+
+自定义JTextArea观感
+~~~~~~~~~~~~~~~~~~~
+
+每一个可安装的Swing观感都提供了不同的JTextArea外观以及默认的UIResource值集合。图15-18显示在JTextArea组件在预安装的观感类型下的外观。注意，每一个外观上的基本区别在于JScrollPane的滚动条，他并不是JTextArea的实际部分。
+
+.. figure:: images/Swing_15_18.png
+   :alt: Swing_15_18.png
+
+   Swing\_15\_18.png
+表15-11显示了JTextArea的15个UIResource相关的属性集合。
+
+.. figure:: images/Swing_table_15_11.png
+   :alt: Swing_table_15_11.png
+
+   Swing\_table\_15\_11.png
+JEditorPane类
+-------------
+
+JEditorPane类提供了显示与编辑多属性文本的功能。虽然JTextField与JTextArea只支持单颜色，单字体内容，JEditorPane允许我们使用各种风格（例如粗体，14点Helvetica，段落右对齐）或是HTML查看器的外观来标记我们的内容，如图15-19所示。
+
+.. figure:: images/Swing_15_19.png
+   :alt: Swing_15_19.png
+
+   Swing\_15\_19.png
+注意，JEditorPane的HTML支持只在具有某些扩展的HTML
+3.2级别上可用，而编写本书时HTML
+4.0x是当前的版本。级联样式表（CSS）被部分支持。
+
+JEditorPane借助于一个特定的文本标记机制的EditorKit来支持多属性文本的显示与编辑。存在预定义的工具集来支持原始文本，HTML文档以及RTF文档。因为内容是多属性的，PlainDocument模型不再够用。相反，Swing以DefaultStyledDocument类的形式提供了一个StyledDocument来维护文档模型。其余的部分是一个新的HyperlinkListsener/HyperlinkEvent事件处理对用来监视文档中的超连接操作。
+
+创建JEditorPane
+~~~~~~~~~~~~~~~
+
+JEditorPane有四个构造函数：
+
+.. code:: java
+
+    public JEditorPane()
+    JEditorPane editorPane = new JEditorPane();
+    public JEditorPane(String type, String text)
+    String content = "<H1>Got Java?</H1>";
+    String type = "text/html";
+    JEditorPane editorPane = new JEditorPane(type, content);
+    public JEditorPane(String urlString) throws IOException
+    JEditorPane editorPane = new JEditorPane("http://www.apress.com");
+    public JEditorPane(URL url) throws IOException
+    URL url = new URL("http://www.apress.com");
+    JEditorPane editorPane = new JEditorPane(url);
+
+无参数的构造函数创建了一个空的JEditorPane。如果我们要初始化内容，我们可以直接指定文本或是其MIME类型。或者是我们可以指定获取内容的URL。URL可以作为一个String或是一个URL对象来指定。当我们将内容指定为一个URL，JEditorPane会由响应来确定MIME类型。
+
+JEditorPane属性
+~~~~~~~~~~~~~~~
+
+表15-12显示了JEditorPane的11个属性。这些属性中的大部分仅是自定义父类的行为。
+
+.. figure:: images/Swing_table_15_12.png
+   :alt: Swing_table_15_12.png
+
+   Swing\_table\_15\_12.png
+注意，page属性是非标准的，因为他有两个setter方法，但是只有一个getter方法。
+
+JEditorPane的四个有趣属性是editorKit，contentType，page与text。editorKit属性是依据编辑器面板中的内容类型来配置的。我们将会在第16章中进行详细探讨其DefaultEditorKit，StyledEditorKit与HTMLEditorKit实现。contentType属性表示文档中内容类型的MIME类型。当我们在构造函数中（或是其他位置）设置内容时，这个属性会被自动设置。如果编辑器工具集不能确定MIME类型，我们可以进行手动设置。三个内建支持的数据类型是text/html，text/plain与text/rtf，通过预定义编辑器工具集的getContentType()方示可以获取这些类型。
+
+page属性可以使得我们修改所显示的内容来反映一个特定URL的内容，从而我们可以以某种方式使用这些内容。text属性使得我们确定哪些文本内容基于当前的Document模型。
+
+处理JEditorPane事件
+~~~~~~~~~~~~~~~~~~~
+
+因为JEditorPane仅是一个具有一些特殊显示特性的另一个文本区域组件，他支持与JTextArea组件相同的用于事件处理的监听器。另外，JEditorPane提供了一个特殊的监听器事件组合来处理文档中的超链接。
+
+HyperlinkListener接口定义了一个方法，public void
+hyperlinkUpdate(HyperlinkEvent
+hyperlinkEvent)，他使用一个HyperlinkEvent来响应－不要惊奇－超链接事件。事件包含一个报告事件类型的HyperlinkEvent.EventType并且使得我们进行不同的响应，或者是当选中时跟随链接或者是当在超链接上移动鼠标时改变光标（尽管这是默认发生的）。
+
+下面是HyperlinkListener定义：
+
+.. code:: java
+
+    public interface HyperlinkListener implements EventListener {
+      public void hyperlinkUpdate(HyperlinkEvent hyperlinkEvent);
+    }
+    And, here is the HyperlinkEvent definition:
+    public class HyperlinkEvent extends EventObject {
+      // Constructors
+      public HyperlinkEvent(Object source, HyperlinkEvent.EventType type, URL url);
+      public HyperlinkEvent(Object source, HyperlinkEvent.EventType type, URL url,
+        String description);
+      public HyperlinkEvent(Object source, HyperlinkEvent.EventType type, URL url,
+        String description, Element sourceElement)
+      // Properties
+      public String getDescription();
+      public HyperlinkEvent.EventType getEventType();
+      public Element getSourceElement();
+      public URL getURL();
+    }
+
+超链接类型将会是HyperlinkEvent.EventType类的三个常量之一：
+
+-  ACTIVATED：通常涉及到在合适的内容上进行鼠标点击
+-  ENTERED：在超链接内容上移动鼠标
+-  EXITED：将鼠标移出超链接内容
+
+所以，如果我们希望在工具栏上创建一个显示URL的HyperlinkListener，当在超链接之前并在激活时跟随超链接，我们可以创建我们自己的最简单的HTML帮助查看器。列表15-15中的HyperlinkListener实现将会为我们实现这一技巧。在监听器中提供了一些println语句，当鼠标位于URL之上并且URL被激活时显示URL。
+
+.. code:: java
+
+
+    /**
+     * 
+     */
+    package swingstudy.ch15;
+
+    import java.awt.EventQueue;
+    import java.awt.Frame;
+    import java.io.IOException;
+    import java.net.URL;
+
+    import javax.swing.JEditorPane;
+    import javax.swing.JOptionPane;
+    import javax.swing.event.HyperlinkEvent;
+    import javax.swing.event.HyperlinkListener;
+    import javax.swing.text.Document;
+
+    /**
+     * @author mylxiaoyi
+     *
+     */
+    public class ActivatedHyperlinkListener implements HyperlinkListener {
+
+        Frame frame;
+        JEditorPane editorPane;
+        
+        public ActivatedHyperlinkListener(Frame frame, JEditorPane editorPane) {
+            this.frame = frame;
+            this.editorPane = editorPane;
+        }
+        /* (non-Javadoc)
+         * @see javax.swing.event.HyperlinkListener#hyperlinkUpdate(javax.swing.event.HyperlinkEvent)
+         */
+        @Override
+        public void hyperlinkUpdate(HyperlinkEvent event) {
+            // TODO Auto-generated method stub
+
+            HyperlinkEvent.EventType type= event.getEventType();
+            final URL url = event.getURL();
+            if(type==HyperlinkEvent.EventType.ENTERED) {
+                System.out.println("URL: "+url);
+            }
+            else if(type==HyperlinkEvent.EventType.ACTIVATED) {
+                System.out.println("Activated");
+                Runnable runner = new Runnable() {
+                    public void run() {
+                        Document doc = editorPane.getDocument();
+                        try {
+                            editorPane.setPage(url);
+                        }
+                        catch(IOException ioException) {
+                            JOptionPane.showMessageDialog(frame, "Error following link", "Invalid link", JOptionPane.ERROR_MESSAGE);
+                            editorPane.setDocument(doc);
+                        }
+                    }
+                };
+                EventQueue.invokeLater(runner);
+            }
+        }
+    }
+
+提示，不要忘记调用setEditable(false)方法将JEditorPane设置为只读。否则，查看器就成为了编辑器。
+
+列表15-16是使用我们新创建的ActivatedHyperlinkListener类的完整示例。他所创建的窗体类似于前面图15-19中所示的页面，尽管是在图片中，About链接已经被跟随。
+
+.. code:: java
+
+
+    /**
+     * 
+     */
+    package swingstudy.ch15;
+
+    import java.awt.EventQueue;
+    import java.io.IOException;
+
+    import javax.swing.JEditorPane;
+    import javax.swing.JFrame;
+    import javax.swing.JScrollPane;
+    import javax.swing.event.HyperlinkListener;
+
+
+
+    /**
+     * @author mylxiaoyi
+     *
+     */
+    public class EditorSample {
+
+        /**
+         * @param args
+         */
+        public static void main(String[] args) {
+            // TODO Auto-generated method stub
+
+            Runnable runner = new Runnable() {
+                public void run() {
+                    JFrame frame = new JFrame("EditorPane Example");
+                    frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+                    
+                    try {
+                        JEditorPane editorPane = new JEditorPane("http://www.google.com");
+                        editorPane.setEditable(false);
+                        
+                        HyperlinkListener hyperlinkListener = new ActivatedHyperlinkListener(frame, editorPane);
+                        editorPane.addHyperlinkListener(hyperlinkListener);
+                        JScrollPane scrollPane = new JScrollPane(editorPane);
+                        frame.add(scrollPane);
+                    }
+                    catch(IOException e) {
+                        System.err.println("Unable to load: "+e);
+                    }
+                    
+                    frame.setSize(640, 480);
+                    frame.setVisible(true);
+                }
+            };
+            EventQueue.invokeLater(runner);
+        }
+
+    }
+
+自定义JEditorPane观感
+~~~~~~~~~~~~~~~~~~~~~
+
+JEditorPane的外观类似于JTextArea。尽管所支持的内容不同，观感相关的属性通常是不同的。
+
+表15-13显示了JEditorPane的15个UIResource相关的属性集合。属性的名字于JTextArea设置中的属性名字。
+
+.. figure:: images/Swing_table_15_13.png
+   :alt: Swing_table_15_13.png
+
+   Swing\_table\_15\_13.png
+JTextPane类
+-----------
+
+JTextPane是JEditorPane的一种特殊形式，特别设计用来编辑（与显示）格式化文本。他与JEditorPane的唯一不同在于提供显示内容的方式，因为文本并不是像在HTML或是RTF文档中一样使用格式标记的。
+
+JTextPane依赖设置文本属性的三个接口：AttributeSet用于基本的属性集合，MutableAttributeSet用于可修改的属性集合，Style用作与StyledDocument的部分相关联的属性集合。
+
+本节将会介绍JTextPane。要了解关于在JTextPane中配置格式化内容不同部分的格式的信息可以查看第16章。
+
+创建JTextPane
+~~~~~~~~~~~~~
+
+JTextPane只有两个构造函数：
+
+.. code:: java
+
+    public JTextPane()
+    JTextPane textPane = new JTextPane();
+    JScrollPane scrollPane = new JScrollPane(textPane);
+    public JTextPane(StyledDocument document)
+    StyledDocument document = new DefaultStyledDocument();
+    JTextPane textPane = new JTextPane(document);
+    JScrollPane scrollPane = new JScrollPane(textPane);
+
+无参数的构造函数初始时没有内容。第二个构造函数使得我们先创建Document，然后在JTextPane中使用。
+
+提示，如果内容大于可用的屏幕空间，记得将我们的JTextPane放在JScrollPane中。
+
+JTextPane属性
+~~~~~~~~~~~~~
+
+表15-14显示了JTextPane的八个属性。我们将会在第16章中详细探讨这些属性。
+
+.. figure:: images/Swing_table_15_14_1.png
+   :alt: Swing_table_15_14_1.png
+
+   Swing\_table\_15\_14\_1.png
+.. figure:: images/Swing_table_15_14_2.png
+   :alt: Swing_table_15_14_2.png
+
+   Swing\_table\_15\_14\_2.png
+自定义JTextPane观感
+~~~~~~~~~~~~~~~~~~~
+
+JTextPane是JEditorPane的一个子类。他在所有预定义的观感类型下与JTextArea具有相同的外观（如图15-18所示）。尽管内容也许不同，但是观感是相同的。
+
+表15-15中显示了JTextPane
+UIResource相关属性的可用集合。对于JTextPane组件，有15个不同的属性。其属性名字类似于JTextArea设置中的属性名字。
+
+.. figure:: images/Swing_table_15_15.png
+   :alt: Swing_table_15_15.png
+
+   Swing\_table\_15\_15.png
+载入具有内容的JTextPane
+~~~~~~~~~~~~~~~~~~~~~~~
+
+列表15-17提供了一个向JTextPane载入StyledDocument内容的示例。这仅是向我们展示功能。Style，SimpleAttributeSet与StyledConstants的详细使用将会在第16章中进行探讨。
+
+.. code:: java
+
+
+    /**
+     * 
+     */
+    package swingstudy.ch15;
+
+    import java.awt.BorderLayout;
+    import java.awt.EventQueue;
+
+    import javax.swing.Icon;
+    import javax.swing.ImageIcon;
+    import javax.swing.JFrame;
+    import javax.swing.JLabel;
+    import javax.swing.JScrollPane;
+    import javax.swing.JTextPane;
+    import javax.swing.text.BadLocationException;
+    import javax.swing.text.DefaultStyledDocument;
+    import javax.swing.text.SimpleAttributeSet;
+    import javax.swing.text.Style;
+    import javax.swing.text.StyleConstants;
+    import javax.swing.text.StyleContext;
+    import javax.swing.text.StyledDocument;
+
+    /**
+     * @author mylxiaoyi
+     *
+     */
+    public class TextPaneSample {
+        private static String message = "In the beginning, there was COBOL, then there was FORTRAN, "+
+        "then there was BASIC, ... and now there is Java.\n";
+
+        /**
+         * @param args
+         */
+        public static void main(String[] args) {
+            // TODO Auto-generated method stub
+
+            Runnable runner = new Runnable() {
+                public void run() {
+                    JFrame frame = new JFrame("TextPane Example");
+                    frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+                    
+                    StyleContext context = new StyleContext();
+                    StyledDocument document = new DefaultStyledDocument(context);
+                    
+                    Style style = context.getStyle(StyleContext.DEFAULT_STYLE);
+                    StyleConstants.setAlignment(style, StyleConstants.ALIGN_RIGHT);
+                    StyleConstants.setFontSize(style, 14);
+                    StyleConstants.setSpaceAbove(style, 4);
+                    StyleConstants.setSpaceBelow(style, 4);
+                    
+                    // Inset content
+                    try {
+                        document.insertString(document.getLength(), message, style);
+                    }
+                    catch(BadLocationException badLocationException) {
+                        System.err.println("Oops");
+                    }
+                    
+                    SimpleAttributeSet attributes = new SimpleAttributeSet();
+                    StyleConstants.setBold(attributes, true);
+                    StyleConstants.setItalic(attributes, true);
+                    
+                    // Insert content
+                    try {
+                        document.insertString(document.getLength(), "Hello Java", attributes);
+                    }
+                    catch(BadLocationException badLocationException) {
+                        System.err.println("Oops");
+                    }
+                    
+                    // Third style for icon/component
+                    Style labelStyle = context.getStyle(StyleContext.DEFAULT_STYLE);
+                    
+                    Icon icon = new ImageIcon("Computer.gif");
+                    JLabel label = new JLabel(icon);
+                    StyleConstants.setComponent(labelStyle, label);
+                    
+                    // Insert content
+                    try {
+                        document.insertString(document.getLength(), "Ignored", labelStyle);
+                    }
+                    catch(BadLocationException badLocationException) {
+                        System.err.println("Oops");
+                    }
+                    
+                    JTextPane textPane = new JTextPane(document);
+                    textPane.setEditable(false);
+                    JScrollPane scrollPane = new JScrollPane(textPane);
+                    frame.add(scrollPane, BorderLayout.CENTER);
+                    
+                    frame.setSize(300, 150);
+                    frame.setVisible(true);
+                }
+            };
+            EventQueue.invokeLater(runner);
+        }
+
+    }
+
+上述源码的关键行是调用insertString()与其style参数：
+
+.. code:: java
+
+    document.insertString(document.getLength(), message, style);
+
+图15-20显示了具有一些段落内容的JTextPane的样子。注意，内容并没有限制为仅是广西；他也可以具有图片。
+
+.. figure:: images/Swing_15_20.png
+   :alt: Swing_15_20.png
+
+   Swing\_15\_20.png
+小结
+----
+
+在本章中，我们开始对Swing文本组件的细节进行探讨。我们首先了解了根文本组件，JTextComponent，以及为其他的文本组件定义了许多操作。然后我们探讨特定的文本组件，JTextField，JPasswordField，JFormattedTextField，JTextArea，JEditorPane与JTextPane。
+
+我们同时探讨了构成不同的组件的各种片段。我们深入了基于Document接口，用于AbstractDocument与PlaintDocument类的文本组件模型。我们同时了解了使用DocumentFilter来创建自定义的组件限制文本组件的输入。噣上，我们探讨了用于显示光标与高亮文本的Caret与Highlighter接口，用于限制文本组件中移动的NavigationFilter，以及使得文本组件作为控制器的Keymap。类似于控制器，Keymap将用户的按钮转换为影响文本组件模型的特定动作。
+
+我们同时了解了Swing文本组件中是如何处理事件的。除了基本的AWT事件处理类，Swing添加了一些特别设计的新类，使用CaretListener来监听光标移动，使用DocumentListener监听文档内容变化。而且通过InputVerifer还有一个通用的Swing输入验证支持。
+
+在第16章中，我们将会进一步探讨Swing文本组件。本章仅是所有组件的基本特性，而下一章将会探讨使用TextAction，JFormattedField的格式化输入以及使用StyledDocument的配置Style对象的细节。同时我们还会在HTMLDocument标记中进行探讨。

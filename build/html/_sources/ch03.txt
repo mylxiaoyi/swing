@@ -1,0 +1,175 @@
+The Model-View-Controller Architecture
+======================================
+
+第2章探讨了如何处理Swing组件的事件生产者与消费者。我们了解了Swing组件的事件处理如何超出原始的AWT组件的事件处理功能。在本章中，我们会进一步深入Swing组件设计，来探讨称之为Model-View-Controller（MVC）的体系地构。
+
+理解MVC流
+---------
+
+在1980年后首次被引入Smalltalk后，MVC体系结构是第2章所描述的观察者模式的一种特殊形式。MVC的模型部分存放组件的状态，并且用作Subject。MVC的视图部分用作Subject的观察者来显示模型状态。视图创建控制器，其中定义了用户界面如何响应用户输入。
+
+MVC通信
+~~~~~~~
+
+图3-1显示MVC元素如何进行通信－在这种情况下，使用Swing的多行文本组件JTextArea。由MVC的角度来看，JTextArea作为MVC体系结构中的视图部分。显示在组件内部的是一个Document，他是JTextArea的模型。Document存放JTextArea的状态信息，例如文本内容。在JTextArea内部是一个InputMap格式的控制器。他将键盘输入映射为ActionMap中的命令，并且这些命令被映射到可以通知Document的TextAction对象。当发生通知时，Document创建一个DocumentEvent并将其发送回JTextArea。
+
+.. figure:: images/Swing_3_1.png
+   :alt: Swing_3_1.png
+
+   Swing\_3\_1.png
+Swing组件的UI委托
+~~~~~~~~~~~~~~~~~
+
+这个例子演示了Swing世界中MVC体系结构的一个重要方面。在视图与控制器之间需要发生复杂的交互。Swing设计将这两个元素组合为一个委托对象来简化设计。这导致了每一个Swing组件具有一个负责渲染当前组件状态并处理用户输入事件的UI委托。
+
+有时，用户事件会导致不影响模型的视图改变。例如，当标位置是视图的一个属性。模型并不关心光标位置，只关心文本内容。影响光标位置的用户输入并不会传递给模型。相反，影响Document内容的用户输入（例如按下回退键）会被传递。按下回退键会导致由模型中移除一个字符。正是由于这种结合，每一个Swing组件具有一个UI委托。
+
+为了演示，图3-2显示了具有模型与UI委托的JTextArea组成。用于JTextArea的UI委托由TextUI接口开始，并在BasicTextUI中进行基本实现。相应的，由用于JTextArea的BasicTextAreaUI进行特例化。BasicTextAreaUI创建一个视图，或者是一个PlainView或者是一个WrappedPlainView。在模型一侧，事情则要相对简单得多。Document接口由AbstractDocument类来实现，然后由PlainDocument进行具体化。
+
+文本组件将会在第15章与第16章进行更为全面的解释。正如图3-2所示，文本组件的使用涉及到许多内容。在大多数情况下，我们并不需要处理到图中所示的程度。然而，所有这些类都是在幕后进行作用的。MVC体系结构的UI委托部分将会在第20章我们如何自定义委托时再进行深入的讨论。
+
+.. figure:: images/Swing_3_2.png
+   :alt: Swing_3_2.png
+
+   Swing\_3\_2.png
+共享数据模型
+------------
+
+因为数据模型只存储状态信息，我们可以在多个组件之间共享模型。然后每一个组件视图可以用来修改模型。
+
+在图3-3所示的情况中，三个不同的JTextArea组件可以用来修改一个Document模型。如果用户修改了一个JTextArea的内容，模型就会发生变化，使得其他的文本区域自动的反映更新的文档状态。对于任意的Document视图并没有必须手动通知其他的视图共享模型。
+
+.. figure:: images/Swing_3_3.png
+   :alt: Swing_3_3.png
+
+   Swing\_3\_3.png
+数据模型的共享可以通过下面两种方法来实现：
+
+-  我们可以创建与任意组件相分离的数据模型并通知所有的组件使用这个数据模型。
+-  我们可以先创建一个组件，由第一个组件获取模型，然后与其他的组件进行共享。
+
+.. code:: java
+
+    package swingstudy.ch03;
+
+    import java.awt.Container;
+    import java.awt.EventQueue;
+
+    import javax.swing.BoxLayout;
+    import javax.swing.JFrame;
+    import javax.swing.JScrollPane;
+    import javax.swing.JTextArea;
+    import javax.swing.text.Document;
+
+    public class ShareModel {
+
+        /**
+         * @param args
+         */
+        public static void main(String[] args) {
+            // TODO Auto-generated method stub
+
+            Runnable runner = new Runnable() {
+                public void run() {
+                    JFrame frame = new JFrame("Share Sample");
+                    frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+                    
+                    Container content = frame.getContentPane();
+                    
+                    JTextArea textarea1 = new JTextArea();
+                    Document document = textarea1.getDocument();
+                    
+                    JTextArea textarea2 = new JTextArea(document);
+                    JTextArea textarea3 = new JTextArea(document);
+                    
+                    content.setLayout(new BoxLayout(content, BoxLayout.Y_AXIS));
+                    
+                    content.add(new JScrollPane(textarea1));
+                    content.add(new JScrollPane(textarea2));
+                    content.add(new JScrollPane(textarea3));
+                    
+                    frame.setSize(300, 400);
+                    frame.setVisible(true);
+                }
+            };
+            
+            EventQueue.invokeLater(runner);
+        }
+
+    }
+
+图3-4显示了在编辑共享文档之后程序的样子。注意，三个文本区域具有查看（或是修改）文档不同部分的功能。例如，他们并不会只限于只在末尾部添加文本。这是因为每一个文本区域都会分别管理位置与光标。位置与光标是视图的属性，而不是模型的属性。
+
+.. figure:: images/Swing_3_4.png
+   :alt: Swing_3_4.png
+
+   Swing\_3\_4.png
+理解预定义的数据模型
+--------------------
+
+当使用Swing组件时，理解每一个组件后面的数据模型是有益的，因为数据模型存储他们的状态。理解每一个组件的数据模型有助于我们将可见的组件（视图部分）与其逻辑（数据模型部分）相分离。例如，理解了这种分离，我们就会明白为什么JTextArea内部的光标位置不是数据模型部分，而是视图部分。
+
+表3-1提供了一份Swing组件，每一个组件描述数据模型的接口以及特定实现的完整列表。如果某个组件并没有列出来，则该组件由其父类继承了数据模型，如AbstractButton。另外，在某些情况下，多个接口会用来描述一个组件，因为数据存储在一个模型中，而数据的选择是在另一个模型中。例如JComboBox，MutableComboBoxModel接口由ComboBoxModel扩展而来。预定义的类不仅实现了ComboBoxModel接口，同时也实现了MutableComboBoxModel接口。
+
++------------------+---------------------------+--------------------------------+
+| 组件             | 数据模型接口              | 实现                           |
++------------------+---------------------------+--------------------------------+
+| AbstractButton   | ButtonModel               | DefaultButtonModel             |
++------------------+---------------------------+--------------------------------+
+| JColorChooser    | ColorSelectionModel       | DefaultColorSelectionModel     |
++------------------+---------------------------+--------------------------------+
+| JComboBox        | | ComboBoxModel           | | N/A                          |
+|                  | |  MutableComboBoxModel   | |  DefaultComboBoxModel        |
++------------------+---------------------------+--------------------------------+
+| JFileChooser     | ListModel                 | BasicDirectoryModel            |
++------------------+---------------------------+--------------------------------+
+| JList            | | ListModel               | | AbstractListModel            |
+|                  | | ListSelectionModel      | | DefaultListModel             |
+|                  |                           | | DefaultListSelectionModel    |
++------------------+---------------------------+--------------------------------+
+| JMenuBar         | SingleSelectinModel       | DefaultSingleSelectionModel    |
++------------------+---------------------------+--------------------------------+
+| JPopupMenu       | SingleSelectionModel      | DefaultSingleSelectionModel    |
++------------------+---------------------------+--------------------------------+
+| JProgressBar     | BoundedRangeModel         | DefaultBoundedRangeModel       |
++------------------+---------------------------+--------------------------------+
+| JScrollbar       | BoundedRangeModel         | DefaultBoundedRangeModel       |
++------------------+---------------------------+--------------------------------+
+| JSlider          | BoundedRangeModel         | DefaultBoundedRangeModel       |
++------------------+---------------------------+--------------------------------+
+| JSpiner          | SpinnerModel              | | AbstractionSpinnerModel      |
+|                  |                           | |  SpinnerDateModel            |
+|                  |                           | |  SpinnerListModel            |
+|                  |                           | |  SpinnerNumberModel          |
++------------------+---------------------------+--------------------------------+
+| JTabbedPane      | SingleSelectionModel      | DefaultSingleSelectionModel    |
++------------------+---------------------------+--------------------------------+
+| JTable           | | TableModel              | | AbstractTableModel           |
+|                  | |  TableColumnModel       | |  DefaultTableModel           |
+|                  | |  ListSelectionModel     | |  DefaultTableColumnModel     |
+|                  |                           | |  DefaultListSelectionModel   |
++------------------+---------------------------+--------------------------------+
+| JTextComponent   | Document                  | | AbstractDocument             |
+|                  |                           | |  PlainDocument               |
+|                  |                           | |  StyledDocument              |
+|                  |                           | |  DefaultStyleDocument        |
+|                  |                           | |  HTMLDocument                |
++------------------+---------------------------+--------------------------------+
+| JToggleButton    | ButtonModel               | | JToggleButton                |
+|                  |                           | |  ToggleButtonModel           |
++------------------+---------------------------+--------------------------------+
+| JTree            | | TreeModel               | | DefaultTreeModel             |
+|                  | | TreeSelectionModel      | |  DefaultTreeSelectionModel   |
+|                  |                           | |  JTree.EmptySelectionModel   |
++------------------+---------------------------+--------------------------------+
+
+Table: Swing组件模型
+
+当直接访问一个组件的模型时，如果我们修改模型，所有注册的视图都会被自动通知。相应的，这会使得视图重新验证自身来保证组件显示他们的正确的当前状态。这种状态修改自动传播的特性也是为什么MVC如此流行的原因之一。另外，使用MVC体系结构有助于程序在随着时间与复杂性增长修改时变得更容易维护。如果我们改变可视组件库也不再需要担心丢失状态信息。
+
+小结
+----
+
+本章提供了关于Swing组件如何使用修改的MVC体系结构的一个快速浏览。我们探讨了修改的MVC体系结构的构成以及一个特定的组件，JTextArea如何映射到这个体系结构。另外，本章讨论了在组件之间数据模型的共享并且列出了所有用于不同Swing组件的数据模型。
+
+在第4章，我们将会开始了解构成Swing库的单个组件。另外，当我们检测Swing库中的基本JComponet组件时我们会探讨Swing组件类层次结构。

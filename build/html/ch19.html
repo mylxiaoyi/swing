@@ -1,0 +1,552 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>拖放支持 &mdash; The Definitive Guide to Java Swing Third Edtion 0.01 documentation</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.01',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="The Definitive Guide to Java Swing Third Edtion 0.01 documentation" href="index.html" />
+    <link rel="next" title="可插拨的观感体系结构" href="ch20.html" />
+    <link rel="prev" title="Tables" href="ch18.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="ch20.html" title="可插拨的观感体系结构"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="ch18.html" title="Tables"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">The Definitive Guide to Java Swing Third Edtion 0.01 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="id1">
+<h1>拖放支持<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h1>
+<p>拖放支持允许在一个程序中或是屏幕上的某个区域中高亮显示某些内容，选中他，并将其重新分配到另一个程序或是屏幕上的某个区域中。例如，在Microsoft
+Word中，我们可以选中一段并拖动到一个新位置。</p>
+<p>随着Java的发展，在新版本中不仅有打印支持，同时也有拖放支持。拖放支持的最主要变化发生在J2SE
+1.4版本中。以前版本中的拖放支持极难使用，特别是对于复杂类型的拖放行为更是如此。JDK
+5.0版本添加了一些bug修正并且加强了拖放支持。</p>
+<p>我们可以使用三种方法在我们的程序中实现拖放支持：</p>
+<ol class="arabic simple">
+<li>对于具有内建支持的组件，只需要使用参数true调用其setDragEnabled()方法将其激活即可。这些组件包括JColorChooser，JFileChooser，JList，JTable，JTree以及JTextComponent的所有子类，除了JPasswordField。</li>
+<li>对于没有内建支持的组件，我们通常需要为该组件配置TransferHandler。</li>
+<li>我们可以直接使用java.awt.dnd包中的类。多亏了内建支持与可配置性，这种方法很少使用。</li>
+</ol>
+<div class="section" id="id2">
+<h2>内建拖放支持<a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h2>
+<p>表19-1显示了为拖放支持提供了内建支持的组件。初始时，支持拖放操作的组件只有放操作被激活，但是在调用组件的setDragEnabled(true)方法之后，我们也可以激活拖操作，如果支持拖放操作。Java平台的拖放功能使用底层的java.awt.datatransfer包来移动数据。这个包中的类允许我们描述要移动的数据。</p>
+<div class="figure">
+<img alt="Swing_table_19_1.png" src="_images/Swing_table_19_1.png" />
+<p class="caption">Swing_table_19_1.png</p>
+</div>
+<p>注意，出于安全原因，我们不能拖拽JPasswordField组件中的文本。</p>
+<p>对于JColorChooser组件，我们拖拽的是java.awt.Color对象。另一个相对的便是JFileChooser，在其中我们拖拽java.io.File对象并将其放在目标中。如果拖放目标不支持File对象的使用，则会拖放表示路径的字符串。</p>
+<p>作为一个简单的渲染，列表19-1显示了在一个屏幕上有两个JColorChooser组件的程序。在两个选择器上调用setDragEnabled(true)调用，所以我们可以在两个组件之间使用最少的代码来拖拽颜色。</p>
+<div class="code java highlight-python"><pre>package swingstudy.ch19;
+
+import java.awt.BorderLayout;
+import java.awt.EventQueue;
+
+import javax.swing.JColorChooser;
+import javax.swing.JFrame;
+
+public class DoubleColor {
+
+    /**
+     * @param args
+     */
+    public static void main(String[] args) {
+        // TODO Auto-generated method stub
+
+        Runnable runner = new Runnable() {
+            public void run() {
+                JFrame frame = new JFrame("Double Color Chooser");
+                frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+
+                JColorChooser left = new JColorChooser();
+                left.setDragEnabled(true);
+                frame.add(left, BorderLayout.WEST);
+
+                JColorChooser right = new JColorChooser();
+                right.setDragEnabled(true);
+                frame.add(right, BorderLayout.EAST);
+
+                frame.pack();
+                frame.setVisible(true);
+            }
+        };
+        EventQueue.invokeLater(runner);
+    }
+
+}</pre>
+</div>
+<p>图19-1显示了在拖拽一些颜色之后的效果。拖拽区域是底部的预览面板。放操作并不会修改每一个颜色选择器右边的最近列表，并且我们可以在不同的颜色选择器面板之间执行放操作。</p>
+<div class="figure">
+<img alt="Swing_19_1.png" src="_images/Swing_19_1.png" />
+<p class="caption">Swing_19_1.png</p>
+</div>
+</div>
+<div class="section" id="transferhandler">
+<h2>TransferHandler类<a class="headerlink" href="#transferhandler" title="Permalink to this headline">¶</a></h2>
+<p>拖放的神奇是由于java.swing.TransferHandler类，由J2SE
+1.4版本引入。也许我们会问，他有什么神奇之处呢？通过这个类，我们可以选择在拖放操作中我们希望传递哪些属性。</p>
+<p>当我们在某个组件上调用setDragEnabled(true)来支持拖拽特性，组件会向所安装的TransferHandler询问传递哪些内容。如果我们不喜欢正在传递的默认对象，我们可以调用组件的setTransferhandler()方法，并传递相应的参数进行替换。当我们希望激活没有内建拖放支持的组件的拖放特性时，我们也可以调用setTransferHandler()方法。</p>
+<p>TransferHandler类只有一个公开构造函数：</p>
+<div class="code java highlight-python"><pre>public TransferHandler(String property)</pre>
+</div>
+<p>构造函数的参数表示我们希望传递的组件的属性。换句话说，我们指定JavaBeans组件属性作为拖放操作的可传递对象。</p>
+<p>例如，要传递JLabel的文本标签，我们可以使用下面的代码：</p>
+<div class="code java highlight-python"><pre>JLabel label = new JLabel("Hello, World");
+label.setTransferHandler(new TransferHandler("text"));</pre>
+</div>
+<p>因为JLabel并没有setDragEnabled()方法，我们必须告诉组件如何开始拖拽。通常情况下，这需要我们按下鼠标按钮，所以我们需要向按钮添加了一个MouseListener。当我们通知TransferHandler来exportAsDrag()时，这会为组件激活拖拽操作。</p>
+<div class="code java highlight-python"><pre>MouseListener listener = new MouseAdapter() {
+  public void mousePressed(MouseEvent me) {
+    JComponent comp = (JComponent)me.getSource();
+    TransferHandler handler = comp.getTransferHandler();
+    handler.exportAsDrag(comp, me, TransferHandler.COPY);
+  }
+};
+button.addMouseListener(listener);</pre>
+</div>
+<p>当放操作发生时－在这个例子中是释放鼠标－默认行为是放下使用TransferHandler所注册的内容。</p>
+<p>列表19-2演示了为JLabel激活拖放操作的示例。</p>
+<div class="code java highlight-python"><pre>package swingstudy.ch19;
+
+import java.awt.BorderLayout;
+import java.awt.EventQueue;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
+
+import javax.swing.JComponent;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JTextField;
+import javax.swing.TransferHandler;
+
+public class DragLabel {
+
+    /**
+     * @param args
+     */
+    public static void main(String[] args) {
+        // TODO Auto-generated method stub
+
+        Runnable runner = new Runnable() {
+            public void run() {
+                JFrame frame = new JFrame("Drag Label");
+                frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+
+                JLabel label = new JLabel("Hello, World");
+                label.setTransferHandler(new TransferHandler("text"));
+                MouseListener listener = new MouseAdapter() {
+                    public void mousePressed(MouseEvent event) {
+                        JComponent comp = (JComponent)event.getSource();
+                        TransferHandler handler = comp.getTransferHandler();
+                        handler.exportAsDrag(comp, event, TransferHandler.COPY);
+                    }
+                };
+
+                label.addMouseListener(listener);
+                frame.add(label, BorderLayout.SOUTH);
+
+                JTextField text = new JTextField();
+                frame.add(text, BorderLayout.NORTH);
+
+                frame.setSize(300, 150);
+                frame.setVisible(true);
+            }
+        };
+        EventQueue.invokeLater(runner);
+    }
+
+}</pre>
+</div>
+<p>图19-2显示了拖拽操作中的程序。注意鼠标是如何变化来指示操作的。</p>
+<div class="figure">
+<img alt="Swing_19_2.png" src="images/Swing_19_2.png" />
+<p class="caption">Swing_19_2.png</p>
+</div>
+<p>如果我们并不想要拖拽JLabel的文本，而是希望拖拽前景色，则只需要修改程序中setTransferHandler()一行：</p>
+<div class="code java highlight-python"><pre>label.setTransferHandler(new TransferHandler("foreground"));</pre>
+</div>
+<p>然后，假定我们有某个位置来放置颜色，如列表19-1中的示例程序，那么我们就将前景色由标签拖拽到JColorChooser，并且将颜色由JColorChooser拖拽到JLabel。因为TransferHandler被注册为组件的特定属性，并不需要显示的代码来处理放操作。相反，传递给处理器构造函数属性的设置方法会得到变化的通知。</p>
+</div>
+<div class="section" id="id3">
+<h2>图像拖放支持<a class="headerlink" href="#id3" title="Permalink to this headline">¶</a></h2>
+<p>如果我们希望传输的不仅是简单的属性，我们需要创建一个Transferable接口的实现，这个接口位于java.awt.datatransfer包中。Transferable实现通常意味着通过剪切板传输，但是我们的实现是TransferHandler的子类，我们可以用其拖放对象。Transferable接口的三个方法显示如下：</p>
+<div class="code java highlight-python"><pre>public interface Transferable{
+  public DataFlavor[] getTransferDataFlavors();
+  public boolean isDataFlavorSupported(DataFlavor);
+  public Object getTransferData(java.awt.datatransfer.DataFlavor)
+    throws UnsupportedFlavorException, IOException;
+}</pre>
+</div>
+<p>使用这个接口的通常程序是传输图像。JLabel或是JButton所公开的属性是javax.swing.Icon对象，而不是java.awt.Image对象。虽然我们可以Java程序内部或是跨越Java程序传输Icon对象，然而另一个更有用的行为是向外部对象传输Image对象，例如Paint
+Shop Pro或是Photoshop。</p>
+<p>要创建一个可传输的图像对象，ImageSelection类，我们必须实现三个Transferable接口方法并且重写TransferHandler的四个方法：getSourceActions()，canImport()，createTransferable()与importData()。</p>
+<p>注意，用于传输字符串的类名为StringSelection。</p>
+<p>getSourceActions()方法需要报告我们将要支持哪些动作。默认情况下，当通过构造函数设置属性或是当不可用为Transferable.NONE时则为TransferHandler.COPY操作。因为ImageSelection类隐式使用Icon属性来获取组件的图像，只需要使得这个方法返回TransferHandler.COPY即可：</p>
+<div class="code java highlight-python"><pre>public int getSourceActions(JComponent c) {
+  return TransferHandler.COPY;
+}</pre>
+</div>
+<p>还有一个TransferHandler.MOVE操作，但是通常我们并不希望图像由复制的地方删除。</p>
+<p>我们向canImport()方法传递一个组件或是一个DataFlavor对象的数组。我们需要验证组件是被支持的并且数组中的一个flavor匹配所支持的集合：</p>
+<div class="code java highlight-python"><pre>private static final DataFlavor flavors[] = {DataFlavor.imageFlavor};
+...
+public boolean canImport(JComponent comp, DataFlavor flavor[]) {
+  if (!(comp instanceof JLabel) &amp;&amp; !(comp instanceof AbstractButton)) {
+    return false;
+  }
+  for (int i=0, n=flavor.length; i&lt;n; i++) {
+    for (int j=0, m=flavors.length; j&lt;m; j++) {
+      if (flavor[i].equals(flavors[j])) {
+        return true;
+      }
+    }
+  }
+  return false;
+}</pre>
+</div>
+<p>createTransferable()方法返回一个到Transferable实现的引用。当剪切板粘贴操作被执行时，或者是当拖拽时执行放操作，Transferable对象将会得到通知来获得所传输的对象。</p>
+<div class="code java highlight-python"><pre>public Transferable createTransferable(JComponent comp) {
+  // Clear
+  image = null;
+  if (comp instanceof JLabel) {
+    JLabel label = (JLabel)comp;
+    Icon icon = label.getIcon();
+    if (icon instanceof ImageIcon) {
+      image = ((ImageIcon)icon).getImage();
+      return this;
+    }
+  } else if (comp instanceof AbstractButton) {
+    AbstractButton button = (AbstractButton)comp;
+    Icon icon = button.getIcon();
+    if (icon instanceof ImageIcon) {
+      image = ((ImageIcon)icon).getImage();
+      return this;
+    }
+  }
+  return null;
+}</pre>
+</div>
+<p>当数据被放入组件或是由剪切板粘贴时会调用importData()方法。他有两个参数：粘贴剪切板数据的JComponent与借助于Transferable对象的剪切板数据。假定方法接由一个为Java平台所支持的格式，与传输处理器相关联的组件会获得一个要显示的新图像。</p>
+<div class="code java highlight-python"><pre>the Java platform, the component associated with the transfer handler gets a new image to display.
+public boolean importData(JComponent comp, Transferable t) {
+  if (comp instanceof JLabel) {
+    JLabel label = (JLabel)comp;
+    if (t.isDataFlavorSupported(flavors[0])) {
+      try {
+        image = (Image)t.getTransferData(flavors[0]);
+        ImageIcon icon = new ImageIcon(image);
+        label.setIcon(icon);
+        return true;
+      } catch (UnsupportedFlavorException ignored) {
+      } catch (IOException ignored) {
+      }
+    }
+  } else if (comp instanceof AbstractButton) {
+    AbstractButton button = (AbstractButton)comp;
+    if (t.isDataFlavorSupported(flavors[0])) {
+      try {
+        image = (Image)t.getTransferData(flavors[0]);
+        ImageIcon icon = new ImageIcon(image);
+        button.setIcon(icon);
+        return true;
+      } catch (UnsupportedFlavorException ignored) {
+      } catch (IOException ignored) {
+      }
+    }
+  }
+  return false;
+}</pre>
+</div>
+<p>将所有的代码与Transferable接口的三个实现方法组合在一起就构成了列表19-3。</p>
+<div class="code java highlight-python"><pre>package swingstudy.ch19;
+
+import java.awt.Image;
+import java.awt.datatransfer.DataFlavor;
+import java.awt.datatransfer.Transferable;
+import java.awt.datatransfer.UnsupportedFlavorException;
+import java.io.IOException;
+
+import javax.swing.AbstractButton;
+import javax.swing.Icon;
+import javax.swing.ImageIcon;
+import javax.swing.JComponent;
+import javax.swing.JLabel;
+import javax.swing.TransferHandler;
+
+public class ImageSelection extends TransferHandler implements Transferable {
+
+    private static final DataFlavor flavors[] = {DataFlavor.imageFlavor};
+
+    private Image image;
+
+    public int getSourceActions(JComponent c) {
+        return TransferHandler.COPY;
+    }
+
+    public boolean canImport(JComponent comp, DataFlavor flavor[]) {
+        if(!(comp instanceof JLabel) &amp;&amp; !(comp instanceof AbstractButton)) {
+            return false;
+        }
+        for(int i=0, n=flavor.length; i&lt;n; i++) {
+            for(int j=0, m=flavors.length; j&lt;m; j++) {
+                if(flavor[i].equals(flavors[j])) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    public Transferable createTransferable(JComponent comp) {
+        // clear
+        image = null;
+
+        if(comp instanceof JLabel) {
+            JLabel label = (JLabel)comp;
+            Icon icon = label.getIcon();
+            if(icon instanceof ImageIcon) {
+                image = ((ImageIcon)icon).getImage();
+                return this;
+            }
+        }
+        else if(comp instanceof AbstractButton) {
+            AbstractButton button = (AbstractButton)comp;
+            Icon icon = button.getIcon();
+            if(icon instanceof ImageIcon) {
+                image = ((ImageIcon)icon).getImage();
+                return this;
+            }
+        }
+        return null;
+    }
+
+    public boolean importData(JComponent comp, Transferable t) {
+        if(comp instanceof JLabel) {
+            JLabel label = (JLabel)comp;
+            if(t.isDataFlavorSupported(flavors[0])) {
+                try {
+                    image = (Image)t.getTransferData(flavors[0]);
+                    ImageIcon icon = new ImageIcon(image);
+                    label.setIcon(icon);
+                    return true;
+                }
+                catch(UnsupportedFlavorException ignored) {
+
+                }
+                catch(IOException ignored){
+
+                }
+            }
+        }
+        else if(comp instanceof AbstractButton) {
+            AbstractButton button = (AbstractButton)comp;
+            if(t.isDataFlavorSupported(flavors[0])) {
+                try {
+                    image = (Image)t.getTransferData(flavors[0]);
+                    ImageIcon icon = new ImageIcon(image);
+                    button.setIcon(icon);
+                    return true;
+                }
+                catch(UnsupportedFlavorException ignored) {
+
+                }
+                catch(IOException ignored) {
+
+                }
+            }
+        }
+        return false;
+    }
+
+    @Override
+    public DataFlavor[] getTransferDataFlavors() {
+        // TODO Auto-generated method stub
+        return flavors;
+    }
+
+    @Override
+    public boolean isDataFlavorSupported(DataFlavor flavor) {
+        // TODO Auto-generated method stub
+        return flavors[0].equals(flavor);
+    }
+
+    @Override
+    public Object getTransferData(DataFlavor flavor)
+            throws UnsupportedFlavorException, IOException {
+        // TODO Auto-generated method stub
+        if(isDataFlavorSupported(flavor)) {
+            return image;
+        }
+        return null;
+    }
+
+}</pre>
+</div>
+<p>要测试这个类，我们需要使用可拖放的JLabel与AbstractButton子类创建一个程序。这个程序基本上与显示在列表19-2中的程序相同，但是只有一个与位于屏幕中间的图像相关联的JLabel。</p>
+<div class="code java highlight-python"><pre>package swingstudy.ch19;
+
+import java.awt.BorderLayout;
+import java.awt.EventQueue;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
+
+import javax.swing.Icon;
+import javax.swing.ImageIcon;
+import javax.swing.JComponent;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JScrollPane;
+import javax.swing.TransferHandler;
+
+public class DragImage {
+
+    /**
+     * @param args
+     */
+    public static void main(String[] args) {
+        // TODO Auto-generated method stub
+
+        Runnable runner = new Runnable() {
+            public void run() {
+                JFrame frame = new JFrame("Drag Image");
+                frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+
+                Icon icon = new ImageIcon("dog.jpg");
+                JLabel label = new JLabel(icon);
+                label.setTransferHandler(new ImageSelection());
+                MouseListener listener = new MouseAdapter() {
+                    public void mousePressed(MouseEvent event) {
+                        JComponent comp = (JComponent)event.getSource();
+                        TransferHandler handler = comp.getTransferHandler();
+                        handler.exportAsDrag(comp, event, TransferHandler.COPY);
+                    }
+                };
+                label.addMouseListener(listener);
+                frame.add(new JScrollPane(label), BorderLayout.CENTER);
+
+                frame.setSize(300, 150);
+                frame.setVisible(true);
+            }
+        };
+        EventQueue.invokeLater(runner);
+    }
+
+}</pre>
+</div>
+<p>图19-3显示程序运行的结果。</p>
+<div class="figure">
+<img alt="Swing_19_3.png" src="images/Swing_19_3.png" />
+<p class="caption">Swing_19_3.png</p>
+</div>
+</div>
+<div class="section" id="id4">
+<h2>小结<a class="headerlink" href="#id4" title="Permalink to this headline">¶</a></h2>
+<p>Swing中的拖放支持是丰富且多样的。我们可以自由的获取标准组件的多个行为。如果我们需要更多的行为，我们可以更深入一步直到我们获得所需要的属性。</p>
+<p>通常情况下，我们并不需要深入java.awt.dnd中的所有方法，例如DragSourceDragEvent，DragSourceDropEvent，或是DropTargetDragEvent。他们就在那里并且在幕后完成工作，但是我们并不需要担心这些。相反，拖放支持通常委托给与要拖拽的组件属性相关联的TransferHandler。只需要在组件上调用setDragEnabled(true)方法，从而我们就准备好一切。我们也可以为其他的项目设置拖放支持，例如图像，但是需要创建一个Transferable接口的一个实现。</p>
+<p>在下一章中，我们将会探讨Swing可插拨的观感体系结构。我们将会了解如何在不改变程序代码的情况下自定义我们的界面。</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">拖放支持</a><ul>
+<li><a class="reference internal" href="#id2">内建拖放支持</a></li>
+<li><a class="reference internal" href="#transferhandler">TransferHandler类</a></li>
+<li><a class="reference internal" href="#id3">图像拖放支持</a></li>
+<li><a class="reference internal" href="#id4">小结</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="ch18.html"
+                        title="previous chapter">Tables</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="ch20.html"
+                        title="next chapter">可插拨的观感体系结构</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/ch19.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="ch20.html" title="可插拨的观感体系结构"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="ch18.html" title="Tables"
+             >previous</a> |</li>
+        <li><a href="index.html">The Definitive Guide to Java Swing Third Edtion 0.01 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2014, mylxiaoyi.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2b3.
+    </div>
+  </body>
+</html>

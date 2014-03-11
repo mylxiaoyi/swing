@@ -1,0 +1,1171 @@
+可插拨的观感体系结构
+====================
+
+在第19章中，我们探讨了Swing的拖放支持。在本章中，我们将会深入我们使用Swing组件库时可用的可插拨的观感体系结构。
+
+Swing组件的所有方面都是基于Java的。所以不存在原生代码，AWT组件集合也是如此。如果我们不喜欢组件的方式，我们可以对其进行修改，并且我们可以有多种实现方法。
+
+抽象的LookAndFeel类是特定观感的根类。每一个可安装的观感类，正如UIManager.LookAndFeelInfo类所描述的，必须是LookAndFeel类的子类。LookAndFeel子类描述了特定观感Swing组件的默认外观。
+
+当前已安装的观感类集合是由UIManager类提供的，他同时管理特定LookAndFeel的所有的组件的默认显示属性。这些显示属性是在UUIDefaluts散列表中管理的。这些显示属性或者以空的UIResource或是UI委托进行标记，所以是ComponentUI类的子类。依据他们的用法，这些属性可以存储为UIDefaults.LazyValue对象UIDefaults.ActiveValue对象。
+
+LookAndFeel类
+-------------
+
+抽象LookAndFeel类的实现描述了每一个Swing组件如何显示以及用户如何与他们进行交互。每一个Swing组件的外观是由一个UI委托来控制的，他同时承担了MVC体系结构中视图与控制器的角色。每一个预定义的观感类及其相关联的UI委托类都包含在各自的包中。当配置当前观感时，我们可以使用一个预定义的观感类或是创建我们自己的类。当我们创建我们自己的观感时，我们可以在已存在的观感类上进行构建，例如BasicLookAndFeel类及其UI委托，而不是从零创建所有的UI委托。图20-1显示了预定义类的层次结构。
+
+.. figure:: images/Swing_20_1.png
+   :alt: Swing_20_1.png
+
+   Swing\_20\_1.png
+每一个观感类有六个属性，如表20-1所示。
+
+.. figure:: images/Swing_table_20_1.png
+   :alt: Swing_table_20_1.png
+
+   Swing\_table\_20\_1.png
+这些属性是只读的并且大部分描述了观感。然而defaults属性有一些不同。一旦我们获得其UIDefaults值，我们就可以直接通过其方法修改其状态。另外，LookAndFeel的UIDefaults可以通过UIManager直接访问与修改。
+
+nativeLookAndFeel属性可以使得我们确定某个特定的观感实现是否是用户操作系统的原生观感。例如，WindowsLookAndFeel对于运行在Microsoft
+Windows操作系统上的任何系统而言都是原生的。suppportedLookAndFeel属性可以告诉我们某一个特定观感的实现是否可以使用。对于WindowsLookAndFeel实现，这个特定的属性只会为Microsoft
+Windows操作系统所支持。相应的，MacLookAndFeel实现只为MacOS计算机所支持。MotifLookAndFeel与MetalLookAndFeel并没有固定为特定操作系统的原生观感。
+
+列出已安装的观感类
+~~~~~~~~~~~~~~~~~~
+
+要确定在我们的计算机上安装了哪些观感类，我们可以向UIManager查询，如列表20-1所示。UIManager有一个UIManager.LookAndFeelInfo[]
+getInstalledLookAndFeels()方法可以返回一个对象数组，这个对象可以提供所有已安装观感类的文本名字（public
+String getName()）与类名（public String getClassName()）。
+
+.. code:: java
+
+    package swingstudy.ch19;
+
+    import javax.swing.UIManager;
+
+    public class ListPlafs {
+
+        /**
+         * @param args
+         */
+        public static void main(String[] args) {
+            // TODO Auto-generated method stub
+
+            UIManager.LookAndFeelInfo plaf[] = UIManager.getInstalledLookAndFeels();
+            for(int i=0, n=plaf.length; i<n; i++) {
+                System.out.println("Name: "+plaf[i].getName());
+                System.out.println("  Class name: "+plaf[i].getClassName());
+            }
+        }
+
+    }
+
+运行这个程序也许会生成下面的输出。我们当前的系统配置与/或未来Swing库版本的变化都会导致不同的结果。
+
+Name: Metal
+
+`` Class name: javax.swing.plaf.metal.MetalLookAndFeel``
+
+Name: CDE/Motif
+
+`` Class name: com.sun.java.swing.plaf.motif.MotifLookAndFeel``
+
+Name: Windows
+
+`` Class name: com.sun.java.swing.plaf.windows.WindowsLookAndFeel``
+
+注意，Ocean本身并不是一个观感。相反，他是Metal观感的一个内建主题。这个主题恰好为Metal的默认主题。
+
+改变当前观感
+~~~~~~~~~~~~
+
+一旦我们知道在我们的系统上有哪些可用的观感类，我们就可以使得我们的程序使用其中一个观感类。UIManager有两个重载的setLookAndFeel()方法来修改已安装的观感类：
+
+.. code:: java
+
+    public static void setLookAndFeel(LookAndFeel newValue) throws
+      UnsupportedLookAndFeelException
+    public static void setLookAndFeel(String className) throws 
+      ClassNotFoundException, InstantiationException, IllegalAccessException,
+      UnsupportedLookAndFeelException
+
+尽管第一个版本看起来是更为合理的选择，然后第二个却是更为经常使用的版本。当我们使用UIManager.getInstalledLookAndFeels()方法请求已安装的观感类时，我们以字符串的形式获得对象的类名，而不是对象实例。由于改变观感时可能发生的异常，我们需要将setLookAndFeel()调用放在一个try/catch块中。如果我们为一个已存在的窗口改变观感，我们需要使用SwingUtilities的public
+static void updateComponentTreeUI(Component
+rootComponent)方法来告诉组件更新其外观。如果还没有创建组件，则没有这样的必要。
+
+下面的代码演示了如何改变观感：
+
+.. code:: java
+
+    try {
+      UIManager.setLookAndFeel(finalLafClassName);
+      SwingUtilities.updateComponentTreeUI(frame);
+    } catch (Exception exception) {
+      JOptionPane.showMessageDialog (
+        frame, "Can't change look and feel",
+        "Invalid PLAF", JOptionPane.ERROR_MESSAGE);
+    }
+
+图20-2演示了通过JComboBox或是JButton组件在运行时改变观感的示例程序。通常情况下，我们并不允许用户改变观感；我们也许只是希望在启动时设置观感。
+
+.. figure:: images/Swing_20_2.png
+   :alt: Swing_20_2.png
+
+   Swing\_20\_2.png
+列表20-2显示了图20-2中示例程序的源码。
+
+.. code:: java
+
+
+    package swingstudy.ch19;
+
+    import java.awt.BorderLayout;
+    import java.awt.EventQueue;
+    import java.awt.event.ActionEvent;
+    import java.awt.event.ActionListener;
+
+    import javax.swing.DefaultComboBoxModel;
+    import javax.swing.JButton;
+    import javax.swing.JComboBox;
+    import javax.swing.JFrame;
+    import javax.swing.JOptionPane;
+    import javax.swing.JPanel;
+    import javax.swing.SwingUtilities;
+    import javax.swing.UIManager;
+
+    public class ChangeLook {
+
+        /**
+         * @param args
+         */
+        public static void main(String[] args) {
+            // TODO Auto-generated method stub
+
+            Runnable runner = new Runnable() {
+                public void run() {
+                    final JFrame frame = new JFrame("Change Look");
+                    frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+                    
+                    ActionListener actionListener = new ActionListener() {
+                        public void actionPerformed(ActionEvent event) {
+                            Object source = event.getSource();
+                            String lafClassName = null;
+                            if(source instanceof JComboBox) {
+                                JComboBox comboBox = (JComboBox)source;
+                                lafClassName = (String)comboBox.getSelectedItem();
+                            }
+                            else if(source instanceof JButton) {
+                                lafClassName = event.getActionCommand();
+                            }
+                            if(lafClassName != null) {
+                                final String finalLafClassName = lafClassName;
+                                Runnable runner = new Runnable() {
+                                    public void run() {
+                                        try {
+                                            UIManager.setLookAndFeel(finalLafClassName);
+                                            SwingUtilities.updateComponentTreeUI(frame);
+                                        }
+                                        catch(Exception exception) {
+                                            JOptionPane.showMessageDialog(frame, "Can't change look and fee", "INvalid PLAF", JOptionPane.ERROR_MESSAGE);
+                                        }
+                                    }
+                                };
+                                EventQueue.invokeLater(runner);
+                            }
+                        }
+                    };
+                    
+                    UIManager.LookAndFeelInfo looks[] = UIManager.getInstalledLookAndFeels();
+                    
+                    DefaultComboBoxModel model = new DefaultComboBoxModel();
+                    JComboBox comboBox = new JComboBox(model);
+                    
+                    JPanel panel = new JPanel();
+                    
+                    for(int i=0, n=looks.length; i<n; i++){
+                        JButton button = new JButton(looks[i].getName());
+                        model.addElement(looks[i].getClassName());
+                        button.setActionCommand(looks[i].getClassName());
+                        button.addActionListener(actionListener);
+                        panel.add(button);
+                    }
+                    
+                    comboBox.addActionListener(actionListener);
+                    
+                    frame.add(comboBox, BorderLayout.NORTH);
+                    frame.add(panel, BorderLayout.SOUTH);
+                    frame.setSize(350, 150);
+                    frame.setVisible(true);
+                }
+            };
+            EventQueue.invokeLater(runner);
+        }
+
+    }
+
+注意，实际的观感变化是在EventQueue.invokeLater()调用中实现的。这是必需的，因为当前事件的处理在我们可以改变观感之前必须完成，并且变化必须发生在事件队列上。
+
+除了编程改变当前的观感之外，我们可以由命令行使用一个新观感启动程序。只需要将swing.defaultlaf系统属性设置为观感类名。例如，下面的启动行将会启动ChangeLook程序，使用Motif作为初始观感。
+
+java -Dswing.defaultlaf=com.sun.java.swing.plaf.motif.MotifLookAndFeel
+ChangeLook
+
+如果我们希望每次程序启动时具有不同的观感，我们可以在具有相关设置的Java运行库（默认为jre）目录下创建一个文件，swing.properties。swing.properties文件需要位于Java运行库的lib目录下。例如，下面的配置行会使得初始观感总是Motif，除非通地编程或是由命令行改变。
+
+swing.defaultlaf=com.sun.java.swing.plaf.motif.MotifLookAndFeel
+
+除了swing.defaultlatf设置以外，swing.properties文件还支持一些其他的设置，如表20-2所示。每一个属性都会允许我们覆盖预定义观感设置的默认设置。在其他的设置中，auxiliary与multiplexing观感类支持可访问性。我们将会在本章稍后进行讨论。
+
+.. figure:: images/Swing_table_20_2.png
+   :alt: Swing_table_20_2.png
+
+   Swing\_table\_20\_2.png
+提示，swing.installedlafs与swing.auxiliarylaf属性设置是以逗号分隔的已安装观感类列表。
+
+我们也许已经注意到图20-1中类层次结构中所示的Synth类并没有列在已安装的观感类默认集合中。Synth需要另一个配置文件；他并不是我们可以在运行时在没有定义自定义外观的情况切换的配置。这个基本观感类为自定义提供了框架。我们将会在本章稍后的内容中了解如何使用Synth观感。
+
+当Windows
+XP风格并不适合用户平台或是设置了swing.noxp系统属性时可以使用WindowsClassicLookAndFeel。
+
+自定义当前观感
+~~~~~~~~~~~~~~
+
+在第3章中，我们了解了MVC体系结构以及Swing组件如何将视图与控制器组合为UI委托。现在我们将会深入Swing组件的UI委托。基本来说，如果我们不喜欢Swing组件的显示，我们可以通知UIManager来修改,然后他就不会向以前那样显示。
+
+**UIManager类**
+
+当我们需要创建一个Swing组件时，UIManager类扮演代理的角色来获得当前已安装观感的信息。这样如果我们要安装一个新的观感或是修改已有的观感，我们不需要直接通知Swing组件；我们只需要通知UIManager。
+
+在前面章节中每一个组件的讨论是通守列出通过UIManager可以改变的所有设置的方式来实现的。另外，本书的附录提供了一个JDK
+5.0所有可用设置的字母列表。一旦我们知道我们修改的设置的属性字符串，我们就可以调用public
+Object UIManager.put(Object key, Object
+value)方法，这个方法会修改属性设置并返回以前的设置（如果存在）。例如，下面的代码行将JButton组件的背景色设置为红色。在我们将新设置放入UIManager类的查找表以后，以后所创建的组件将会使用新的值，Color.RED。
+
+UIManager.put("Button.background", Color.RED);
+
+一旦我们将新设置放入UIManager的查找表中以后，当我们创建新的Swing组件时就会使用新的设置。旧组件不会自动更新；如果我们希望他们单个更新，我们必须调用他们的public
+void
+updateUI()方法（或是调用updateComponentTreeUI()方法来更新一个组件的整个窗口）。如果我们正在创建我们自己的组件，或者我们只是关心一个不同组件属性的当前设置，我们可以通过表20-3中所列出的方法向UIManager查询。
+
+.. figure:: images/Swing_table_20_3.png
+   :alt: Swing_table_20_3.png
+
+   Swing\_table\_20\_3.png
+除了getUI()方法以外，每一个方法都有一个接受用于本地化支持的Locale参数的第二个版本。
+
+除了defaults属性以外，当我们调用不同的put()与get()方法会使用该属性，UIManager类有八个类级别的属性。这些属性列在表20-4中，其中包括具有两个不同设置方法的两个用于lookAndFeel的项。
+
+.. figure:: images/Swing_table_20_4.png
+   :alt: Swing_table_20_4.png
+
+   Swing\_table\_20\_4.png
+systemLookAndFeelClassName属性允许我们确定哪一个特定的观感类名适合于用户的操作系统。crossPlatformLookAndFeelClassName属性使得我们可以确定默认情况下哪一个类名表示跨平台观感：java.swing.plaf.metal.MetalLookAndFeel。初始时，lookAndFeelDefaults属性与defaults属性是相同的。当我们要对观感进行修改时，我们使用defaults属性。这样，预定义观感的设置就不会发生改变。
+
+**UIManager.LookAndFeelInfo类**
+
+当我们向UIManager查询已安装的观感类列表时，我们会返回一个UIManager.LookAndFeelInfo对象的数组。由这个数组我们可以获得观感的描述性名字（LookAndFeel实现的name属性），以及实现的类名字。如表20-5所示，这两个设置是只读的。
+
+.. figure:: images/Swing_table_20_5.png
+   :alt: Swing_table_20_5.png
+
+   Swing\_table\_20\_5.png
+**UIDefaults类**
+
+LookAndFeel类以及UIManager使用一个特殊的UIDefaults散列表来管理依赖于观感的Swing组件属性。这种特殊的行为在于当一个新设置通过put()方法放入散列表时，就会生成一个PropertyChangeEvent并且所注册的PropertyChangeListener对象就会得到通知。BasicLookAndFeel类的大部分都会在合适的时间将UI委托注册到所感兴趣的属性变化事件。
+
+如果我们需要一次改变多个属性，我们可以使用public void putDefaults(Object
+keyValueList[])方法，这个方法会引起一次事件通知事件。通过putDefaults()方法，键/值对会位于一维数组中。例如，要使得按钮的默认背景色为粉色而前景色为洋红色，我们可以使用下面的代码：
+
+.. code:: java
+
+    Object newSettings[] = {"Button.background", Color.PINK,
+                            "Button.foreground", Color.MAGENTA};
+    UIDefaults defaults = UIManager.getDefaults();
+    defaults.putDefaults(newSettings);
+
+因为UIDefaults是Hashtable的子类，我们可以通过使用Enumeration在所有的键或值上进行循环来获得所有的已安装设置。要简化事情，列表20-3给出一个列出了存储在JTable中属性的示例程序。这个程序重用了多个第18章中的排序类。
+
+.. code:: java
+
+
+    package swingstudy.ch19;
+
+    import java.awt.BorderLayout;
+    import java.awt.EventQueue;
+    import java.awt.event.ActionEvent;
+    import java.awt.event.ActionListener;
+    import java.util.Enumeration;
+    import java.util.Vector;
+
+    import javax.swing.JButton;
+    import javax.swing.JFrame;
+    import javax.swing.JOptionPane;
+    import javax.swing.JScrollPane;
+    import javax.swing.JTable;
+    import javax.swing.JToolBar;
+    import javax.swing.SwingUtilities;
+    import javax.swing.UIDefaults;
+    import javax.swing.UIManager;
+    import javax.swing.table.AbstractTableModel;
+
+    import swingstudy.ch18.TableHeaderSorter;
+    import swingstudy.ch18.TableSorter;
+
+    public class ListProperties {
+
+        static class CustomTableModel extends AbstractTableModel {
+            Vector<Object> keys = new Vector<Object>();
+            Vector<Object> values = new Vector<Object>();
+            private static final String columnNames[] = {"Property String", "Value"};
+            
+            public int getColumnCount() {
+                return columnNames.length;
+            }
+            
+            public String getColumnName(int column) {
+                return columnNames[column];
+            }
+            
+            public int getRowCount() {
+                return keys.size();
+            }
+            
+            public Object getValueAt(int row, int column) {
+                Object returnValue = null;
+                if(column == 0) {
+                    returnValue = keys.elementAt(row);
+                }
+                else if(column == 1) {
+                    returnValue = values.elementAt(row);
+                }
+                return returnValue;
+            }
+            
+            public synchronized void uiDefaultsUpdate(UIDefaults defaults) {
+                Enumeration newKeys = defaults.keys();
+                keys.removeAllElements();
+                while(newKeys.hasMoreElements()) {
+                    keys.addElement(newKeys.nextElement());
+                }
+                Enumeration newValues = defaults.elements();
+                values.removeAllElements();
+                while(newValues.hasMoreElements()) {
+                    values.addElement(newValues.nextElement());
+                }
+                fireTableDataChanged();
+            }
+        }
+        /**
+         * @param args
+         */
+        public static void main(String[] args) {
+            // TODO Auto-generated method stub
+
+            Runnable runner = new Runnable() {
+                public void run() {
+                    final JFrame frame = new JFrame("List Properties");
+                    frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+                    
+                    final CustomTableModel model = new CustomTableModel();
+                    model.uiDefaultsUpdate(UIManager.getDefaults());
+                    TableSorter sorter = new TableSorter(model);
+                    
+                    JTable table = new JTable(sorter);
+                    TableHeaderSorter.install(sorter, table);
+                    
+                    table.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
+                    
+                    UIManager.LookAndFeelInfo looks[] = UIManager.getInstalledLookAndFeels();
+                    
+                    ActionListener actionListener = new ActionListener() {
+                        public void actionPerformed(ActionEvent event) {
+                            final String lafClassName = event.getActionCommand();
+                            Runnable runner = new Runnable() {
+                                public void run() {
+                                    try {
+                                        UIManager.setLookAndFeel(lafClassName);
+                                        SwingUtilities.updateComponentTreeUI(frame);
+                                        model.uiDefaultsUpdate(UIManager.getDefaults());
+                                    }
+                                    catch(Exception exception) {
+                                        JOptionPane.showMessageDialog(frame, "Can't change look and feel", "Invalid PLAF", JOptionPane.ERROR_MESSAGE);
+                                    }
+                                }
+                            };
+                            EventQueue.invokeLater(runner);
+                        }
+                    };
+                    
+                    JToolBar toolbar = new JToolBar();
+                    for (int i=0, n=looks.length; i<n; i++) {
+                        JButton button = new JButton(looks[i].getName());
+                        button.setActionCommand(looks[i].getClassName());
+                        button.addActionListener(actionListener);
+                        toolbar.add(button);
+                    }
+                    
+                    frame.add(toolbar, BorderLayout.NORTH);
+                    JScrollPane scrollPane = new JScrollPane(table);
+                    frame.add(scrollPane, BorderLayout.CENTER);
+                    frame.setSize(400, 400);
+                    frame.setVisible(true);
+                }
+            };
+            EventQueue.invokeLater(runner);
+        }
+
+    }
+
+图20-3显示了程序的运行结果。
+
+.. figure:: images/Swing_20_3.png
+   :alt: Swing_20_3.png
+
+   Swing\_20\_3.png
+提示，要将属性重置为当前安装观感的默认值，则将其设置为null。这将会使得组件由观感获取原始默认值。
+
+**UIResource接口**
+
+预定义的观感类的UIDefaults设置使用一个特殊的标记接口，UIResource，从而可以使得UI委托确定默认值是否被覆盖。如果我们将一个特定的设置改变为一个新值（例如，将Button.background设置修改变Color.PINK），那么当已安装的观感变化时UIManager不会替换这个设置。调用setBackground(Color.PINK)也同样如此。当观感发生变化时，只有实现了UIResource接口的特定属性的值才会发生变化。
+
+javax.swing.plaf包中包含许多实现了UIResource接口的类。例如，ColorUIResource类将Color对象看作为UIResource元素。列表20-6列出了所有自定义已安装观感可用的UUIResource组件。
+
+.. figure:: images/Swing_table_20_6_1.png
+   :alt: Swing_table_20_6_1.png
+
+   Swing\_table\_20\_6\_1.png
+|Swing\_table\_20\_6\_2.png| |Swing\_table\_20\_6\_3.png|
+|Swing\_table\_20\_6\_4.png|
+
+下面的代码演示了使用ColorUIResource类来将按钮的背景色设置为一个当已安装的观感变化时将会发生变化的值。
+
+.. code:: java
+
+    Color background = new ColorUIResource(Color.PINK);
+    UIManager.put("Button.background", background);
+
+如果封装的ColorUIResource构造函数调用，颜色就会在观感变化之后仍然保持不变。
+
+**UIDefaults.ActionValue,
+UIDefaults.LazyValue与UIDefaults.ProxyLazyValue类**
+
+除了实现在UIResouce接口以外，UIDefaults查询表中的元素如果实现了UIDefaults的内联类LazyValue或是ActiveValue，则他们就是延迟的或是活动的。例如，因为Color与Dimension对象并不是非常资源敏感的，当这样的一个元素被放入UIDefaults表中时，则Color与Dimension就会被创建并且立即放入查询表中－这就是称之为是活动的。相对的，在类似于Icon这样的资源例子中，而且特别是ImageIcon，我们希望延迟创建并载入图标类直到需要他时－这就称之为延迟。我们也许希望使其成为延迟的另一个元素例子就是对于每一个JList组件都需要一个单独的渲染器的ListCellRenderer。因为我们并不知道我们需要多少渲染器以或是将要安装哪一个渲染器，我们可以将创建时机延迟并且在我们请求时获得当前渲染器的一个唯一版本。
+
+下面我们来了解一下LookAndFeel的public Object makeIcon(Class baseClass,
+String
+imageFile)方法。为了处理图标图像文件的延迟加载，LookAndFeel类会自动为载入一个Icon创建一个LzyValue类。因为图像文件将会在稍后载入，我们需要向图标加载器提供图标图像文件（baseClass）以及文件名（imageFile）的位置。
+
+.. code:: java
+
+    Object iconObject = LookAndFeel.makeIcon(this.getClass(), "World.gif");
+    UIManager.put("Tree.leafIcon", iconObject);
+
+接下来我们了解一个UIDefaults.LazyValue定义并且创建DiamondIcon的延迟版本。
+
+.. code:: java
+
+    public interface UIDefaults.LazyValue {
+      public Object createValue(UIDefaults table);
+    }
+
+在实现了LazyValue接口的类中，他们的构造函数将会保存通过createValue()接口方法传递给实际构造函数的信息。为了有助于创建自定义的延迟值，UIDefaults.ProxyLazyValue类提供了一个保存所传递信息的方法。有四种方法来使用ProxyLazyValue来延迟对象创建，而每一个方法都会使用反射来创建实际的对象，由构造函数的参数获取特定的信息：
+
+#. public UIDefaults.ProxyLazyValue(String
+   className)：如果对象创建使用无参数的构造函数，只需要传递类名作为参数。
+#. public UIDefaults.ProxyLazyValue(String className, String
+   method)：如果对象创建将会使用无需参数的工厂方法，则传递工厂方法以及类名。
+#. public UIDefaults.ProxyLazyValue(String className, Object[]
+   arguments)：如果对象创建将会使用需要参数的构造函数，则向ProxyLazyValue构造函数传递类名与参数数组。
+#. public UIDefaults.ProxyLazyValue(String lcassName, String method,
+   Object[]
+   arguments)：如里对象创建使用需要参数的工厂方法，则传递工厂方法名以及类名与参数组件。
+
+对于将要创建的延迟DiamondIcon，我们将需要传递由颜色，选中状态与维度构成的状态信息。
+
+要测试延迟DiamondIcon，我们可以将UIDefaults.ProxyLazyValue的实例关联到Tree.openIcon设置，如下所示：
+
+.. code:: java
+
+    Integer fifteen = new Integer(15);
+    Object lazyArgs[] = new Object[] { Color.GREEN, Boolean.TRUE, fifteen, fifteen} ;
+    Object lazyDiamond = new UIDefaults.ProxyLazyValue("DiamondIcon", lazyArgs); 
+    UIManager.put("Tree.openIcon", lazyDiamond);
+
+结合前面将Tree.leafIcon设置修改为World.gif图标的变化以及使用默认树数据模型，所生成的树如图20-4所示。
+
+.. figure:: images/Swing_20_4.png
+   :alt: Swing_20_4.png
+
+   Swing\_20\_4.png
+.. code:: java
+
+
+    package swingstudy.ch19;
+
+    import java.awt.BorderLayout;
+    import java.awt.Color;
+    import java.awt.EventQueue;
+
+    import javax.swing.JFrame;
+    import javax.swing.JScrollPane;
+    import javax.swing.JTree;
+    import javax.swing.LookAndFeel;
+    import javax.swing.UIDefaults;
+    import javax.swing.UIManager;
+
+    public class LazySample {
+
+        /**
+         * @param args
+         */
+        public static void main(String[] args) {
+            // TODO Auto-generated method stub
+
+            Runnable runner = new Runnable() {
+                public void run() {
+                    JFrame frame = new JFrame("Lazy Example");
+                    frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+                    
+                    Object iconObject = LookAndFeel.makeIcon(LazySample.class, "World.gif");
+                    UIManager.put("Tree.leafIcon", iconObject);
+                    
+                    Integer fifteen = new Integer(15);
+                    Object lazyArgs[] = new Object[] {Color.GREEN, Boolean.TRUE, fifteen, fifteen};
+                    Object lazyDiamond = new UIDefaults.ProxyLazyValue("DiamondIcon", lazyArgs);
+                    UIManager.put("Tree.openIcon", lazyDiamond);
+                    
+                    JTree tree = new JTree();
+                    JScrollPane scrollPane = new JScrollPane(tree);
+                    
+                    frame.add(scrollPane, BorderLayout.CENTER);
+                    frame.setSize(200, 200);
+                    frame.setVisible(true);
+                }
+            };
+            EventQueue.invokeLater(runner);
+        }
+
+    }
+
+与延迟值不同，活动值类似于实例创建工厂。每次通过UIManager的get()方法请求一个值时，则会创建并返回一个新实例。接口方法与UIDefaults.LazyValue的接口方法相同；只有接口的名字是不同的。
+
+.. code:: java
+
+    public interface UIDefaults.ActiveValue {
+      public Object createValue(UIDefaults table);
+    }
+
+为了进行演示，列表20-5定义了一个构建JLabel组件的工厂。标签文本将作为显示创建了多个标签的计数器。每次createValue()方法被调用时，则会创建一个新JLabel。
+
+.. code:: java
+
+
+    package swingstudy.ch19;
+
+    import javax.swing.JLabel;
+    import javax.swing.UIDefaults;
+
+    public class ActiveLabel implements UIDefaults.ActiveValue {
+        private int counter = 0;
+        
+        public Object createValue(UIDefaults defaults) {
+            JLabel label = new JLabel(""+counter++);
+            return label;
+        }
+    }
+
+为了创建组件，我们需要使用UIManager.put()方法安装ActiveLabel类。一旦这个类被安装，每次调用UIManager的get()方法都会导致创建一个新的组件。
+
+.. code:: java
+
+    UIManager.put(LABEL_FACTORY, new ActiveLabel());
+    ...
+    JLabel label = (JLabel)UIManager.get(LABEL_FACTORY);
+
+图20-5显示了使用中的组件。当每次按钮被点击时，则会调用UIManager.get()方法，并且组件被添加到屏幕。
+
+.. figure:: images/Swing_20_5.png
+   :alt: Swing_20_5.png
+
+   Swing\_20\_5.png
+列表20-6显示了图20-5所示的示例程序的源码。
+
+.. code:: java
+
+
+    package swingstudy.ch19;
+
+    import java.awt.BorderLayout;
+    import java.awt.EventQueue;
+    import java.awt.event.ActionEvent;
+    import java.awt.event.ActionListener;
+
+    import javax.swing.JButton;
+    import javax.swing.JFrame;
+    import javax.swing.JLabel;
+    import javax.swing.JPanel;
+    import javax.swing.UIManager;
+
+    public class ActiveSample {
+
+        private static final String LABEL_FACTORY = "LabelFactory";
+        /**
+         * @param args
+         */
+        public static void main(String[] args) {
+            // TODO Auto-generated method stub
+
+            Runnable runner = new Runnable() {
+                public void run() {
+                    JFrame frame = new JFrame("Active Example");
+                    frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+                    
+                    UIManager.put(LABEL_FACTORY, new ActiveLabel());
+                    
+                    final JPanel panel = new JPanel();
+                    
+                    JButton button = new JButton("Get");
+                    
+                    ActionListener actionListener = new ActionListener() {
+                        public void actionPerformed(ActionEvent event) {
+                            JLabel label = (JLabel)UIManager.get(LABEL_FACTORY);
+                            panel.add(label);
+                            panel.revalidate();
+                        }
+                    };
+                    button.addActionListener(actionListener);
+                    
+                    frame.add(panel, BorderLayout.CENTER);
+                    frame.add(button, BorderLayout.SOUTH);
+                    frame.setSize(200, 200);
+                    frame.setVisible(true);
+                }
+            };
+            EventQueue.invokeLater(runner);
+        }
+
+    }
+
+注意，有一个特殊的延迟类用于InputMap延迟：UIDefaults.LazyInputMap类。
+
+**使用客户端属性**
+
+如果修改所有UIManager已知的UIResource属性仍不能为我们提供我们所需要的观感，一些UI委托类可以为我们提供隐藏于API视图之外的他们自己的自定义功能。这些自定义功能是作为客户端属性来提供的，并且可以通过JComponent的两个方法来访问：public
+final Object getClientProperty(Object key)与public final void
+putClientProperty(Object key, Object
+value)。记住这里的key与value是Object类型的。虽然通常情况下key是一个String而value是一个任意类型的对象，key也可是一个任意类型的对象。
+
+客户端属性的目的是作为特定观感的组件的属性。无需通过继承观感委托通过一对getter/setter方示来公开属性，get/put客户端属性提供了到私有实例级别查询表的访问来存储新的属性设置。另外，当对UIDefaults进行修改时，修改组件的客户端属性会通知所注册的组件的属性变化监听器。
+
+大多数特定的客户端属性已在本书中相关的组件部分进行探讨。表20-7提供了一个用于所有可配置的客户端属性的资源。左边的例显示了除了包名以外属性所用于的类。中间一列显示了属性名，其中包含所用的原始文本与可用的类常量。右边一列包含了来存储属性名的类类型。如果类类型是一个String，则会提供一个可用值列表。
+
+|Swing\_table\_20\_7\_1.png| |Swing\_table\_20\_7\_2.png|
+|Swing\_table\_20\_7\_3.png| |Swing\_table\_20\_7\_4.png|
+|Swing\_table\_20\_7\_5.png| |Swing\_table\_20\_7\_6.png|
+
+注意，表20-7中的大多数属性都是为特定的委托实现在内部所用的，而我们不需要使用他们。其他的一些属性，例如桌面管理器的拖拽模式，是在JDK新版本发布之前保存API不变的来添加功能的中间方法。
+
+为了演示客户端属性的使用，下面的两行代码将JToolBar.isRoolover属性修改为Boolean.TRUE。其他的工具栏也许并不希望这个属性设置为Boolean.TRUE，所以将这个属性设置保持为Boolean.FALSE。
+
+.. code:: java
+
+    JToolBar toolbar = new JToolBar();
+    toolbar.putClientProperty("JToolBar.isRollover", Boolean.TRUE);
+
+**创建新的UI委托**
+
+有时修改Swing组件的某些UIResource元素并不足以获得我们所希望的外观或是行为。当出现这种情况时，我们需要为组件创建一个新的UI委托。每一个Swing组件都有控制其MVC体系统结构中的视图与控制器方面的UI委托。
+
+表20-8提供了一个Swing组件，描述每一个组件的UI委托的类以及预定义观感类的特定实现的列表。例如，调用JToolBar的getUIClassID()方法将会返回ToolBarUI的UI委托的类ID字符串。然后如果我们使用UIManager.get("ToolBarUI")调用向UIManager查询当前已安装的观感的该UI委托的特定实现，则会返回抽象的ToolBarUI的实现。所以，如果我们要为JToolBar组件开发我们自己的观感，我们必须创建一个抽象ToolBarUI类的实现。
+
+|Swing\_table\_20\_8\_1.png| |Swing\_table\_20\_8\_2.png|
+|Swing\_table\_20\_8\_3.png| |Swing\_table\_20\_8\_4.png|
+
+注意，JWindow，JFrame与JApplet这样的类都是重量级组件，因而缺少UI委托。
+
+第13章中的PopupComboSample示例演示了新的UI委托的创建。列表20-7稍微修改了自定义的ComboBoxUI片段，其中显示下拉菜单的普通向下按钮被替换为右箭头。
+
+.. code:: java
+
+
+    package swingstudy.ch20;
+
+    import javax.swing.JButton;
+    import javax.swing.JComponent;
+    import javax.swing.plaf.ComponentUI;
+    import javax.swing.plaf.basic.BasicArrowButton;
+    import javax.swing.plaf.basic.BasicComboBoxUI;
+
+    public class MyComboBoxUI extends BasicComboBoxUI {
+
+        public static ComponentUI createUI(JComponent c) {
+            return new MyComboBoxUI();
+        }
+        
+        protected JButton createArrowButton() {
+            JButton button = new BasicArrowButton(BasicArrowButton.EAST);
+            return button;
+        }
+    }
+
+要使用新的UI委托，我们只需要创建这个类并且使用setUI()方法将其与组件相关联。
+
+.. code:: java
+
+    JComboBox comboBox = new JComboBox(labels);
+    comboBox.setUI((ComboBoxUI)MyComboBoxUI.createUI(comboBox));
+
+修改第13的PopupComboSample示例使其显示两个组合框，自定义的ComboBoxUI在上面而另一个在下面，则会产生图20-6所示的结果。
+
+.. figure:: images/Swing_20_6.png
+   :alt: Swing_20_6.png
+
+   Swing\_20\_6.png
+列表20-8显示了生成了图20-6的更新的源码。
+
+.. code:: java
+
+
+    package swingstudy.ch20;
+
+    import java.awt.BorderLayout;
+    import java.awt.EventQueue;
+
+    import javax.swing.JComboBox;
+    import javax.swing.JFrame;
+    import javax.swing.plaf.ComboBoxUI;
+
+    public class PopupComboSample {
+
+        /**
+         * @param args
+         */
+        public static void main(String[] args) {
+            // TODO Auto-generated method stub
+
+            Runnable runner = new Runnable() {
+                public void run() {
+                    String labels[] = {"Chardonnay", "Sauvignon", "Riesling", "Cabernet", 
+                            "Zinfandel", "Merlot", "Pinot Noir", "Sauvignon Blanc", "Syrah",
+                            "Gewurztraminer"
+                    };
+                    JFrame frame = new JFrame("Popup JComboBox");
+                    frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+                    
+                    JComboBox comboBox = new JComboBox(labels);
+                    comboBox.setMaximumRowCount(5);
+                    comboBox.setUI((ComboBoxUI)MyComboBoxUI.createUI(comboBox));
+                    frame.add(comboBox, BorderLayout.NORTH);
+                    
+                    JComboBox comboBox2= new JComboBox(labels);
+                    frame.add(comboBox2, BorderLayout.SOUTH);
+                    
+                    frame.setSize(300, 100);
+                    frame.setVisible(true);
+                }
+            };
+            EventQueue.invokeLater(runner);
+        }
+
+    }
+
+如果我们要为所有的组件使用这个新的UI委托，我们可以在创建组件之前使得UIManager知道这个委托，而不是在创建之后手动调用setUI()。在列表20-8的示例中，我们可以添加下面的代码行：
+
+.. code:: java
+
+    UIManager.put("ComboBoxUI", "MyComboBoxUI") 
+
+如果我们这样做，两个组合框就会看起来相同。
+
+UI委托的实际创建是间接完成的，如图20-7所示。组件的构造函数调用会向UIManager查询UI委托类。UIManager在在其默认属性UIDefaults对象中维护委托列表。当UIDefaults为委托所需要时，他会返回到组件来查询需要哪个委托。在查找到相应的委托实现以外，UIDefaults对象会告诉ComponentUI来创建组件，从而导致创建实际的UI委托类。一旦UI委托被创建，他就需要为特定的模型状态进行配置。
+
+.. figure:: images/Swing_20_7.png
+   :alt: Swing_20_7.png
+
+   Swing\_20\_7.png
+创建新的观感
+------------
+
+除非公司要求我们自定义所有的内容来提供唯一的体验，通常并不需要从头创建一个完整的新观感。通常，开发者通过提供一些自定义的UI委托来对现在的观感进行小量的修改。然而如果我们确实希望创建一个新的观感类，我们只需要创建一个LookAndFeel类的子类。我们仍然必须提供UI委托，但是现在这些类可以由Swing组件隐藏，因为他们的使用将并不会直接为javax.swing组件类所知。
+
+在非Windows机器上使用WindowsLookAndFeel
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+为了演示新的观感类的创建，让我们创建一个封装了Windows
+UI委托的平台需求的观感实现。通过简单的重写public boolean
+isSupportedLookAndFeel()方法来返回true，我们就可以为Windows观感类移除平台需求。
+
+注意，Java许可证禁止发布移除了Windows观感类平台需求的程序。所以只要我们不发布他，就可以使用这个这里的示例。
+
+列表20-9中的类定义显示了创建一个新的观感实现是多么的简单。
+
+.. code:: java
+
+    package swingstudy.ch20;
+
+    import com.sun.java.swing.plaf.windows.WindowsLookAndFeel;
+
+    public class MyWindows extends WindowsLookAndFeel {
+
+        public String getID() {
+            return "MyWindows";
+        }
+        
+        public String getName() {
+            return "MyWindows Look and Feel";
+        }
+        
+        public String getDescription() {
+            return "The MyWindows Look and Feel";
+        }
+        
+        public boolean isNativeLookAndFeel() {
+            return false;
+        }
+        
+        public boolean isSupportedLookAndFeel() {
+            return true;
+        }
+    }
+
+如果我们在一个非Windows机器上使用这个Swing类，我们可以使得观感成为Windows观感。只需要将我们的观感设置为MyWindows并且使得观感类文件可用。类文件只需要在我们的CLASSPATH中可用并且使用下面的命令行启动：
+
+java -Dswing.defaultlaf=MyWindows ClassFile
+
+为了使得Windows观感变化可以正常工作，我们需要在MyWindows目录结构的icons子目录中提供观感所用的图标文件。表20-9列出了与预定义的观感类型相对应的图标。MyWindows观感需要所有的Windows图像文件。
+
+注意，尽管Ocean只是Metal的主题，他却提供了他自己的图像集合。
+
+|Swing\_table\_20\_9\_1.png| |Swing\_table\_20\_9\_2.png|
+|Swing\_table\_20\_9\_3.png| |Swing\_table\_20\_9\_4.png|
+|Swing\_table\_20\_9\_5.png| |Swing\_table\_20\_9\_6.png|
+
+注意，至少JOptionPane消息类型的图像在所有的观感中都是需要的。通常他们名为Error.gif，Inform.gif，Question.gif与Warn.gif，尽管并不是绝对需要。
+
+如果我们不希望跨过Widnows观感的“本地”需求，我们可以安装单独的UI委托，例如下面的代码将会为JButton组件使用Windows
+UI委托：
+
+.. code:: java
+
+    UIManager.put("ButtonUI","com.sun.java.swing.plaf.windows.WindowsButtonUI")
+
+添加UI委托
+~~~~~~~~~~
+
+创建一个具有自定义UI委托的新观感需要创建一个LookAndFeel类的子类。更可能的情况是，我们将会创建一个BasicLookAndFeel类或是另一个预定义观感类的子类，然后为其中的一些组件提供我们的委托。
+
+如果我们继承BasicLookAndFeel类，则他会有一个public void
+initClassDefaults(UIDefaults
+table)方法，可以重写这个方法来安装我们自己的委托。只需要将委托放在观感的UIDefaults表中，而不是放在希望使用这个新委托的我们程序中。
+
+列表20-10中的MetalLookAndFeel的扩展将前面定义的MyComboBoxUI委托作为ComboBoxUI委托添加到观感中。随着我们定义更多的自定义组件，我们可以使用相似的方法进行添加。
+
+.. code:: java
+
+
+    package swingstudy.ch20;
+
+    import javax.swing.UIDefaults;
+    import javax.swing.plaf.metal.MetalLookAndFeel;
+
+    public class MyMetal extends MetalLookAndFeel {
+
+        public String getID() {
+            return "MyMetal";
+        }
+        
+        public String getName() {
+            return "MyMetal Look and Feel";
+        }
+        
+        public String getDescription() {
+            return "The MyMetal Look and Feel";
+        }
+        
+        public boolean isNativeLookAndFeel() {
+            return false;
+        }
+        
+        public boolean isSupportedLookAndFeel() {
+            return true;
+        }
+        
+        protected void initClassDefaults(UIDefaults table) {
+            super.initClassDefaults(table);
+            table.put("ComboBoxUI", "MyComboBoxUI");
+        }
+    }
+
+使用Metal主题
+-------------
+
+Metal观感类（javax.swing.plaf.metal.MetalLookAndFeel）提供了定义颜色，字体以及由UIManager管理的所有的UIDefaults默认设置的方法。通过允许用户修改主题，他们就可以通过开发者的最少工作来获得所喜欢的颜色或是字体尺寸。通过开发合适的主题，我们无需创建新的观感类就可以很容易的定制接口或是手动将新的设置插入到UIDefaults中。
+
+MetalTheme类
+~~~~~~~~~~~~
+
+表20-10列出了通过MetalTheme类可用的49个不同的属性。各种primary与secondary属性是抽象并且必须在子类中实现。在其他的属性中，以Font结尾的六个属性－controlTextFont，menuTextFont，subTextFont，systemTextFont，userTextFont与windowTextFont－也是抽象并且必须在子类中实现。其余的属性，在默认情况下，重用11个primary/secondary值中的一个用于他们的设置。
+
+|Swing\_table\_20\_10\_1.png| |Swing\_table\_20\_10\_2.png|
+|Swing\_table\_20\_10\_3.png| |Swing\_table\_20\_10\_4.png|
+
+DefaultMetalTheme与OceanTheme类
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+与类名相反，DefaultMetalTheme类并不是默认的Metal主题；默认主题为OceanTheme。DefaultMetalTheme称其自身为Steel主题并且分别使用蓝色与灰色用于primary与secondary设置。OceanTheme，称之为Ocean，对于背景使用浅蓝色调色板。
+
+要使用Steel主题而不是Ocean主题，我们需要将swing.metalTheme系统属性设置为steel，如下所示：
+
+java –Dswing.metalTheme=steel ClassName
+
+大多数人更喜欢Ocean的新外观，但是为了兼容仍然可以使用Steel。
+
+如果我们创建我们自己的Metal主题，我们需要继承OceanTheme或是DefaultMetalTheme，然后通过设置MetalLookAndFeel类的表述currentTheme属性将自定义主题安装为我们的主题。
+
+.. code:: java
+
+    MetalTheme myTheme = new MyTheme();
+    MetalLookAndFeel.setCurrentTheme(myTheme);
+
+由于MetalTheme的大多数定制都是与字体和颜色相关的，public void
+addCustomEntriesToTable(UIDefaults
+table)方法允许我们重写Metal观感的默认UIDefaults设置。所以，不仅主题自定义Swing组件的字体与颜色，而他们还可以自定义Swing组件中许多UIResource相关的属性。
+
+下面的代码演示了如何为特定的主题设置两个滚动条设置。记住，当合适的时候要使用UIResource标记这些设置，并且不要忘记使用我们超类实现来初始化table参数。
+
+.. code:: java
+
+    public void addCustomEntriesToTable(UIDefaults table) {
+      super.addCustomEntriesToTable(table);
+      ColorUIResource thumbColor = new ColorUIResource(Color.MAGENTA);
+      table.put("Scrollbar.thumb", thumbColor);
+      table.put("ScrollBar.width", new Integer(25));
+    }
+
+MetalWorks系统demo是由JDK安装随着自定义主题的例子而提供的。他所定义的主题由一个属性文件读取主题颜色设置。无需每次我们要修改我们程序主题的时候创建一个新的类文件，我们可以在运行时由文件读取。
+
+.. code:: java
+
+    name=Charcoal
+    primary1=33,66,66
+    primary2=66,99,99
+    primary3=99,99,99
+    secondary1=0,0,0
+    secondary2=51,51,51
+    secondary3=102,102,102
+    black=255,255,255
+    white=0,0,0
+
+图20-8显示了Metalworks演示程序中所用的Charcoal主题。图20-9显示了他所定义的Presentation主题。
+
+|Swing\_20\_8.png| |Swing\_20\_9.png|
+
+使用Auxiliary观感
+-----------------
+
+Swing提供了多个观感，可以通过MutliLookAndFeel或是通过swing.properties文件中swing.plaf.multiplexingplaf属性指定在任意时刻激活。当安装了多个观感类时，只有一个观感会可见并在屏幕上绘制。其余的版本被称之为auxiliary观感并且与可访问选项相关联，例如屏幕读取器。另一个辅助观感就是日志记录器，他会记录那些与日志文件交互的组件。
+
+Auxiliary观感类是通过使用swing.properties文件中的swing.auxiliarylaf属性使用运行环境注册的。如果指定了多个类，则各项需要通过逗号进行分隔。除了使用属性文件，我们可以通过调用UIManager的public
+static void addAuxiliaryLookAndFeel(LookAndFeel
+lookAndFeel)方法在程序中安装观感。一旦安装，多元观感就会为所有已安装的观感类自动创建并管理UI委托。
+
+要确定安装了哪一个辅助观感类，我们可以通过UIManager的public static
+LookAndFeel[]
+getAuxiliaryLookAndFeels()方法进行查询。这会返回实际LookAndFeel对象的数组，与通过getInstalledLookAndFeels()方法返回的UIManager.LookAndFeelInfo数组不同。
+
+SynthLookAndFeel类
+------------------
+
+Synth观感是一个完全丰满的观感，并不是Metal，Windows或Motif的主题扩展。尽管此观感并不使用UIResource表，该类由一个空的绘图开始并且由一个XML文件中读取完整的定义。
+
+配置Synth
+~~~~~~~~~
+
+Synth观感的配置类似如下的样子：
+
+.. code:: java
+
+    SynthLookAndFeel synth = new SynthLookAndFeel();
+    Class aClass = SynthSample.class;
+    InputStream is = aClass.getResourceAsStream("config.xml");
+    synth.load(is, aClass);
+    UIManager.setLookAndFeel(synth);
+
+那么配置文件config.xml中的内容到底是什么呢？在我们的配置文件中，我们指定了我们希望在我们的程序中所用的特定组件如何显示。这通常称之为skining我们的程序，或是创建一个自定义的皮肤。通过简单的修改XML文件，我们程序的整个外观就会发生变化；并不需要编程实现。
+
+DTD文件可以由
+`http://java.sun.com/j2se/1.5.0/docs/api/javax/swing/plaf/synth/doc-files/synth.dtd获取。文件格式在 <http://java.sun.com/j2se/1.5.0/docs/api/javax/swing/plaf/synth/doc-files/synth.dtd获取。文件格式在>`__
+`http://java.sun.com/j2se/1.5.0/docs/api/javax/swing/plaf/synth/doc-files/synthFileFormat.html进行完全描述。解析器并不验证，在有工具帮助自动化过程之前，我们需要小心处理XML文件的创建。 <http://java.sun.com/j2se/1.5.0/docs/api/javax/swing/plaf/synth/doc-files/synthFileFormat.html进行完全描述。解析器并不验证，在有工具帮助自动化过程之前，我们需要小心处理XML文件的创建。>`__
+
+在Synth中有许多可用的配置选项，但是基本的XML概念用来定义style并将其bind到组件。
+
+.. raw:: html
+
+   <style>
+
+标签可以允许我们自定义诸如字体，颜色，insets以及背景或是边框图片的属性。
+
+为了进行演示，列表20-11定义了一个名为button的自定义。通常，文本会以粗体24点Monospaced字体显示。当鼠标移动到关联的组件上时，字体变为48点斜体SansSerif字体并且背景颜色变为蓝色。当组件被按下时，字体会再次发生变化，这次变为36点粗斜体Serif字体，并且背景颜色变为红色。配置文件的最后部分是将名为button的风格关联到JButton控件，通过标签。
+
+.. code:: xml
+
+    <?xml version="1.0" encoding="UTF-8"?>
+    <synth>
+        <style id="button">
+            <font name="Monospaced" size="24" style="BOLD"/>
+            <state value="MOUSE_OVER">
+                <font name="SansSerif" size="48" style="ITALIC"/>
+                <opaque value="TRUE"/>
+                <color value="BLUE" type="BACKGROUND"/>
+            </state>
+            <state value="PRESSED">
+                <font name="Serif" size="36" style="BOLD AND ITALIC"/>
+                <opaque value="TRUE"/>
+                <color value="RED" type="BACKGROUND"/>
+            </state>
+        </style>
+        <bind style="button" type="region" key="Button"/>
+    </synth>
+
+图20-10显示了屏幕上组件的样子。
+
+.. figure:: images/Swing_20_10.png
+   :alt: Swing_20_10.png
+
+   Swing\_20\_10.png
+列表20-12包含了生成图20-10的完整示例代码。
+
+.. code:: java
+
+    package swingstudy.ch20;
+
+    import java.awt.BorderLayout;
+    import java.awt.EventQueue;
+    import java.io.InputStream;
+    import java.text.ParseException;
+
+    import javax.swing.JButton;
+    import javax.swing.JFrame;
+    import javax.swing.UIManager;
+    import javax.swing.plaf.synth.SynthLookAndFeel;
+
+    public class SynthSample {
+
+        /**
+         * @param args
+         */
+        public static void main(String[] args) {
+            // TODO Auto-generated method stub
+
+            Runnable runner = new Runnable() {
+                public void run() {
+                    SynthLookAndFeel synth = new SynthLookAndFeel();
+                    try {
+                        Class aClass = SynthSample.class;
+                        InputStream is = aClass.getResourceAsStream("config.xml");
+                        if(is == null) {
+                            System.err.println("Unable to find theme configuration InputStream");
+                            System.exit(-1);
+                        }
+                        synth.load(is, aClass);
+                    }
+                    catch(ParseException e) {
+                        System.err.println("Unable to load theme configuration");
+                        System.exit(-2);
+                    }
+                    try {
+                        UIManager.setLookAndFeel(synth);
+                    }
+                    catch(javax.swing.UnsupportedLookAndFeelException e) {
+                        System.err.println("Unable to change look and feel");
+                        System.exit(-3);
+                    }
+                    JFrame frame = new JFrame("Synth Sample");
+                    frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+                    JButton button = new JButton("Hello, Synth");
+                    frame.add(button, BorderLayout.CENTER);
+                    frame.setSize(300, 200);
+                    frame.setVisible(true);
+                }
+            };
+            EventQueue.invokeLater(runner);
+        }
+
+    }
+
+默认Synth属性
+~~~~~~~~~~~~~
+
+配置文件不仅仅是风格与绑定。事实上，如果我们确实希望设置一个UIResource属性，我们仍然可以，但是只可以用一个有限的子集。位于
+http://java.sun.com/j2se/1.5.0/docs/api/javax/swing/plaf/synth/doc-files/componentProperties.html
+的文件描述了完整的集合。这个集合要大大的小于我们将会在本书附录中看到了列表。这些设置是通过标签或是标签进行配置的。默认属性是UIDefaults表中用于观感的默认属性；而属性仅是特定控件的设置。类似于下面的标签将会位于用于配置的特定
+
+.. raw:: html
+
+   <style>
+
+中：
+
+.. code:: xml
+
+    <property key="ScrollPane.viewportBorderInsets" type="insets" value="5 5 5 5"/>
+
+或是
+
+.. code:: xml
+
+    <object class="javax.swing.plaf.ColorUIResource" id="color">
+      <int>255</int>
+      <int>0</int>
+      <int>0</int>
+    </object>
+    <defaultsProperty key="Table.focusCellForeground" type="idref" value="color"/>
+
+使用Synth图像
+~~~~~~~~~~~~~
+
+间接的，使用SynthPainter类，我们可以提供用于组件周围边框所用的图像。然而，图像必须是特殊创建的，因而绘图器不仅是绘制图像。That
+one image must be used for components of all sizes, of that type, such
+as for all text
+fields。绘图器通过将组件分为多个区域在不同尺寸的控件中共享图像。四个角通常按其本来尺寸进行绘制。中间的区域会进行水平或垂直扩展。
+
+图20-11显示了一个可用的边框图像。注意四个角的曲线，但是中间区域并没有曲线。曲线会在边框扩展时保持不变。
+
+.. figure:: images/Swing_20_11.png
+   :alt: Swing_20_11.png
+
+   Swing\_20\_11.png
+要在我们的配置文件中使用图20-11中的图像，我们需要使用标签并且指定一个相应的method属性。这直接映射到SynthPainter类的paintXXX(SynthContext
+context, Graphics g, int x, int y, int w, int h, int
+orientation)方法。因为将会使用这个图像用于绘制文本域边框，method属性应该设置为textFieldBorder。我们同时需要指定图像的path（其文件名以及相对于SynthLookAndFeel.load()方法第二个参数指定的位置的路径）。insets与颜色是我们需要指定的其他项。下面是该使用的完整style定义。
+
+.. code:: xml
+
+    <style id="textfield">
+       <opaque value="true"/>
+       <state>
+          <color value="#C2E2CF" type="BACKGROUND"/>
+          <color value="#000000" type="TEXT_FOREGROUND"/>
+       </state>
+       <imagePainter method="textFieldBorder" path="text.png"
+          sourceInsets="3 3 3 3" paintCenter="false"/>
+       <insets top="3" left="3" bottom="3" right="3"/>
+    </style>
+    <bind style="textfield" type="region" key="TextField"/>
+
+向列表20-2中的程序添加JTextField会生成类似于图20-12所示的屏幕结果。当我们调整屏幕尺寸时，文本域的边框会变化。从技术上来说，类似的定义同样可以用于JTextArea，因为在这里所用的图像并没有高度限制。
+
+.. figure:: images/Swing_20_12.png
+   :alt: Swing_20_12.png
+
+   Swing\_20\_12.png
+小结
+----
+
+在本章中，我们探讨了Swing组件的可插拨的观感体系结构。因为Swing组件的所有方面都是使用Java语言编写的，如果我们不喜欢组件的某一方面，我们就可以进行简单的修改。而修改正是本章向我们展示的内容。
+
+首先，我们了解了如何查询预安装的LookAndFeel类以及如何修改我们当前的观感。接下来，我们了解了如何通过UIManager修改其UIDefaults来自定义当前观感。我们了解了这些默认设置如保实现了UIResource接口，从而当观感类变化时设置发生变化。另外，我们了解了为了更好的资源使用这些资源如何实现UIDefaults.LazyValue与UIDefaults.ActiveValue。而且我们了解了客户端属性如何由API视图隐藏，但是仍然可以用于自定义一个组件的观感。
+
+为了自定义各种组件的观感，我们探讨了创建新的UI委托以及新的观感类，其中的一些是非可见的或是辅助的。我们同时了解了Metal观感如何通过其主题的使用包含特定的行为。最后，我们探讨了自定义Synth观感。
+
+在第21章中，我们将会了解Swing undo框架，他可以用来设计撤销与重做操作。

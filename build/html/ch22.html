@@ -1,0 +1,278 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>可访问性 &mdash; The Definitive Guide to Java Swing Third Edtion 0.01 documentation</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.01',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="The Definitive Guide to Java Swing Third Edtion 0.01 documentation" href="index.html" />
+    <link rel="prev" title="Undo框架" href="ch21.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="ch21.html" title="Undo框架"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">The Definitive Guide to Java Swing Third Edtion 0.01 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="id1">
+<h1>可访问性<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h1>
+<p>Swing框架的一个标准部分就是对于辅助技术的支持。这些技术使得我们的Swing程序可以为具有身体缺陷的人所使用。一些用户需要屏蔽阅读器，声音或是不需要鼠标的输入模式。无鼠标的输入通常是通过键盘实现的，但是也可能是通过特殊的输入设置实现，例如语音设备。</p>
+<p>用户并不需要具有身体缺陷来体验作为开发者的我们可以用来使得我们的程序更容易访问的选项。例如，我们可以添加工具提示文本，当用户将鼠标放置在组件上时可以看到。使用辅助设备的具有视觉限制的用户可以依赖这些文本来使用屏幕阅读器描述组件。其他选项包含键盘快捷键与菜单热键，这些都可以使得用户在屏幕中浏览并且使用最小的手部运动来激活动作。</p>
+<p>本章将会提供一些建议来帮助我们创建符合美国联邦法案的程序。</p>
+<div class="section" id="accessibility">
+<h2>Accessibility类<a class="headerlink" href="#accessibility" title="Permalink to this headline">¶</a></h2>
+<p>javax.accessibility包最常用与最少用到的包。为了保证我们正确的配置我们的Swing组件，所有的事情都在幕后进行。当一个使用辅助设备的用户运行程序时，Java
+Accessibitity
+API就会进入并为设备提供必要的信息。例如，当创建一个ImageIcon，有两个构造函数集合：具有description参数以及没有description参数的。</p>
+<div class="code java highlight-python"><pre>// Without description argument
+public ImageIcon()
+public ImageIcon(Image image)
+public ImageIcon(String filename)
+public ImageIcon(URL location)
+public ImageIcon(byte imageData[])
+// With description argument
+public ImageIcon(Image image, String description)
+public ImageIcon(String filename, String description)
+public ImageIcon(URL location, String description)
+public ImageIcon(byte imageData[], String description)</pre>
+</div>
+<p>通过使用带有描述参数的构造函数创建ImageIcon，我们的程序就会自动的变得具有更好的访问性。创建使用带有description参数的构造函数创建图标以外，我们还可以稍后通过setDescription()方法设置文本。</p>
+<p>一个重要的接口，Accessible，与一个抽象类，AccessibleContext，为Java
+Accessibility API提供了核心框架。</p>
+<div class="section" id="accessible">
+<h3>Accessible接口<a class="headerlink" href="#accessible" title="Permalink to this headline">¶</a></h3>
+<p>对于在可访问性框架之内工作的Swing组件而言，他必须实现Accessible接口。</p>
+<div class="code java highlight-python"><pre>public interface Accessible {
+  // Property
+  public AccessibleContext getAccessibleContext();
+}</pre>
+</div>
+<p>正如其接口定义所示，其只有一个方法，就是为实现类获取当前的AccessibleContext实例。所有的标准AWT与Swing组件都实现了这个接口。一些组件内部部分，例如在JInternalFrame标题面板上的系统菜单栏，也实现了Accessible接口。</p>
+</div>
+<div class="section" id="accessiblecontext">
+<h3>AccessibleContext类<a class="headerlink" href="#accessiblecontext" title="Permalink to this headline">¶</a></h3>
+<p>尽管所有的组件必须实现Accessible接口，而实际所完成的工作是在他所返回的AccessibleContext实例内部完成的。所返回的环境实际是另一个组件。他将可访问属性映射到组件属性。例如，对于JLable组件，当我们获取其AccessibleContext时，我们实际上获取的是一个名为AccessibleJLabel的派生类。这个子类映射JLabel属性，例如accessibleName属性映射到text属性。如表22-1所示，抽象类本身要比较接口大得多。</p>
+<div class="figure">
+<img alt="Swing_table_22_1.png" src="_images/Swing_table_22_1.png" />
+<p class="caption">Swing_table_22_1.png</p>
+</div>
+<div class="figure">
+<img alt="Swing_table_22_1_2.png" src="_images/Swing_table_22_1_2.png" />
+<p class="caption">Swing_table_22_1_2.png</p>
+</div>
+<p>如表22-1所示，在javax.accessibility包中还有一些其他类。然而，实际上，我们并不需要担心这些，只要我们创建的组件与屏幕是可访问的即可。</p>
+</div>
+</div>
+<div class="section" id="id2">
+<h2>创建可访问的组件<a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h2>
+<p>本节提供一些建议来帮助我们创建在使用辅助技术时可以访问的程序。这并不意味着一个冗长的列表，但是他确实提供了一个有益技术的概述。</p>
+<ol class="arabic simple">
+<li>首要的一点，尝试在没有鼠标的情况下使用我们的程序。我们的菜单是否支持快捷键与热键？我们的按钮是否具有与其相关联的热键？我们的文本域是否具有通过setLabelFor()方法设置与其相关联的标签，并且每一个标签具有热键？</li>
+<li>确保我们的组件具有一个与其相关联的简短文本。如果一个组件，例如仅有图片的按钮，没有相关联的字符串，调用AccessibleContext的setAccessibleName()方法
+。记住，如果我们的程序目标是国际用户，一定要本地化其名字。</li>
+<li>尽可能使用工具提示文本。如果在一个组件上具有工具提示文本并不合适，记住调用setAccessibleDescription()。</li>
+<li>我们的自定义组件是否可访问？如果我们派生JComponent，则该类并没有实现Accessible接口。但是如果我们派生JPanel，则已经实现Accessible接口。然而，尽管JPanel实现了此接口，我们的组件也许并没有提供必需的可访问性信息。在合适的情况下，考虑扩展JComponent生成我们自定义的AccessibleContext，AccessibleJComponent。</li>
+<li>位于不可访问容器内的组件也是不可访问的。记住使用JPanel作为我们的容易，而不是AWT的Container类，来保证我们的屏幕是可访问的。</li>
+</ol>
+</div>
+<div class="section" id="java">
+<h2>使用Java访问桥<a class="headerlink" href="#java" title="Permalink to this headline">¶</a></h2>
+<p>如果我们恰好在Microsoft
+Windows平台下工作，我们可以尝试Java访问桥，由http://java.sun.com/products/accessbridge/
+可以获得。这个工具很容易使用。</p>
+<p>下载accessbridge-1_2.zip之后，解压并运行Install程序，可以在installer子目录中找到。在程序检测Java虚拟机兼容性之后，他会提示我们选择桥安装在哪个兼容的JVM中。如图22-1所示，如果我们恰好在系统有多个JVM，这也许会在多个位置。选择我们最可能使用的一个。这个程序也许还会提示我们移除我们机器上的一些旧版本。以c:\program
+files\java开头的目录是浏览器Java插件的不同版本。</p>
+<div class="figure">
+<img alt="Swing_22_1.png" src="_images/Swing_22_1.png" />
+<p class="caption">Swing_22_1.png</p>
+</div>
+<p>在点击安装按钮之后，我们会看到一个成功容器，如图22-2所示。安装很快速。</p>
+<div class="figure">
+<img alt="Swing_22_2.png" src="_images/Swing_22_2.png" />
+<p class="caption">Swing_22_2.png</p>
+</div>
+<p>一旦我们安装了这个访问桥，我们就可以像Java Monkey与Java
+Ferret那样运行程序（没错，这就是他们的真实名字）。一旦运行，这些程序就会将他们关联到在相同的JVM上运行的任何Java程序。例如，我们可以尝试使用Java
+Monkey运行在第4章所提示的示例程序，如列表22-1所示。</p>
+<div class="code java highlight-python"><pre>package swingstudy.ch22;
+
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.EventQueue;
+
+import javax.swing.JButton;
+import javax.swing.JFrame;
+import javax.swing.JPanel;
+import javax.swing.JToolTip;
+
+public class TooltipSample {
+
+    /**
+     * @param args
+     */
+    public static void main(String[] args) {
+        // TODO Auto-generated method stub
+
+        Runnable runner = new Runnable() {
+            public void run() {
+                JFrame frame = new JFrame("Tooltip Sample");
+                frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+
+                JPanel panel = new JPanel();
+                panel.setToolTipText("&lt;html&gt;Tooltip&lt;br&gt;Message");
+                frame.add(panel, BorderLayout.CENTER);
+
+                JButton button = new JButton("Hello, world") {
+                    public JToolTip createToolTip() {
+                        JToolTip tip = super.createToolTip();
+                        tip.setBackground(Color.YELLOW);
+                        tip.setForeground(Color.RED);
+                        return tip;
+                    }
+                    public boolean contains(int x, int y) {
+                        if(x&lt;100) {
+                            setToolTipText("Got Green Eggs?");
+                        }
+                        else {
+                            setToolTipText("Got Ham?");
+                        }
+                        return super.contains(x, y);
+                    }
+                };
+                button.setToolTipText("Hello, World");
+                frame.add(button, BorderLayout.NORTH);
+
+                frame.setSize(300, 150);
+                frame.setVisible(true);
+            }
+        };
+        EventQueue.invokeLater(runner);
+    }
+
+}</pre>
+</div>
+<p>我们将会看到图22-3所示的结果。如果我们没有立即看到组件树，选择Java
+Monkey容器中File菜单下的Refresh Tree选项。</p>
+<div class="figure">
+<img alt="Swing_22_3.png" src="_images/Swing_22_3.png" />
+<p class="caption">Swing_22_3.png</p>
+</div>
+<p>选择Panels菜单下的Accessibility API
+Panel选项来查看通过AccessibleContext可以获得的信息，例如名字，描述，以及角色。图22-4显示了一个示例。记住向下滚动来查看所有可用的信息。</p>
+<div class="figure">
+<img alt="Swing_22_4.png" src="_images/Swing_22_4.png" />
+<p class="caption">Swing_22_4.png</p>
+</div>
+<p>Java访问桥所提供的另一个程序就是Java
+Ferret。这是一个跟踪程序，其中我们可以全能不同事件的跟踪，例如鼠标，焦点以及菜单选择。如果我们全能了鼠标跟踪，我们将会程序的更新。图22-5显示了当我们在示例工具提示文本程序中的JButton上面移动鼠标时所显示的Java
+Ferret信息的示例。</p>
+<div class="figure">
+<img alt="Swing_22_5.png" src="_images/Swing_22_5.png" />
+<p class="caption">Swing_22_5.png</p>
+</div>
+</div>
+<div class="section" id="id3">
+<h2>小结<a class="headerlink" href="#id3" title="Permalink to this headline">¶</a></h2>
+<p>本章探讨了Swing
+API如何有助于使得我们的程序同时对于正常用户与身体有缺陷的用户更具有可访问性。通过遵循本章中的一些建议，我们可以程序可以更好的行使联邦与国际用户。借助于Java
+Monkey与Ferret程序，我们可以发现是否向需要可访问性特性的用户公开了足够的属性。</p>
+<p>这就要结束我们的Swing旅程了。记住访问由Sun在http://www.theswingconnection.com/
+的Swing连接来跟踪最新的发展。</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">可访问性</a><ul>
+<li><a class="reference internal" href="#accessibility">Accessibility类</a><ul>
+<li><a class="reference internal" href="#accessible">Accessible接口</a></li>
+<li><a class="reference internal" href="#accessiblecontext">AccessibleContext类</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#id2">创建可访问的组件</a></li>
+<li><a class="reference internal" href="#java">使用Java访问桥</a></li>
+<li><a class="reference internal" href="#id3">小结</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="ch21.html"
+                        title="previous chapter">Undo框架</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/ch22.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="ch21.html" title="Undo框架"
+             >previous</a> |</li>
+        <li><a href="index.html">The Definitive Guide to Java Swing Third Edtion 0.01 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2014, mylxiaoyi.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2b3.
+    </div>
+  </body>
+</html>

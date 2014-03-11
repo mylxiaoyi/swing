@@ -1,0 +1,1098 @@
+高级Swing容器
+=============
+
+第10章探讨了AWT与Swing中的布局管理器。在本章中，我们将会了解一些构建在这些布局管理器之上的容器以及其他的一些无需布局管理器的容器。
+
+我们的探讨由Box类开始，我们将会发现使用BoxLayout管理器来创建一个单行或单列组件的最好方法。接下来我们会了解JSplitPane容器，他类似于其中只有两个组件的特殊的Box。JSplitPane提供了一个分隔栏，用户可以拖动这个分隔栏来调整组件的大小以满足各自的需求。
+
+然后我们会探讨JTabbedPane容器，其工作方工式类似于一个由CardLayout布局管理器管理的容器，所不同的是容器内建的标签可以使得我们由一个卡片移动到一个卡片。我们也可以使用JTabbedPane创建多个屏幕，属性页对话框用于用户输入。
+
+最后讨论的两个高级Swing容器是JScrollPane与JViewport。这两个组件都提供了在有限的屏幕真实状态之内显示大组件集合的能力。JScrollPane为显示区域添加滚动条，从而我们可以在一个小区域内在大组件周围移动。事实上，JScrollPane使用JViewport来分割本看不见的大组件部分。
+
+下面我们就开始了解第一个容器，Box类。
+
+Box类
+-----
+
+作为JComponent类的子类，Box类是借助于BoxLayout管理器创建单行或单列组件的一个特殊Java
+Container。Box容器的作用类似于JPanel（或Panel），但是具有一个不同的默认布局管理器，BoxLayout。在Box之外使用BoxLayout有一些麻烦，而Box简化了BoxLayout的使用。我们只需三步就可以将BoxLayout管理器与容器相关联：手动创建容器，创建布局管理器，然后将管理器与容器相关联。当我们创建一个Box的实例时，我们一次就执行了这三个步骤。另外，我们可以使用Box的名为Box.Filler的内联类来更好的放置容器内的组件。
+
+创建Box
+~~~~~~~
+
+我们有三种方法来创建Box，一个构造函数以及两个静态工厂方法：
+
+.. code:: java
+
+    public Box(int direction)
+    Box horizontalBox = new Box(BoxLayout.X_AXIS);
+    Box verticalBox   = new Box(BoxLayout.Y_AXIS);
+    public static Box createHorizontalBox()
+    Box horizontalBox = Box.createHorizontalBox();
+    public static Box createVerticalBox()
+    Box verticalBox   = Box.createVerticalBox();
+
+注意
+，Box类并没有被设计用来作为JavaBean组件使用。在IDE中这个容器的使用十分笨拙。
+
+不经常使用的构造函数需要布局管理器主坐标的方向。这个方向是通过BoxLayout的两个常量来指定的：X\_AXIS或Y\_AXIS，分别用来创建水平或垂直盒子。我们无需手动指定方向，我们可以简单的通过所提供的工厂方法来创建所需方向的盒子：createHorizontalBox()或createVerticalBox()。
+
+使用JLabel，JTextField与JButton填充一个水平与垂直Box演示了BoxLayout的灵活性，如图11-1所示。
+
+.. figure:: images/Swing_11_1.png
+   :alt: Swing_11_1.png
+
+   Swing\_11\_1.png
+对于水平容器，标签与按钮以其最优的宽度显示，因为他们的最大尺寸与最优尺寸相同。文本域使用余下的空间。
+
+在垂直容器中，标签与按钮的尺寸也是他们的最优尺寸，因为他们的最大尺寸依然与他们的最优尺寸相同。文本的高度填充了标签与按钮没有使用的高度，而其宽度与容器的宽度相同。
+
+用于创建图11-1所示屏幕的源码显示在列表11-1中。
+
+.. code:: java
+
+    package swingstudy.ch11;
+
+    import java.awt.BorderLayout;
+    import java.awt.EventQueue;
+
+    import javax.swing.Box;
+    import javax.swing.JButton;
+    import javax.swing.JFrame;
+    import javax.swing.JLabel;
+    import javax.swing.JTextField;
+
+    public class BoxSample {
+
+        /**
+         * @param args
+         */
+        public static void main(String[] args) {
+            // TODO Auto-generated method stub
+
+            Runnable runner = new Runnable() {
+                public void run() {
+                    JFrame verticalFrame = new JFrame("Vertical");
+                    verticalFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+                    
+                    Box verticalBox = Box.createVerticalBox();
+                    verticalBox.add(new JLabel("Top"));
+                    verticalBox.add(new JTextField("Middle"));
+                    verticalBox.add(new JButton("Bottom"));
+                    verticalFrame.add(verticalBox, BorderLayout.CENTER);
+                    verticalFrame.setSize(150, 150);
+                    verticalFrame.setVisible(true);
+                    
+                    JFrame horizontalFrame = new JFrame("Horizontal");
+                    horizontalFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+                    
+                    Box horizontalBox = Box.createHorizontalBox();
+                    horizontalBox.add(new JLabel("Left"));
+                    horizontalBox.add(new JTextField("Middle"));
+                    horizontalBox.add(new JButton("Right"));
+                    horizontalFrame.add(horizontalBox, BorderLayout.CENTER);
+                    horizontalFrame.setSize(150, 150);
+                    horizontalFrame.setVisible(true);
+                }
+            };
+            
+            EventQueue.invokeLater(runner);
+        }
+
+    }
+
+Box属性
+~~~~~~~
+
+如表11-1所示，Box只有两个属性。尽管布局属性由其父类Container继承了setLayout(LayoutManager)方法，但是如果在Box对象上调用，这个类会抛出一个AWTError。一旦BoxLayout管理器在其构造函数中被设置，那么就能再改变，其方向也不能改变。
+
+.. figure:: images/Swing_table_11_1.png
+   :alt: Swing_table_11_1.png
+
+   Swing\_table\_11\_1.png
+使用Box.Filer
+~~~~~~~~~~~~~
+
+Box类具有一个内联类Box.Filler，可以帮助我们创建不可见的组件从而更好的为采用BoxLayout布局管理器的容器内的组件进行位置布局。通过直接操作所创建组件的最小，最大与最优尺寸，我们可以创建可以增长来填充未用的空间或是保持固定尺寸的组件，从而屏幕更为用户所接受。
+
+注意，由技术上来说，Box.Filler的使用并没有局限于使用BoxLayout布局管理器的容器。我们可以将其用在其他任何使用Component的地方。只是组件是不可见的。
+
+我们无需直接使用Box.Filler类，Box类的一些静态方法可以帮助我们创建合适的填充器组件。工厂方法可以使得我们通过类型对组件进行分类，而不是通过最小值，最大值或是最优尺寸进行分类。我们将会在接下来的两节中了解这些方法。
+
+如果我们对类定义感兴趣，Box.Filler的类定义显示如下。类似于Box类，Box.Filler本来也不是作为JavaBean组件来使用的。
+
+.. code:: java
+
+    public class Box.Filler extends Component implements Accessible {
+      // Constructors
+      public Filler(Dimension minSize, Dimension prefSize, Dimension maxSize);
+      // Properties
+      public AccessibleContext getAccessibleContext();
+      public Dimension getMaximumSize();
+      public Dimension getMinimumSize();
+      public Dimension getPreferredSize();
+      // Others
+      protected AccessibleContext accessibleContext;
+      public void changeShape(Dimension minSize, Dimension prefSize, Dimension maxSize);
+    }
+
+创建扩展区域
+~~~~~~~~~~~~
+
+如果一个组件具有较小的最小尺寸与最优尺寸，而最大尺寸要大于屏幕尺寸，组件可以在一个或是两个方向上进行扩展以占用容器中组件之间的未用空间。在Box的情况下，或者更确切的说，布局管理器为BoxLayout的容器，扩展出现在布局管理器初始选择的方向上（BoxLayout.X\_AXIS或BoxLayout.Y\_AXIS）。对于水平的盒子，扩展影响了组件的宽度。对于垂直的盒子，扩展反映在组件的高度上。
+
+通常为这种扩展组件类型指定的名字为胶水（glue）。glue的两种类型为独立于方向的glue与方向相关的glue。下面的Box工厂方法用于创建胶合组件：
+
+.. code:: java
+
+    public static Component createGlue()
+    // Direction independent
+    Component glue = Box.createGlue();
+    aBox.add(glue);
+    public static Component createHorizontalGlue();
+    // Direction dependent: horizontal
+    Component horizontalGlue = Box.createHorizontalGlue();
+    aBox.add(horizontalGlue);
+    public static Component createVerticalGlue()
+    // Direction dependent: vertical
+    Component verticalGlue  = Box.createVerticalGlue();
+    aBox.add(verticalGlue);
+
+一旦我们创建了glue，我们就可以像添加其他的组件一样将其添加到容器中，通过Container.add(Component)或是其他的add()方法。glue可以使得我们在容器内对齐组件，如图11-2所示。
+
+.. figure:: images/Swing_11_2.png
+   :alt: Swing_11_2.png
+
+   Swing\_11\_2.png
+我们可以将胶合组件添加到任何其布局管理器考虑到组件的最小尺寸，最大尺寸与最优尺寸的容器中，例如BoxLayout。例如，图11-3演示了当我们将一个胶合组件添加到JMenuBar而在最后一个JMenu之前的样子。因为JMenuBar的布局管理器为BoxLayout（实际上是子类javax.swing.plaf.basic.DefaultMenuLayout），这一操作可以将最后一个菜单推到工具栏的右边，类似于Motif/CDE风格的帮助菜单。
+
+注意，我们推荐避免使用胶合组件的这种功能来设置菜单栏上的菜单。事实上JMenuBar的public
+void sethelpMenu(JMenu
+menu)将会实现这种行为而且不会抛出Error。当然，我们中的许多人仍在等待这种操作。
+
+.. figure:: images/Swing_11_3.png
+   :alt: Swing_11_3.png
+
+   Swing\_11\_3.png
+创建固定区域
+~~~~~~~~~~~~
+
+因为胶合组件会扩展来填充可用的空间，如果我们希望组件之间有一段固定的距离，我们需要创建一个固定组件，或strut。当我们这样做时，我们需要指定strut的尺寸。strut可以是二维的，需要我们指定组件的宽度或调试；或者也可以是一维的，需要我们指定宽度或高度。
+
+.. code:: java
+
+    public static Component createRigidArea(Dimension dimension)
+    // Two-dimensional
+    Component rigidArea = Box. createRigidArea(new Dimension(10, 10));
+    aBox.add(rigidArea);
+    public static Component createHorizontalStrut(int width)
+    // One-dimensional: horizontal
+    Component horizontalStrut = Box. createHorizontalStrut(10);
+    aBox.add(horizontalStrut);
+    public static Component createVerticalStrut(int height)
+    // One-dimensional: vertical
+    Component verticalStrut   = Box. createVerticalStrut(10);
+    aBox.add(verticalStrut);
+
+注意，尽管使用createGule()方法创建的方向无关的胶合组件在我们修改容器方向时并没有副作用，然而创建固定区域会在修改坐标时引起布局问题。（想像一下拖动菜单栏）这是因为组件具有一个最小尺寸。使用createRigidArea()方法并不推荐，除非我们确实需要一个二维的空组件。
+
+图11-4显示了一些固定组件。注意，我们可以变化不同的组件之间的固定距离，而且容器最末的固定组件并没有效果。在用户调整屏幕之后，组件之间的固定距离会保持不变，如图11-4所示。
+
+.. figure:: images/Swing_11_4.png
+   :alt: Swing_11_4.png
+
+   Swing\_11\_4.png
+JSplitPane类
+------------
+
+类似于Box容器，JSplitPane容器允许我们在单行或单列中显示组件。然而Box可以包含任意数量的组件，JSplitPane只可以用来显示两个组件。组件可以变化尺寸并通过一个可移动的分隔栏进行分隔。分隔栏可以使得用户可以通过拖拽分隔栏来调整所包含组件的尺寸。图11-5显示了垂直与水平分割面板，同时显示在移动分隔栏之前与之后的样子。
+
+.. figure:: images/Swing_11_5.png
+   :alt: Swing_11_5.png
+
+   Swing\_11\_5.png
+创建JSplitPane
+~~~~~~~~~~~~~~
+
+JSplitPane有五个构造函数。通过这些构造函数，我们可以初始化所包含组件对的方向，设置continuousLayout属性或是为容器初始化组件对。
+
+.. code:: java
+
+    public JSplitPane()
+    JSplitPane splitPane = new JSplitPane();
+
+    public JSplitPane(int newOrientation)
+    JSplitPane splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
+
+    public JSplitPane(int newOrientation, boolean newContinuousLayout)
+    JSplitPane splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT, true);
+
+    public JSplitPane(int newOrientation, Component newLeftComponent,
+      Component newRightComponent)
+    JComponent topComponent = new JButton("Top Button");
+    JComponent bottomComponent = new JButton("Bottom Button");
+    JSplitPane splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT,
+      topComponent, bottomComponent);
+
+    public JSplitPane(int newOrientation, boolean newContinuousLayout,
+      Component newLeftComponent, Component newRightComponent)
+    JSplitPane splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT, true,
+      topComponent, bottomComponent);
+
+除非特别指定，默认方向为水平方向。方向可以通过JSplitPane的常量VERTICAL\_SPLIT或HORIZONTAL\_SPLIT来指定。continuousLayout属性设置瘊定了当用户拖动分隔栏时分隔面板如何响应。当设置为false（默认）时，在拖动时只有分隔符被重绘。当设置为true时，在用户拖拽分隔栏时，JSplitPane会调整尺寸并重绘分隔栏每一边的组件。
+
+注意，如果方向为JSplitPane.VERTICAL\_SPLIT，我们可以将上部的组件看作左侧组件，而将下部组件看作右侧组件。
+
+如果我们使用无参数的构造函数，分隔面板内的初始组件集合由按钮组成（两个JButton组件）。其他的两个构造函数显示的设置了初始的两个组件。奇怪的是，其余的两个构造函数默认情况下并没有提供容器内的组件。要添加或修改JSplitPane内的组件，请参看稍后的“修改JSplitPane组件”一节。
+
+JSplitPane属性
+~~~~~~~~~~~~~~
+
+表11-2显示了JSplitPane的17个属性。
+
+.. figure:: images/Swing_table_11_2_1.png
+   :alt: Swing_table_11_2_1.png
+
+   Swing\_table\_11\_2\_1.png
+.. figure:: images/Swing_table_11_2_2.png
+   :alt: Swing_table_11_2_2.png
+
+   Swing\_table\_11\_2\_2.png
+**设置方向**
+
+除了在构造函数中初始化方向以外，我们可以通过将方向属性修改为JSplitPane.VERTICAL\_SPLIT或是JSplitPane.HORIZONTAL\_SPLIT来修改JSplitPane方向。如果我们试着将属性修改为非等同的设置，则会抛出IllegalArgumentException。
+
+不推荐在运行时动态修改方向，因为这会使用户感到迷惑。然而，如果我们正在使用可视化开发工具，我们可以在创建JSplitPane之后显示设置方向属性。当没有进行可视化编程时，我们通常在创建JSplitPane时初始化方向。
+
+**修改JSplitPane组件**
+
+有四个读写属性可以用来处理JSplitPane内组件的不同位置：bottomComponent,
+leftComponent,
+rightComponent与topComponent。事实上，这四个属性表示两种内部组件：左边与上部组件是一种；右边与下部组件表示另一种。
+
+我们应该使用与我们的JSplitPane的方向相适应的属性。使用不合适的属性方法会使得程序员的维护生命十分困难。想像一下，在创建用户界面之后，在六个月之后看到如下的代码：
+
+.. code:: java
+
+    JComponent leftButton = new JButton("Left");
+    JComponent rightButton = new JButton("Right");
+    JSplitPane splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
+    splitPane.setLeftComponent(leftButton);
+    splitPane.setRightComponent(rightButton);
+
+如果我们看一下代码，基于变量名以及setXXXComponent()方法的使用，我们也许会认为屏幕在左边包含一个按钮，而右边也是一个按钮。但是实例化的JSplitPane具有一个垂直方向，所创建的界面如图11-6所示。所用的变量是按钮的标签，而不是他们的位置。
+
+.. figure:: images/Swing_11_6.png
+   :alt: Swing_11_6.png
+
+   Swing\_11\_6.png
+如果setTopComponent()与setBottomComponent()方法使用更好的变量名，代码会更容易理解：
+
+.. code:: java
+
+    JComponent topButton = new JButton("Left");
+    JComponent bottomButton = new JButton("Right");
+    JSplitPane splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
+    splitPane.setTopComponent(topButton);
+    splitPane.setBottomComponent(bottomButton);
+
+**移动JSplitPane分隔符**
+
+初始时，分隔符显示在上部组件的下面或是左边组件的右边合适尺寸处。任何时候，我们可以通过调用JSplitPane的restToPreferredSizes()方法来重新设置分隔位置。如果我们要编程来定位分隔符，我们可以通过setDividerLocation(newLocation)来修改dividerLocation属性。这个属性可以修改一个int位置，表示距离上部或左边的绝对距离，或者是设置为一个0.0与1.0之间的double值，表示JSplitPane容器宽度的百分比。
+
+注意，如果将属性设置为0.0与1.0范围之外的double值则会抛出IllegalArgumentException。
+
+如果我们要设置分隔符的位置，我们必须等到组件已经被实现。本质上，这就意味着组件必须可见。有多种方法可以实现这一操作，最直接的方法就是向JSplitPane关联一个HierarchyListener，并且监听HierarchyEvent何时变为SHOWING\_CHANGED类型。下面的代码片段演示了这一操作，将分隔符位置修改为75%。
+
+.. code:: java
+
+    HierarchyListener hierarchyListener = new HierarchyListener() {
+      public void hierarchyChanged(HierarchyEvent e) {
+        long flags = e.getChangeFlags();
+        if ((flags & HierarchyEvent.SHOWING_CHANGED) ==
+             HierarchyEvent.SHOWING_CHANGED) {
+          splitPane.setDividerLocation(.75);
+        }
+      }
+    };
+    splitPane.addHierarchyListener(hierarchyListener);
+
+尽管我们可以使用double值设置dividerLocation属性，我们只会获得了一个标识绝对位置的int值。
+
+**调整组件尺寸与使用可扩展的分隔符**
+
+对于JSplitPane内的组件调整尺寸存在限制。JSplitPane会考虑到每一个所包含组件的最小尺寸。如果拖动分隔符使得一个组件缩小到小于其最小尺寸，则滚动面板不会允许用户拖动分隔符超过这个最小尺寸。
+
+注意，我们可以编程实现将分隔符放在任意位置，甚至是使得组件小于其最小尺寸。然而这并不是一个好主意，因为组件最小尺寸的存在是有原因的。
+
+如果组件的最小维度对于JSplitPane来说过大，我们需要修改组件的最小尺寸，从而分隔符可以使用组件的空间。对于AWT组件，修改一个标准组件的最小尺寸需要子类派生。对于Swing组件，我们可以简单的通过一个新的Dimension来调用JComponent的setMinimumSize()方法。然而，最小尺寸的设置要合理。如果我们显式的缩小其最小尺寸，组件就不会正常的工作。
+
+有一个更好的方法可以使得一个组件比其他组件占用更多的空间：将JSplitPane的onTouchExpandable属性设置为true。当这个属性为真时，就会为分隔符添加一个图标，从而使得用户可以完全折叠起两个组件中的一个来为另一个组件指定全部的空间。在图11-7的盒子中，图标是一个上下箭头的组合。
+
+图11-7显示了这个图标显示的样子（通过Ocean观感渲染）并且演示了在选择分隔符上的向上箭头来将下部的组件扩展为其全部尺寸时的样子。再一次点击分隔符上的图标会使得组件又回到其先前的位置。点击分隔符上图标以外的位置会将分隔符定位到使得折叠的组件位于其最优尺寸处。
+
+.. figure:: images/Swing_11_7.png
+   :alt: Swing_11_7.png
+
+   Swing\_11\_7.png
+注意，并没有较容易的方法来修改扩展分隔符的图标或是修改分隔符如何渲染。这两方面都是通过BasicSplitPaneDivider子类来定义并且在用于特定观感类型的BasicSplitPaneUI子类的createDefaultDivider()方法中创建的。我们可以简单修改分隔符周围的边框，这是一个自定义边框。
+
+lastDividerLocation属性可以使得我们或是系统查询前一个分隔符位置。当用户选择maximizer图标来取消JSplitPane中的一个组件的最小化时，JSplitPane会使用这个属性。
+
+小心，要小心其最小尺寸是基于容器尺寸或是其初始尺寸的组件。将这些属性放置在JSplitPane中也许会要求我们手动设置组件的minimum或是最优尺寸。当用在JSplitPane中时最常引起问题的组件就是JTextArea与JScrollPane。
+
+**调整JSplitPane尺寸**
+
+如果在JSplitPane中存在其所包含的组件的最优尺寸所不需要的额外空间时，这个空间会依据resizeWeight属性设置进行分配。这个属性的初始设置为0.0，意味着右边或是下边的组件会获得额外的空间。将这个设置修改为1.0会将所有的空间指定给左边或上部的组件。0.5则会在两个组件之间分隔面板。图11-8显示了这些变化的效果。
+
+.. figure:: images/Swing_11_8.png
+   :alt: Swing_11_8.png
+
+   Swing\_11\_8.png
+监听JSplitPane属性变化
+~~~~~~~~~~~~~~~~~~~~~~
+
+JSplitPane类定义了下列的常量来帮助监听边界属性的变化：
+
+-  CONTINUOUS\_LAYOUT\_PROPERTY
+-  DIVIDER\_LOCATION\_PROPERTY
+-  DIVIDER\_SIZE\_PROPERTY
+-  LAST\_DIVIDER\_LOCATION\_PROPERTY
+-  ONE\_TOUCH\_EXPANDABLE\_PROPERTY
+-  ORIENTATION\_PROPERTY
+-  RESIZE\_WEIGHT\_PROPERTY
+
+监听用户何时移动分隔符的一个方法就是监听lastDividerLocation属性的变化。列表11-2中的示例将一个PropertyChangeListener关联到JSplitPane，从而显示当前的分隔符位置，当前的最后位置以及前一个最后位置。分隔符上面与下面的组件是OvalPanel类（在第四章中讨论），绘制来填充组件的维度。这个组件有助于演示将continuousLayout属性设置true的效果状态。
+
+.. code:: java
+
+    package swingstudy.ch11;
+
+    import java.awt.BorderLayout;
+    import java.awt.EventQueue;
+    import java.beans.PropertyChangeEvent;
+    import java.beans.PropertyChangeListener;
+
+    import javax.swing.JComponent;
+    import javax.swing.JFrame;
+    import javax.swing.JSplitPane;
+
+    import swingstudy.ch04.OvalPanel;
+
+    public class PropertySplit {
+
+        /**
+         * @param args
+         */
+        public static void main(String[] args) {
+            // TODO Auto-generated method stub
+
+            Runnable runner = new Runnable() {
+                public void run() {
+                    JFrame frame = new JFrame("Property Split");
+                    frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+                    
+                    // create/configure split pane
+                    JSplitPane splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
+                    splitPane.setContinuousLayout(true);
+                    splitPane.setOneTouchExpandable(true);
+                    
+                    // create top component
+                    JComponent topComponent = new OvalPanel();
+                    splitPane.setTopComponent(topComponent);
+                    
+                    // create bottom component
+                    JComponent bottomComponent = new OvalPanel();
+                    splitPane.setBottomComponent(bottomComponent);
+                    
+                    // create PropertyChangeListener
+                    PropertyChangeListener propertyChangeListener = new PropertyChangeListener() {
+                        public void propertyChange(PropertyChangeEvent event) {
+                            JSplitPane sourceSplitPane = (JSplitPane)event.getSource();
+                            String propertyName = event.getPropertyName();
+                            if(propertyName.equals(JSplitPane.LAST_DIVIDER_LOCATION_PROPERTY)){
+                                int current = sourceSplitPane.getDividerLocation();
+                                System.out.println("Current: "+current);
+                                Integer last = (Integer)event.getNewValue();
+                                System.out.println("Last: "+last);
+                                Integer priorLast = (Integer)event.getOldValue();
+                                System.out.println("Prior last: "+priorLast);
+                            }
+                        }
+                    };
+                    // attach listener
+                    splitPane.addPropertyChangeListener(propertyChangeListener);
+                    
+                    frame.add(splitPane, BorderLayout.CENTER);
+                    frame.setSize(300, 150);
+                    frame.setVisible(true);
+                }
+            };
+            EventQueue.invokeLater(runner);
+        }
+
+    }
+
+如下面的示例输出所示，当我们运行前面的程序时，我们会注意到lastDividerLocation属性的变化来反映分隔符的拖动。当用户停止拖动分隔符时，最后设置被设置为dividerLocation属性的前一个设置，而不是用户开始拖动时的初始设置值。当用户拖动分隔符时，当前值变为最后一个值然后变为前一个最后值。
+
+Current: 11 Last: -1 Prior last: 0 Current: 12 Last: 11 Prior last: -1
+Current: 12 Last: 12 Prior last: 11 Current: 12 Last: 11 Prior last: 12
+Current: 15 Last: 12 Prior last: 11 Current: 15 Last: 15 Prior last: 12
+Current: 15 Last: 12 Prior last: 15 Current: 112 Last: 15 Prior last: 12
+Current: 112 Last: 112 Prior last: 15 Current: 112 Last: 15 Prior last:
+112
+
+注意，PropertyChangeListener并不支持JSplitPane类的BOTTOM, DIVIDER, LEFT,
+RIGHT与TOP常量。相反，他们是为add(Component component, Object
+constraints)方法所用的内部约束。
+
+自定义JSplitPane类型
+~~~~~~~~~~~~~~~~~~~~
+
+每一个可安装的Swing观感提供了不同的JSplitPane外观以及组件的默认UIResource值集合。图11-9显示了预安装的观感类型集合的JSplitPane容器外观：Motif，Windows以及Ocean。
+
+.. figure:: images/Swing_11_9.png
+   :alt: Swing_11_9.png
+
+   Swing\_11\_9.png
+表11-3显示了JSplitPane可用的UIResource相关的属性集合。对于JSplitPane组件，有25个不同的属性，包括3个分隔符特定的属性。
+
+.. figure:: images/Swing_table_11_3_1.png
+   :alt: Swing_table_11_3_1.png
+
+   Swing\_table\_11\_3\_1.png
+.. figure:: images/Swing_table_11_3_2.png
+   :alt: Swing_table_11_3_2.png
+
+   Swing\_table\_11\_3\_2.png
+JTabbedPane类
+-------------
+
+JTabbedPane类表示曾经流行的属性页来支持在一个窗口中多个容器的输入或输出，其中每次只显示一个面板。使用JTabbedPane类似于使用CardLayout管理器，所不同的是添加到修改内建卡片的支持。然而CardLayout是一个LayoutManager，而JTabbedPane是一个完全功能的Container。如果我们不熟悉属性页，标签对话框或是标签面板（所有都是相同的事物的不同名字），图11-10显示了一个JDK
+1.2版本所带的原始SwingSet Demo中的标签集合。
+
+.. figure:: images/Swing_11_10.png
+   :alt: Swing_11_10.png
+
+   Swing\_11\_10.png
+为了有助于JTabbedPane管理哪一个Component被选中，容器的模型是一个SingleSelectionModel接口的实现，或者更确切的说，是一个DefaultSingleSelectionModel实例。（SingleSelectionModel与DefaultSingleSelectionModel在第6章中进行了描述。）
+
+创建JTabbedPane
+~~~~~~~~~~~~~~~
+
+JTabbedPane只有三个构造函数：
+
+.. code:: java
+
+    public JTabbedPane()
+    JTabbedPane tabbedPane = new JTabbedPane();
+    public JTabbedPane(int tabPlacement)
+    JTabbedPane tabbedPane = new JTabbedPane(JTabbedPane.RIGHT);
+    public JTabbedPane(int tabPlacement, int tabLayoutPolicy)
+    JTabbedPane tabbedPane = 
+      new JTabbedPane(JTabbedPane.RIGHT, JTabbedPane.SCROLL_TAB_LAYOUT);
+
+可配置的选项是用来修改显示哪一个组件的标签位置与当在一个虚拟行中有多个标签时的标签布局策略。默认情况下，标签位于容器的顶部，并且标签数量超过容器宽度时会进行回环形成多行。然而，我们可以使用JTabbedPane的下列常量之一来显式的指定位置：TOP,
+BOTTOM,
+LEFT或RIGHT，或者是使用SCROLL\_TAB\_LAYOUT或WRAP\_TAB\_LAYOUT来配置布局策略。图11-11使用其他三个标签位置显示了图11-10的屏幕显示。图11-12显示了带有滚动标签布局的屏幕。
+
+.. figure:: images/Swing_11_11.png
+   :alt: Swing_11_11.png
+
+   Swing\_11\_11.png
+.. figure:: images/Swing_11_12.png
+   :alt: Swing_11_12.png
+
+   Swing\_11\_12.png
+添加与移除标签
+~~~~~~~~~~~~~~
+
+一旦我们创建了基本的JTabbedPane容器，我们需要添加构成JTabbedPane页的面板。我们可以使用两种基本方法来添加面板。
+
+如果我们使用JBuilder或是Eclipse的可视化工具来创建我们的界面，用户界面构建器将会使用我们所熟悉的Container的add()方法来添加Component。所添加的面板使用component.getName()作为默认标题。然而，如果我们手动编程我们不应使用各种add()方法。
+
+添加组件或是面板来创建标签更为合适的方法是使用下面列出的addTab()或是insertTab()方法。insertTab()方法中除了组件与位置索引以外，其他的参数可以为空。（传递null作为Component参数会在运行时抛出NullPointerException。）显示的图标与工具提示设置并没有默认值。
+
+.. code:: java
+
+    • public void addTab(String title, Component component)
+    • public void addTab(String title, Icon icon, Component component)
+    • public void addTab(String title, Icon icon, Component component, String tip)
+    • public void insertTab(String title, Icon icon, Component component, String tip, 
+    int index)
+
+当使用addTab()时，标签被添加到末尾，也就是对于顶部或是底部标签集合来说是最右边的位置，或是对于在左边或右边放置的标签时位于底部，依据组件的方向，也可以是相反的一边。
+
+在创建面板之后，我们可以通过setXXXAt()方法修改一个特定标签的标题，图标，热键，工具提示或是组件：
+
+.. code:: java
+
+    • public void setTitleAt(int index, String title)
+    • public void setIconAt(int index, Icon icon)
+    • public void setMnemonicAt(int index, int mnemonic)
+    • public void setDisplayedMnemonicIndexAt(int index, int mnemonicIndex)
+    • public void setToolTipTextAt(int index, String text)
+    • public void setComponentAt(int index, Component component)
+
+提示，显示的热键索引指向标题中哪一个字符应高亮。例如，如果我们希望title中第二t高亮显示热键，我们可以使用setMnemonicAt()方法将热键字符设置为KeyEvent.VK\_T，并使用setDisplayedMnemonicIndexAt()将热键索引设置为2。
+
+另外，我们可以修改一个特定标签的背景色或前景色，允许或是禁止一个特定的标签，或是使用setXXXAt()方法设置不同的禁止图标：
+
+.. code:: java
+
+    • public void setBackgroundAt(int index, Color background)
+    • public void setForegroundAt(int index, Color foreground)
+    • public void setEnabledAt(int index, boolean enabled)
+    • public void setDisabledIconAt(int index, Icon disabledIcon)
+
+要移除一个标签，我们可以使用removeTabAt(int index), remove(int
+index)或是remove(Component
+component)来移除一个特定的标签。另外，我们可以使用removeAll()移除所有的标签。
+
+JTabbedPane属性
+~~~~~~~~~~~~~~~
+
+表11-4显示了JTabbedPane的11个属性。因为JTabbedPane的许多setter/getter方法都指定了一个索引参数，事实上他们并不是真正的属性。
+
+.. figure:: images/Swing_table_11_4.png
+   :alt: Swing_table_11_4.png
+
+   Swing\_table\_11\_4.png
+我们可以通过selectedComponent或是selectedIndex属性来编程修改显示的标签。
+
+tabRunCount属性表示显示所有的标签所必须的行数（对于顶部或底部标签位置）或是列数（对于左边或是右边位置）。
+
+注意，当要显示容器时修改JTabbedPane的LayoutManager将会抛出异常。换句话说，不要那样做。
+
+监听修改标签选中
+~~~~~~~~~~~~~~~~
+
+如果我们对确定何时选中的标签变化感兴趣，我们需要监听选中模型的变化。这是通过我们将一个ChangeListener关联到JTabbedPane（或是直接关联到SingleSelectionModel）来实现的。注册的ChangeListener报告何时选中模型发生变化，以及选中的面板变化时模型的变化。
+
+显示在列表11-3中的程序演示了监听选中标签的变化并且显示了新选中标签的标题。
+
+.. code:: java
+
+
+    package swingstudy.ch11;
+
+    import java.awt.BorderLayout;
+    import java.awt.Color;
+    import java.awt.EventQueue;
+    import java.awt.event.KeyEvent;
+
+    import javax.swing.JButton;
+    import javax.swing.JFrame;
+    import javax.swing.JTabbedPane;
+    import javax.swing.event.ChangeEvent;
+    import javax.swing.event.ChangeListener;
+
+    import swingstudy.ch04.DiamondIcon;
+
+    public class TabSample {
+
+        static Color colors[] = {Color.RED, Color.ORANGE, Color.YELLOW, Color.GREEN, Color.BLUE, Color.MAGENTA};
+        static void add(JTabbedPane tabbedPane, String label, int mnemonic) {
+            int count = tabbedPane.getTabCount();
+            JButton button = new JButton(label);
+            button.setBackground(colors[count]);
+            tabbedPane.addTab(label, new DiamondIcon(colors[count]), button, label);
+            tabbedPane.setMnemonicAt(count, mnemonic);
+        }
+        /**
+         * @param args
+         */
+        public static void main(String[] args) {
+            // TODO Auto-generated method stub
+
+            Runnable runner = new Runnable() {
+                public void run() {
+                    JFrame frame = new JFrame("Tabbed Pane Sample");
+                    frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+                    
+                    JTabbedPane tabbedPane = new JTabbedPane();
+                    tabbedPane.setTabLayoutPolicy(JTabbedPane.SCROLL_TAB_LAYOUT);
+                    String titles[] = {"General", "Security", "Content", "Connection", "Programs", "Advanced"};
+                    int mnemonics[] = {KeyEvent.VK_G, KeyEvent.VK_S, KeyEvent.VK_C, KeyEvent.VK_0, KeyEvent.VK_P, KeyEvent.VK_A};
+                    for(int i=0, n=titles.length; i<n; i++) {
+                        add(tabbedPane, titles[i], mnemonics[i]);
+                    }
+                    
+                    ChangeListener changeListener = new ChangeListener() {
+                        public void stateChanged(ChangeEvent event) {
+                            JTabbedPane sourceTabbedPane = (JTabbedPane)event.getSource();
+                            int index = sourceTabbedPane.getSelectedIndex();
+                            System.out.println("Tab changed to: "+sourceTabbedPane.getTitleAt(index));
+                        }
+                    };
+                    tabbedPane.addChangeListener(changeListener);
+                    
+                    frame.add(tabbedPane, BorderLayout.CENTER);
+                    frame.setSize(400, 150);
+                    frame.setVisible(true);
+                }
+            };
+            EventQueue.invokeLater(runner);
+        }
+
+    }
+
+自定义JTabbedPane观感
+~~~~~~~~~~~~~~~~~~~~~
+
+每一个可安装的Swing观感都提供了不同的JTabbedPane外观以及JTabbedPane组件的默认UIResource值集合。图11-13显示了JTabbedPane容器在预安装的观感类型Motif，Windows以及Ocean下的外观。某些项目是特定观感的：当可用的标签集合对于显示过度时JTabbedPane如何显示，当用户在后一行选择标签时如何响应，如何显示工具提示，以及如何显示滚动标签布局。
+
+.. figure:: images/Swing_11_13.png
+   :alt: Swing_11_13.png
+
+   Swing\_11\_13.png
+JTabbedPane可用的UIResource相关的属性集合显示在表11-5中。对于JTabbedPane组件，有34个不同的属性。
+
+.. figure:: images/Swing_table_11_5_1.png
+   :alt: Swing_table_11_5_1.png
+
+   Swing\_table\_11\_5\_1.png
+.. figure:: images/Swing_table_11_5_2.png
+   :alt: Swing_table_11_5_2.png
+
+   Swing\_table\_11\_5\_2.png
+.. figure:: images/Swing_table_11_5_3.png
+   :alt: Swing_table_11_5_3.png
+
+   Swing\_table\_11\_5\_3.png
+JScrollPane类
+-------------
+
+Swing的JScrollPane容器通过滚动支持（如果需要）来使得当前部分不可见从而为在较小的显示区域内显示大组件提供支持。图11-4显示了一个实现，其中大组件是一个具有ImageIcon的JLabel。
+
+.. figure:: images/Swing_11_14.png
+   :alt: Swing_11_14.png
+
+   Swing\_11\_14.png
+可以使用两种方示来标识要滚动的组件。我们不需要将要滚动的组件直接添加到JScrollPane容器中，我们可以将组件添加到已经包含在滚动面板中的另一个组件，JViewport。相对应的，我们可以通过将其传递给构造函数，在构造时标识组件。
+
+.. code:: java
+
+    Icon icon = new ImageIcon("dog.jpg");
+    JLabel label = new JLabel(icon);
+    JScrollPane jScrollPane = new JScrollPane();
+    jScrollPane.setViewportView(label);
+    // or
+    JScrollPane jScrollPane2 = new JScrollPane(label);
+
+一旦我们将组件添加到JScrollPane中，用户可以使用滚动条来查看在JScrollPane的内部区域不可见的大组件部分。
+
+除了为我们提供了设置JScrollPane可滚动组件的方法，显示策略可以决定是否以及何时在JScrollPane周围显示滚动条。Swing的JScrollPane为水平以及垂直滚动条维度了单独的显示策略。
+
+除了使得我们为滚动添加JViewport以及两个JScrollBar组件以外，JScrollPane同时允许我们提供另外两个JViewport对象用于行与列头以及在滚动面板四个角中显示的四个Component对象。这些组件的放置是通过在第10章介绍进行全面描述的ScrollPaneLayout管理器来管理的。JScrollPane实现所用的JScrollBar组件是一个名为JScrollPane.ScrollBar的JScrollBar子类。他们被用来替换通常的JScrollBar，从而在组件实现了Scrollable接口时正确处理JViewport中的滚动组件。
+
+为了帮助我们理解这些组件如何放置在JScrollPane中，图11-15演示了ScrollPaneLayout如何放置各种对象。
+
+.. figure:: images/Swing_11_15.png
+   :alt: Swing_11_15.png
+
+   Swing\_11\_15.png
+注意，JScrollPane组件只支持轻量级组件的滚动。我们不应该向容器添加通常的，重量级AWT组件。
+
+创建JScrollPane
+~~~~~~~~~~~~~~~
+
+JScrollPane有四个构造函数：
+
+.. code:: java
+
+    public JScrollPane()
+    JScrollPane scrollPane = new JScrollPane();
+    public JScrollPane(Component view)
+    Icon icon = new ImageIcon("largeImage.jpg");
+    JLabel imageLabel = new JLabel(icon);
+    JScrollPane scrollPane = new JScrollPane(imageLabel);
+    public JScrollPane(int verticalScrollBarPolicy, int horizontalScrollBarPolicy)
+    JScrollPane scrollPane = new 
+      JScrollPane(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS,
+      JScrollPane.HORIZONTAL_SCROLLBAR_ALWAYS);
+    public JScrollPane(Component view, int verticalScrollBarPolicy,
+      int horizontalScrollBarPolicy)
+    JScrollPane scrollPane = new JScrollPane(imageLabel,
+      JScrollPane.VERTICAL_SCROLLBAR_ALWAYS,
+      JScrollPane.HORIZONTAL_SCROLLBAR_ALWAYS);
+
+这些构造函数提供了预安装滚动组件以及配置单独滚动条滚动策略的选项。默认情况下，滚动条只在需要的时候显示。表11-16显示了用来为每一个滚动条显示设置策略的JScrollPane常量。使用其他不正确的设置会导致抛出IllegalArgumentException。
+
+.. figure:: images/Swing_table_11_6.png
+   :alt: Swing_table_11_6.png
+
+   Swing\_table\_11\_6.png
+下面的章节将会解释如何在创建JScrollPane之后添加或修改组件。
+
+修改Viewport View
+~~~~~~~~~~~~~~~~~
+
+如果我们使用合适的组件创建JScrollPane，我们只需要添加JScrollPane来显示。然而，如果我们并没有在创建时关联组件，或者是希望在稍后进行修改，有两种方法可以为滚动关联一个新的组件。首先，我们可以通过设置viewportView属性直接修改组件：
+
+.. code:: java
+
+    scrollPane.setViewportView(dogLabel);
+
+修改滚动组件另一种方法就是将JViewport放在JScrollPane的中间，然后修改其view属性：
+
+.. code:: java
+
+    scrollPane.getViewport().setView(dogLabel);
+
+我们将会在本章稍后的“JViewport类”一节中了解到更多关于JViewport组件的内容。
+
+Scrollable接口
+~~~~~~~~~~~~~~
+
+不同于AWT组件，例如List会在一次显示的选项过多时自动提供可滚动区域，Swing组件JList，JTable，JTextComponent，以及JTree并不会自动提供滚动支持。我们必须创建组件，将其添加到JScrollPane，然后将滚动面板添加到屏幕。
+
+.. code:: java
+
+    JList list = new JList(...);
+    JScrollPane scrollPane = new JScrollPane(list);
+    aFrame.add(scrollPane, BorderLayout.CENTER);
+
+将组件添加到JScrollPane起作用的原因在于每一个也许对于屏幕过大的Swing组件（并且需要滚动支持）实现了Scrollable接口。通过实现这个接口，当我们移动与JScrollPane相关联的滚动条时，JScrollPane会查询容器内Scrollable组件的尺寸信息从而基于当前的滚动条位置正确的定位组件。
+
+我们唯一需要担心Scrollable接口的时机就是当我们创建一个需要滚动支持的自定义组件的时候。下面是Scrollable接口的定义。
+
+.. code:: java
+
+    public interface Scrollable {
+      public Dimension getPreferredScrollableViewportSize();
+      public boolean getScrollableTracksViewportHeight();
+      public boolean getScrollableTracksViewportWidth();
+      public int getScrollableBlockIncrement(Rectangle visibleRect, int orientation,
+        int direction);
+      public int getScrollableUnitIncrement(Rectangle visibleRect, int orientation,
+        int direction);
+    }
+
+如果我们创建一个自定义的Scrollable组件，然后将放在JScrollPane中，当JScrollPane的滚动条或是鼠标滚轮移动时，他就会正确的响应。
+
+JScrollPane属性
+~~~~~~~~~~~~~~~
+
+表11-7显示了JScrollPane的19个属性。
+
+.. figure:: images/Swing_table_11_7_1.png
+   :alt: Swing_table_11_7_1.png
+
+   Swing\_table\_11\_7\_1.png
+.. figure:: images/Swing_table_11_7_2.png
+   :alt: Swing_table_11_7_2.png
+
+   Swing\_table\_11\_7\_2.png
+尝试着JScrollPane的布局属性修改为除了ScrollPaneLayout以外的值或是null将会在运行时抛出ClassCastException，因为JScrollPane所用的布局管理器必须为ScrollPaneLayout。
+
+**使用ScrollPaneLayout**
+JScrollPane依赖ScrollPaneLayout管理器对容器内的组件进行放置。然而大多数的布局管理器被设置用来布局所有的组件类型，但是ScrollPaneLayout的四个区域只接受特定类型的组件。表11-8显示了可以放置在图11-15中所示区域中显示的组件类型。
+
+.. figure:: images/Swing_table_11_8.png
+   :alt: Swing_table_11_8.png
+
+   Swing\_table\_11\_8.png
+注意，区域角有两个常量集合。对于国际化支持，我们可以使用LOWER\_LEADING\_CORNER,
+LOWER\_TRAILING\_CORNER,
+UPPER\_LEADING\_CORNER与UPPER\_TRAILING\_CORNER，这些常量可以为我们处理组件方向。对于由左到右的组件方向，起始是左边，而结束是右边。
+
+正如设计要求，布局管理器描述支持对于可用空间过大的主内容区域（VIEWPORT）所必须的屏幕布局。用于在区域中浏览的滚动条可以被设置在内容区域的右边（VERTICAL\_SCROLLABAR）或是下边（HORIZONTAL\_SCROLLBAR）。不滚动的固定头可以被放置在内容区域的上部（COLUMN\_HEADER）或是其左边（ROW\_HEADER）。四个角（\*\_CORNER）可以配置来显示任意的组件类型，通常是带有图片的标签；然则
+，在其中可以放置任意的组件。
+
+注意，一些开发者会认为ScrollPaneLayout是一个带有自定义约束的GridBagLayout。在通常情况下，大多数开发者并不会在JScrollPane之外使用ScrollPaneLayout。
+
+**使用JScrollPane头与角**
+
+如图11-15与表11-8所示，在JScrollPane存在多个不同的区域。通常，我们只使用中间的视图，并使用两个滚动条完成相应的任务。另外，当使用JTable组件时，当放置在JScrollPane中时，表会自动将列头放置在列头区域。
+
+我们也可以手动添加或是修改JScrollPane的列头或是行头。尽管我们可以在这里区域完全替换JViewport，但是为此区域中的Component设置columnHeaderView或是rowHeaderView属性更为简单。这一操作可以为我们将组件放置在JViewport中。
+
+要将组件放置在JScrollPane的一个角中，我们需要调用setCorner(String key,
+Component
+corner)方法，其中key是JScrollPane中的下列常量之一：LOWER\_LEFT\_CORNER,
+LOWER\_RIGHT\_CORNER, UPPER\_LEFT\_CORNER,或是UPPER\_RIGHT\_CORNER。
+
+角区域的使用比较有技巧。只有当两个位于角落右边角的组件是当前显示时，角落组件才会被显示。例如，假如我们要在右下角落放置一个具有公司logo的标签，而两个滚动条的滚动策略只有在必需的时才会显示。在这种情况下，如果一个滚动条不需要，角落中的logo也不会被显示。作为另一个盒子，如果一个JScrollPane具有一个列头显示，但是并没有行头，左上角中的组件也不会被显示。
+
+所以，仅仅因为我们将角落设置为一个组件（例如scrollPane.setCorner(JScrollPane.UPPER\_LEFT\_CORNER,
+logLabel)），不要期望组件总是或是自动显示。而且，如图11-16所示，相邻的区域控制角落的尺寸。不要认为角落组件会按需要大小显示。这是因为其最小尺寸，最优尺寸与最大尺寸被完全被忽略了。在图11-16中，用来创建角落组件的实际图片要大于所用的空间。
+
+.. figure:: images/Swing_11_16.png
+   :alt: Swing_11_16.png
+
+   Swing\_11\_16.png
+注意，修改JScrollPane的一个角落类似于边界属性，其中属性名是表11-8中所列的角落键值。
+
+**重设视图域位置**
+
+有时，我们也许会希望将内部视图的内容向JScrollPane的左上角移动。这种变化也许是需要的，因为视图发生了变化，或者是某些事情的发生要求视图域组件返回到JScrollPane的原始位置。移动视图最简单的方法就是JScrollPane的滚动条位置。将每一个滚动条设置为其最小值就有效的将组件视图移动到了组件的左上角区域。列表11-4中所显示的ActionListener可以关联到屏幕中的按钮或是JScrollPane的角落，从而使得JScrollPane的内容返回到原始位置。
+
+.. code:: java
+
+
+    package swingstudy.ch11;
+
+    import java.awt.event.ActionEvent;
+    import java.awt.event.ActionListener;
+
+    import javax.swing.JScrollBar;
+    import javax.swing.JScrollPane;
+
+    public class JScrollPaneToTopAction implements ActionListener {
+
+        JScrollPane scrollPane;
+        
+        public JScrollPaneToTopAction(JScrollPane scrollPane) {
+            if(scrollPane == null) {
+                throw new IllegalArgumentException("JScrollPaneToTopAction: null JScrollPane");
+            }
+            this.scrollPane = scrollPane;
+        }
+        @Override
+        public void actionPerformed(ActionEvent event) {
+            // TODO Auto-generated method stub
+            JScrollBar verticalScrollBar = scrollPane.getVerticalScrollBar();
+            JScrollBar horizontalScrollBar = scrollPane.getHorizontalScrollBar();
+            verticalScrollBar.setValue(verticalScrollBar.getMinimum());
+            horizontalScrollBar.setValue(horizontalScrollBar.getMinimum());
+        }
+
+    }
+
+自定义JScrollPane观感
+~~~~~~~~~~~~~~~~~~~~~
+
+每一个可安装的观感都提供了不同的JScrollPane外观以及默认的组件UIResource值集合。图11-17显示了JScrollPane组件在预安装的观感类型集合下的外观显示。对于JScrollPane，观感类型之间的主要区别与滚动条的外观以及视图周围的边框有关。
+
+表11-9显示了JScrollPane可用的UIResource相关属性集合。对于JScrollPane组件，有十个不同的属性。当滚动条在JScrollPane内可见时，修改与JScrollBar的相关属性会影响其外观。
+
+.. figure:: images/Swing_11_17_1.png
+   :alt: Swing_11_17_1.png
+
+   Swing\_11\_17\_1.png
+.. figure:: images/Swing_11_17_2.png
+   :alt: Swing_11_17_2.png
+
+   Swing\_11\_17\_2.png
+.. figure:: images/Swing_table_11_9.png
+   :alt: Swing_table_11_9.png
+
+   Swing\_table\_11\_9.png
+JViewport类
+-----------
+
+JViewport很少在JScrollPane之外使用。通常情况下他位于JScrollPane的中间并且使用ViewportLayout管理器来响应在小空间内显示大Component的定位请求。除了位于JScrollPane的中间以外，JViewport也可以用于JScrollPane的行头与列头。
+
+创建JViewport
+~~~~~~~~~~~~~
+
+JViewport只有一个无参数的构造函数：public
+JViewport()。一旦我们创建了JViewport，我们可以通过setView(Component)向其中添加组件。
+
+JViewport属性
+~~~~~~~~~~~~~
+
+表11-10显示了JViewport的13个属性。将布局管理器设置为ViewportLayout以外的布局管理也可以的，但是并不推荐，因为ViewportLayout布局管理器可以使得JViewport正确工作。
+
+.. figure:: images/Swing_table_11_10.png
+   :alt: Swing_table_11_10.png
+
+   Swing\_table\_11\_10.png
+由于滚动的复杂性以及性能原因，JViewport并不支持边框。试着使用setBorder(Border)方法将边框设置为非null会抛出IllegalArgumentException。因为没有边框，所以insets属性的设置总为（0，0，0，0）。我们不能在JViewport周围显示边框，但是我们可以在视图所在的组件周围显示边框。只需要简单的在组件周围放置一个边框，或是将组件放在一个具有边框的JPanel中，然后将其添加到JViewport。如果我们确实在组件周围添加了边框，只有当组件部分可以见时边框才可见。如果我们不希望边框滚动，我们必须将JViewport放在类似JScrollPane这样具有自己边框的组件中。
+
+提示，要设置显示在JScrollPane中的背景色，我们需要设置视图区域的背景色：aScrollPane.getViewport().setBackground(newColor)。
+
+视图的尺寸（viewSize属性）是基于JViewport内组件的尺寸的（view属性）。视图位置（viewPosition属性）是视图矩形区域（viewRect属性）的左上角，其中矩形区域的尺寸是视图区域的扩展尺寸（extentSize属性）。如果感到迷惑，图11-18会有助于我们理解JViewport中的各种属性。
+
+.. figure:: images/Swing_11_18.png
+   :alt: Swing_11_18.png
+
+   Swing\_11\_18.png
+scrollMode属性可以设置为表11-11中所列的类常量的一个。在大多数情况下，我们可以使用默认的BLIST\_SCROLL\_MODE模式。
+
+.. figure:: images/Swing_table_11_11.png
+   :alt: Swing_table_11_11.png
+
+   Swing\_table\_11\_11.png
+为了在周围移动视图的可见部分，我们只需要修改viewPosition属性。这会移动viewRect，使得我们可以看到视图的不同部分。为了显示这一行为，列表11-5中的程序将键盘快捷键绑定到了JViewport，从而我们可以使用箭头键来移动视图。（通常情况下，JScrollPane会获得这些键盘动作。）代码的主要部分对于设置相应的输入/动作映射是必须的。以粗体显示的代码是移动视图所必须的。
+
+.. code:: java
+
+    package swingstudy.ch11;
+
+    import java.awt.BorderLayout;
+    import java.awt.Dimension;
+    import java.awt.EventQueue;
+    import java.awt.Point;
+    import java.awt.event.ActionEvent;
+
+    import javax.swing.AbstractAction;
+    import javax.swing.Action;
+    import javax.swing.ActionMap;
+    import javax.swing.Icon;
+    import javax.swing.ImageIcon;
+    import javax.swing.InputMap;
+    import javax.swing.JComponent;
+    import javax.swing.JFrame;
+    import javax.swing.JLabel;
+    import javax.swing.JViewport;
+    import javax.swing.KeyStroke;
+
+    public class MoveViewSample {
+
+        public static final int INCREASE = 0; // direction
+        public static final int DECREASE = 1; // direction
+        public static final int X_AXIS = 0; // axis
+        public static final int Y_AXIS = 1; // axis
+        public static final int UNIT = 0;   // type
+        public static final int BLOCK = 1;  // type
+        
+        static class MoveAction extends AbstractAction {
+            JViewport viewport;
+            int direction;
+            int axis;
+            int type;
+            public MoveAction(JViewport viewport, int direction, int axis, int type) {
+                if(viewport == null) {
+                    throw new IllegalArgumentException("null viewport not permitted");
+                }
+                this.viewport = viewport;
+                this.direction = direction;
+                this.axis = axis;
+                this.type = type;
+            }
+            
+            public void actionPerformed(ActionEvent event) {
+                Dimension extentSize = viewport.getExtentSize();
+                int horizontalMoveSize = 0;
+                int verticalMoveSize = 0;
+                if(axis == X_AXIS) {
+                    if(type == UNIT) {
+                        horizontalMoveSize = 1;
+                    }
+                    else {
+                        // type == BLOCK
+                        horizontalMoveSize = extentSize.width;
+                    }
+                }
+                else {
+                    // axis == Y_AXIS
+                    if(type == UNIT) {
+                        verticalMoveSize = 1;
+                    }
+                    else {
+                        // type = BLOCK
+                        verticalMoveSize = extentSize.height;
+                    }
+                }
+                if(direction == DECREASE) {
+                    horizontalMoveSize = -horizontalMoveSize;
+                    verticalMoveSize = -verticalMoveSize;
+                }
+                // translate origin by some amount
+                Point origin = viewport.getViewPosition();
+                origin.x += horizontalMoveSize;
+                origin.y += verticalMoveSize;
+                // set new viewing origin
+                viewport.setViewPosition(origin);
+            }
+        }
+        
+        /**
+         * @param args
+         */
+        public static void main(String[] args) {
+            // TODO Auto-generated method stub
+
+            Runnable runner = new Runnable() {
+                public void run() {
+                    JFrame frame = new JFrame("JViewport Sample");
+                    frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+                    Icon icon = new ImageIcon("dog.jpg");
+                    JLabel dogLabel = new JLabel(icon);
+                    JViewport viewport =  new JViewport();
+                    viewport.setView(dogLabel);
+                    
+                    InputMap inputMap = viewport.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW);
+                    ActionMap actionMap = viewport.getActionMap();
+                    
+                    // up key moves view up unit
+                    Action upKeyAction = new MoveAction(viewport, DECREASE, Y_AXIS, UNIT);
+                    KeyStroke upKey = KeyStroke.getKeyStroke("UP");
+                    inputMap.put(upKey, "up");
+                    actionMap.put("up", upKeyAction);
+                    
+                    // down key moves view down unit
+                    Action downKeyAction = new MoveAction(viewport, INCREASE, Y_AXIS, UNIT);
+                    KeyStroke downKey = KeyStroke.getKeyStroke("DOWN");
+                    inputMap.put(downKey, "down");
+                    actionMap.put("down", downKeyAction);
+                    
+                    // left key moves view left unit
+                    Action leftKeyAction = new MoveAction(viewport, DECREASE, X_AXIS, UNIT);
+                    KeyStroke leftKey = KeyStroke.getKeyStroke("LEFT");
+                    inputMap.put(leftKey, "left");
+                    actionMap.put("left", leftKeyAction);
+                    
+                    // right key mvoes view right unit
+                    Action rightKeyAction = new MoveAction(viewport, INCREASE, X_AXIS, UNIT);
+                    KeyStroke rightKey = KeyStroke.getKeyStroke("RIGHT");
+                    inputMap.put(rightKey, "right");
+                    actionMap.put("right", rightKeyAction);
+                    
+                    // pgup key moves view up block
+                    Action pgUpKeyAction = new MoveAction(viewport, DECREASE, Y_AXIS, BLOCK);
+                    KeyStroke pgUpKey = KeyStroke.getKeyStroke("PAGE_UP");
+                    inputMap.put(pgUpKey, "pgUp");
+                    actionMap.put("pgUp", pgUpKeyAction);
+                    
+                    // pgdn key moves view down block
+                    Action pgDnKeyAction = new MoveAction(viewport, INCREASE, Y_AXIS, BLOCK);
+                    KeyStroke pgDnKey = KeyStroke.getKeyStroke("PAGE_DOWN");
+                    inputMap.put(pgDnKey, "pgDn");
+                    actionMap.put("pgDn", pgDnKeyAction);
+                    
+                    // shift-pgup key moves view left block
+                    Action shiftPgUpKeyAction = new MoveAction(viewport, DECREASE, X_AXIS, BLOCK);
+                    KeyStroke shiftPgUpKey = KeyStroke.getKeyStroke("shift PAGE_UP");
+                    inputMap.put(shiftPgUpKey, "shiftPgUp");
+                    actionMap.put("shiftPgUp", shiftPgUpKeyAction);
+                    
+                    // shift-pgdn key moves view right block
+                    Action shiftPgDnKeyAction = new MoveAction(viewport, INCREASE, X_AXIS, BLOCK);
+                    KeyStroke shiftPgDnKey = KeyStroke.getKeyStroke("shift PAGE_DOWN");
+                    inputMap.put(shiftPgDnKey, "shiftPgDn");
+                    actionMap.put("shiftPgDn", shiftPgDnKeyAction);
+                    
+                    frame.add(viewport, BorderLayout.CENTER);
+                    frame.setSize(300, 200);
+                    frame.setVisible(true);
+                }
+            };
+            EventQueue.invokeLater(runner);
+        }
+
+    }
+
+自定义JViewport观感
+~~~~~~~~~~~~~~~~~~~
+
+每一个可安装的Swing观感通过BasicViewportUI共享相同的JViewport外观，并没有实际外观上的区别。然而，仍然存在一个JViewport的UIResource相关属性集合，如表11-12所示。对于JViewport组件，有四个这样的属性。
+
+.. figure:: images/Swing_table_11_12.png
+   :alt: Swing_table_11_12.png
+
+   Swing\_table\_11\_12.png
+小结
+----
+
+在本章中，我们探讨了一些高级的Swing容器。对于Box类，我们可以更容易的使用BoxLayout管理器考虑到组件的最小尺寸，最优尺寸与最大尺寸以最好的可能方式来创建单行或单列的组件。
+
+对于JSplitPane组件，我们可以通过在其所包含的两个组件间添加分隔符来创建一行或一列的组件，并允许用户通过移动分隔符来手动修改组件的尺寸。
+
+JTabbedPane容器每次只显示所包含的组件集合中的一个组件。所显示的组件是通过用户选择标签来选择的，标签中可以包含具有或是不具有热键的标题，图标以及工具提示文本。这就是我们通常在程序中见到的流行的属性页。
+
+JScrollPane与JViewport容器可以使得我们在一小区域内显示一个大组件。JScrollPane添加了滚动条使得终端用户移动可视化部分，而JViewport没有添加这些滚动条。
+
+在第12章中，我们将会再次探讨Swing库中的单个组件，包括JProgressBar，JScrollBar以及共享BoundedRangeModel作为其数据模型的JSlider。

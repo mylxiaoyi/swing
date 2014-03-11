@@ -1,54 +1,297 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
 
-<html xmlns="http://www.w3.org/1999/xhtml">
-  <head>
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    
-    <title>Pop-Ups and Choosers &mdash; The Definitive Guide to Java Swing Third Edtion 0.01 documentation</title>
-    
-    <link rel="stylesheet" href="_static/default.css" type="text/css" />
-    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-    
-    <script type="text/javascript">
-      var DOCUMENTATION_OPTIONS = {
-        URL_ROOT:    './',
-        VERSION:     '0.01',
-        COLLAPSE_INDEX: false,
-        FILE_SUFFIX: '.html',
-        HAS_SOURCE:  true
-      };
-    </script>
-    <script type="text/javascript" src="_static/jquery.js"></script>
-    <script type="text/javascript" src="_static/underscore.js"></script>
-    <script type="text/javascript" src="_static/doctools.js"></script>
-    <link rel="top" title="The Definitive Guide to Java Swing Third Edtion 0.01 documentation" href="index.html" />
-    <link rel="next" title="布局管理器" href="ch10.html" />
-    <link rel="prev" title="Root Pane Containers" href="ch08.html" /> 
-  </head>
-  <body>
-    <div class="related">
-      <h3>Navigation</h3>
-      <ul>
-        <li class="right" style="margin-right: 10px">
-          <a href="genindex.html" title="General Index"
-             accesskey="I">index</a></li>
-        <li class="right" >
-          <a href="ch10.html" title="布局管理器"
-             accesskey="N">next</a> |</li>
-        <li class="right" >
-          <a href="ch08.html" title="Root Pane Containers"
-             accesskey="P">previous</a> |</li>
-        <li><a href="index.html">The Definitive Guide to Java Swing Third Edtion 0.01 documentation</a> &raquo;</li> 
-      </ul>
-    </div>  
 
-    <div class="document">
-      <div class="documentwrapper">
-        <div class="bodywrapper">
-          <div class="body">
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Pop-Ups and Choosers &mdash; The Definitive Guide to Java Swing Third Edtion 0.01 documentation</title>
+  
+
+  
+  
+
+  
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/labibi.css" type="text/css" />
+  
+
+  
+    <link rel="top" title="The Definitive Guide to Java Swing Third Edtion 0.01 documentation" href="index.html"/>
+        <link rel="next" title="布局管理器" href="ch10.html"/>
+        <link rel="prev" title="Root Pane Containers" href="ch08.html"/>
+
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/modernizr/2.6.2/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-nav-search">
+        <a href="index.html" class="fa fa-home"> The Definitive Guide to Java Swing Third Edtion</a>
+        <div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+        
+        
+            <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="ch01.html">Swing Overiview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch02.html">Event Handling with Swing Component Set</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="ch02.html#id1">基于委托的事件处理</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ch02.html#swing">多线程的Swing事件处理</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ch02.html#id6">Swing特定的事件处理</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ch02.html#id8">Swing焦点管理</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ch02.html#id12">小结</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="ch03.html">The Model-View-Controller Architecture</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="ch03.html#mvc">理解MVC流</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ch03.html#id2">共享数据模型</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ch03.html#id3">理解预定义的数据模型</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ch03.html#id4">小结</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="ch04.html">Core Swing Components</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="ch04.html#jcomponent">JComponent类</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ch04.html#jtooltip">JToolTip类</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ch04.html#jlabel">JLabel类</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ch04.html#icon">Icon接口</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ch04.html#abstractionbutton">AbstractionButton类</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ch04.html#jbutton">JButton类</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ch04.html#jpanel">JPanel类</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ch04.html#id21">小结</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="ch05.html">Toggle Buttons</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="ch05.html#togglebuttonmodel">ToggleButtonModel类</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ch05.html#buttongroup">ButtonGroup类</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ch05.html#jtogglebutton">JToggleButton类</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ch05.html#jcheckbox">JCheckBox类</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ch05.html#jradionbutton">JRadionButton类</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ch05.html#id12">小结</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="ch06.html">wing Menus and Toolbars</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="ch06.html#id1">使用菜单</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ch06.html#popup">使用弹出菜单：Popup类</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ch06.html#jtoolbar">使用工具栏：JToolBar类</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ch06.html#id10">小结</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="ch07.html">Borders</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="ch07.html#some-basics-on-woring-with-borders">Some Basics on Woring with Borders</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ch07.html#examining-the-predefined-borders">Examining the Predefined Borders</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ch07.html#creating-your-own-borders">Creating Your Own Borders</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ch07.html#summary">Summary</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="ch08.html">Root Pane Containers</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="ch08.html#jrootpane">JRootPane类</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ch08.html#jframe">JFrame类</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ch08.html#jwindow">JWindow类</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ch08.html#jdialog">JDialog类</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ch08.html#japplet">JApplet类</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ch08.html#id17">配合桌面使用</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ch08.html#id18">小结</a></li>
+</ul>
+</li>
+<li class="toctree-l1 current"><a class="current reference internal" href="">Pop-Ups and Choosers</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#joptionpane-class">JOptionPane Class</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#progressmonitor">ProgressMonitor类</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#progressmonitorinputstream">ProgressMonitorInputStream类</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#jcolorchooser">JColorChooser类</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#jfilechooser">JFileChooser类</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id20">小结</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="ch10.html">布局管理器</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="ch10.html#id2">布局管理器职责</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ch10.html#layoutmanager">LayoutManager接口</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ch10.html#flowlayout">FlowLayout类</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ch10.html#borderlayout">BorderLayout类</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ch10.html#gridlayout">GridLayout类</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ch10.html#gridbaglayout">GridBagLayout类</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ch10.html#cardlayout">CardLayout类</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ch10.html#boxlayout">BoxLayout类</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ch10.html#overlaylayout">OverlayLayout类</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ch10.html#sizerequirements">SizeRequirements类</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ch10.html#scrollpanellayout">ScrollPanelLayout类</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ch10.html#viewportlayout">ViewportLayout类</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ch10.html#springlayout">SpringLayout类</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ch10.html#id7">小结</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="ch11.html">高级Swing容器</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="ch11.html#box">Box类</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ch11.html#jsplitpane">JSplitPane类</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ch11.html#jtabbedpane">JTabbedPane类</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ch11.html#jscrollpane">JScrollPane类</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ch11.html#jviewport">JViewport类</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ch11.html#id20">小结</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="ch12.html">Bounded Range Components</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="ch12.html#boundedrangemodel">BoundedRangeModel接口</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ch12.html#defaultboundedrangemodel">DefaultBoundedRangeModel类</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ch12.html#jscrollbar">JScrollBar类</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ch12.html#jslider">JSlider类</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ch12.html#jprogressbar">JProgressBar类</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ch12.html#jtextfieldboundedrangemodel">JTextField类与BoundedRangeModel接口</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ch12.html#id14">小结</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="ch13.html">List Model Controls</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="ch13.html#listmodel">ListModel接口</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ch13.html#jlist">JList类</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ch13.html#jcombobox">JComboBox类</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ch13.html#jcomboboxjlist">为JComboBox与JList共享数据模型</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ch13.html#id16">小结</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="ch14.html">Spinner Model Controls</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="ch14.html#jspinner">JSpinner类</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ch14.html#spinnermodel">SpinnerModel接口</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ch14.html#abstractspinnermodel">AbstractSpinnerModel类</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ch14.html#id5">JSpinner编辑器</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ch14.html#id6">小结</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="ch15.html">基本文本组件</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="ch15.html#swing">Swing文本组件概述</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ch15.html#jtextcomponent">JTextComponent类</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ch15.html#jtextfield">JTextField类</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ch15.html#jpasswordfield">JPasswordField类</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ch15.html#jformattedtextfield">JFormattedTextField类</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ch15.html#jtextarea">JTextArea类</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ch15.html#jeditorpane">JEditorPane类</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ch15.html#jtextpane">JTextPane类</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ch15.html#id26">小结</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="ch16.html">高级文本功能</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="ch16.html#action">配合文本组件使用Action</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ch16.html#creating-styled-text">Creating Styled Text</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ch16.html#the-editor-kits">The Editor Kits</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ch16.html#jformattedtextfield">JFormattedTextField格式</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ch16.html#id6">小结</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="ch17.html">树</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="ch17.html#id2">树简介</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ch17.html#jtree">JTree类</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ch17.html#treecellrenderer">TreeCellRenderer接口</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ch17.html#id10">编辑树节点</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ch17.html#id14">使用树节点</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ch17.html#treemodel">TreeModel接口</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ch17.html#treeselectionmodel">TreeSelectionModel接口</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ch17.html#additional-expansion-events">Additional Expansion Events</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ch17.html#id16">小结</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="ch18.html">Tables</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="ch18.html#intoducing-tables">Intoducing Tables</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ch18.html#jtable">JTable类</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ch18.html#tablemode">TableMode接口</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ch18.html#tablecolumnmodel">TableColumnModel接口</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ch18.html#jtableheader">JTableHeader类</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ch18.html#id14">编辑表格单元</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ch18.html#id17">打印表格</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ch18.html#id18">小结</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="ch19.html">拖放支持</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="ch19.html#id2">内建拖放支持</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ch19.html#transferhandler">TransferHandler类</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ch19.html#id3">图像拖放支持</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ch19.html#id4">小结</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="ch20.html">可插拨的观感体系结构</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="ch20.html#lookandfeel">LookAndFeel类</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ch20.html#id5">创建新的观感</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ch20.html#metal">使用Metal主题</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ch20.html#auxiliary">使用Auxiliary观感</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ch20.html#synthlookandfeel">SynthLookAndFeel类</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ch20.html#id8">小结</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="ch21.html">Undo框架</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="ch21.html#id1">使用Undo框架</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ch21.html#swingundo">配合Swing文本组件使用Undo框架</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ch21.html#command">Command设计模式</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ch21.html#id2">Undo框架组件</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ch21.html#id4">使用外部对象管理Undo状态</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ch21.html#id5">小结</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="ch22.html">可访问性</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="ch22.html#accessibility">Accessibility类</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ch22.html#id2">创建可访问的组件</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ch22.html#java">使用Java访问桥</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ch22.html#id3">小结</a></li>
+</ul>
+</li>
+</ul>
+
+        
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="index.html">The Definitive Guide to Java Swing Third Edtion</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="index.html">Docs</a> &raquo;</li>
+      
+    <li>Pop-Ups and Choosers</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          <a href="_sources/ch09.txt" rel="nofollow"> View page source</a>
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main">
             
+  
   <div class="section" id="pop-ups-and-choosers">
 <h1>Pop-Ups and Choosers<a class="headerlink" href="#pop-ups-and-choosers" title="Permalink to this headline">¶</a></h1>
 <p>在第8章中，我们了解了顶层容器，例如JFrame与JApplet。另外，我们探讨了用来创建弹出窗口来显示信息或是获取用户输入的JDialog类。尽管JDialog类可以工作得很好，Swing组件集合同时提供了一些更为简单的方法来由弹出窗口获取用户输入，我们将会在本章进行探讨。</p>
@@ -1976,101 +2219,108 @@ public class JavaFileView extends FileView {
 </div>
 
 
-          </div>
-        </div>
-      </div>
-      <div class="sphinxsidebar">
-        <div class="sphinxsidebarwrapper">
-  <h3><a href="index.html">Table Of Contents</a></h3>
-  <ul>
-<li><a class="reference internal" href="#">Pop-Ups and Choosers</a><ul>
-<li><a class="reference internal" href="#joptionpane-class">JOptionPane Class</a><ul>
-<li><a class="reference internal" href="#joptionpane">创建JOptionPane</a></li>
-<li><a class="reference internal" href="#id1">显示JOptionPane</a></li>
-<li><a class="reference internal" href="#id2">在弹出窗口中自动创建JOptionPane</a></li>
-<li><a class="reference internal" href="#id3">JOptionPane属性</a></li>
-<li><a class="reference internal" href="#id4">自定义JOptionPane观感</a></li>
-</ul>
-</li>
-<li><a class="reference internal" href="#progressmonitor">ProgressMonitor类</a><ul>
-<li><a class="reference internal" href="#id5">创建ProgressMonitor</a></li>
-<li><a class="reference internal" href="#propressmonitor">使用PropressMonitor</a></li>
-<li><a class="reference internal" href="#id6">ProgressMonitor属性</a></li>
-<li><a class="reference internal" href="#id7">自定义ProgressMonitor观感</a></li>
-</ul>
-</li>
-<li><a class="reference internal" href="#progressmonitorinputstream">ProgressMonitorInputStream类</a><ul>
-<li><a class="reference internal" href="#id8">创建ProgressMonitorInputStream</a></li>
-<li><a class="reference internal" href="#id9">使用ProgressMonitorInputStream</a></li>
-<li><a class="reference internal" href="#id10">ProgressMonitorInputStream属性</a></li>
-</ul>
-</li>
-<li><a class="reference internal" href="#jcolorchooser">JColorChooser类</a><ul>
-<li><a class="reference internal" href="#id11">创建JColorChooser</a></li>
-<li><a class="reference internal" href="#id12">使用JColorChooser</a></li>
-<li><a class="reference internal" href="#id13">JColorChooser属性</a></li>
-<li><a class="reference internal" href="#id14">自定义JColorChooser观感</a></li>
-</ul>
-</li>
-<li><a class="reference internal" href="#jfilechooser">JFileChooser类</a><ul>
-<li><a class="reference internal" href="#id15">创建JFileChooser</a></li>
-<li><a class="reference internal" href="#id16">使用JFileChooser</a></li>
-<li><a class="reference internal" href="#id17">JFileChooser属性</a></li>
-<li><a class="reference internal" href="#id18">使用文件过滤器</a></li>
-<li><a class="reference internal" href="#id19">自定义JFileChooser观感</a></li>
-</ul>
-</li>
-<li><a class="reference internal" href="#id20">小结</a></li>
-</ul>
-</li>
-</ul>
 
-  <h4>Previous topic</h4>
-  <p class="topless"><a href="ch08.html"
-                        title="previous chapter">Root Pane Containers</a></p>
-  <h4>Next topic</h4>
-  <p class="topless"><a href="ch10.html"
-                        title="next chapter">布局管理器</a></p>
-  <h3>This Page</h3>
-  <ul class="this-page-menu">
-    <li><a href="_sources/ch09.txt"
-           rel="nofollow">Show Source</a></li>
-  </ul>
-<div id="searchbox" style="display: none">
-  <h3>Quick search</h3>
-    <form class="search" action="search.html" method="get">
-      <input type="text" name="q" />
-      <input type="submit" value="Go" />
-      <input type="hidden" name="check_keywords" value="yes" />
-      <input type="hidden" name="area" value="default" />
-    </form>
-    <p class="searchtip" style="font-size: 90%">
-    Enter search terms or a module, class or function name.
+
+
+
+<div id="disqus_thread"></div>
+    <script type="text/javascript">
+        /* * * CONFIGURATION VARIABLES: EDIT BEFORE PASTING INTO YOUR WEBPAGE * * */
+        var disqus_shortname = 'swing'; // required: replace example with your forum shortname
+
+        /* * * DON'T EDIT BELOW THIS LINE * * */
+        (function() {
+            var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+            dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+            (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+        })();
+    </script>
+    <noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+    <a href="http://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+
+
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="ch10.html" class="btn btn-neutral float-right" title="布局管理器"/>Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="ch08.html" class="btn btn-neutral" title="Root Pane Containers"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2014, mylxiaoyi.
     </p>
-</div>
-<script type="text/javascript">$('#searchbox').show(0);</script>
+  </div>
+
+  <a href="https://github.com/snide/sphinx_rtd_theme">Sphinx theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>
+</footer>
         </div>
       </div>
-      <div class="clearer"></div>
-    </div>
-    <div class="related">
-      <h3>Navigation</h3>
-      <ul>
-        <li class="right" style="margin-right: 10px">
-          <a href="genindex.html" title="General Index"
-             >index</a></li>
-        <li class="right" >
-          <a href="ch10.html" title="布局管理器"
-             >next</a> |</li>
-        <li class="right" >
-          <a href="ch08.html" title="Root Pane Containers"
-             >previous</a> |</li>
-        <li><a href="index.html">The Definitive Guide to Java Swing Third Edtion 0.01 documentation</a> &raquo;</li> 
-      </ul>
-    </div>
-    <div class="footer">
-        &copy; Copyright 2014, mylxiaoyi.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2b3.
-    </div>
-  </body>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'',
+            VERSION:'0.01',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+  
+ 
+
+
+
+
+<script type="text/javascript">
+
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', ]);
+  _gaq.push(['_trackPageview']);
+
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();
+
+</script>
+
+
+
+</body>
 </html>
